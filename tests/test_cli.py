@@ -55,3 +55,33 @@ def test_validation_and_failure_commands(tmp_path: Path, capsys: object) -> None
     assert main(["--repo", str(tmp_path), "--json", "explain-failure", "--log", str(log)]) == 0
     explanation = json.loads(capsys.readouterr().out)  # type: ignore[attr-defined]
     assert explanation["data"]["category"] == "typescript"
+
+
+def test_risk_and_trace_commands(tmp_path: Path, capsys: object) -> None:
+    (tmp_path / "auth.py").write_text("value = 1\n")
+    patch = tmp_path / "change.diff"
+    patch.write_text(
+        "diff --git a/auth.py b/auth.py\n--- a/auth.py\n+++ b/auth.py\n"
+        "@@ -1 +1 @@\n-value = 1\n+value = 2\n"
+    )
+    assert main(["--repo", str(tmp_path), "--json", "score-risk", "--patch", str(patch)]) == 0
+    risk = json.loads(capsys.readouterr().out)  # type: ignore[attr-defined]
+    assert risk["data"]["score"] > 0
+    assert (
+        main(
+            [
+                "--repo",
+                str(tmp_path),
+                "--trace-run",
+                "run-1",
+                "--json",
+                "localize",
+                "auth",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()  # type: ignore[attr-defined]
+    assert main(["--repo", str(tmp_path), "--json", "trace", "list"]) == 0
+    traces = json.loads(capsys.readouterr().out)  # type: ignore[attr-defined]
+    assert traces["data"][0]["id"] == "run-1"

@@ -9,7 +9,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.0"]
 dev = [
   "mypy>=1.15",
   "pytest>=8.3",
@@ -41,4 +40,3 @@ python_version = "3.12"
 strict = true
 packages = ["repo_brain"]
 mypy_path = "src"
-

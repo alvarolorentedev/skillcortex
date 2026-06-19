@@ -15,8 +15,10 @@ from repo_brain.skills.evidence import build_evidence
 from repo_brain.skills.explain_failure import explain_failure
 from repo_brain.skills.localize import localize
 from repo_brain.skills.repo_map import repository_map
+from repo_brain.skills.score_risk import score_risk
 from repo_brain.skills.suggest_tests import suggest_tests
 from repo_brain.skills.validate_patch import validate_patch
+from repo_brain.tracing.trace_store import TraceStore
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -24,6 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo", type=Path)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--trace-run")
     parser.add_argument("--version", action="version", version=__version__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     index = subparsers.add_parser("index")
@@ -43,6 +46,11 @@ def _parser() -> argparse.ArgumentParser:
     validation.add_argument("--command", dest="explicit_command")
     failure = subparsers.add_parser("explain-failure")
     failure.add_argument("--log", type=Path, required=True)
+    risk = subparsers.add_parser("score-risk")
+    risk.add_argument("--patch", type=Path, required=True)
+    trace = subparsers.add_parser("trace")
+    trace_subparsers = trace.add_subparsers(dest="trace_command", required=True)
+    trace_subparsers.add_parser("list")
     return parser
 
 
@@ -71,6 +79,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     except RepositoryError as exc:
         print(str(exc), file=sys.stderr)
         return 3
+    trace_store = TraceStore(root / ".repo-brain" / "index.sqlite3")
+    if args.trace_run:
+        existing = {run.id for run in trace_store.list_runs()}
+        if args.trace_run not in existing:
+            trace_store.start_run(
+                args.trace_run,
+                None,
+                getattr(args, "task", None),
+            )
     if args.command == "map":
         map_data = repository_map(root)
         if args.json:
@@ -80,6 +97,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "localize":
         localization_data = [asdict(item) for item in localize(root, args.task)]
+        if args.trace_run:
+            trace_store.add_event(
+                args.trace_run,
+                "localize",
+                {"candidates": [item["path"] for item in localization_data]},
+            )
+            trace_store.finish_run(args.trace_run, "completed")
         if args.json:
             print(
                 json.dumps(
@@ -158,6 +182,32 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             print(json.dumps(explanation_data, indent=2, sort_keys=True))
+        return 0
+    if args.command == "score-risk":
+        try:
+            patch_text = args.patch.read_text()
+        except OSError as exc:
+            print(str(exc), file=sys.stderr)
+            return 4
+        risk_report = score_risk(root, patch_text)
+        risk_data = asdict(risk_report)
+        if args.json:
+            print(
+                json.dumps(
+                    _envelope("score-risk", str(root), risk_data, [], []),
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(json.dumps(risk_data, indent=2, sort_keys=True))
+        return 0
+    if args.command == "trace":
+        runs = [asdict(run) for run in trace_store.list_runs()]
+        if args.json:
+            print(json.dumps(_envelope("trace", str(root), runs, [], []), sort_keys=True))
+        else:
+            for run in runs:
+                print(f"{run['id']}  {run['status']}  {run['started_at']}")
         return 0
     result = index_repository(root)
     data: dict[str, Any] = asdict(result)
