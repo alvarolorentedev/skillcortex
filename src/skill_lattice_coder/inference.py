@@ -17,6 +17,7 @@ def infer(
     skills: list[str] | None = None,
     dry_run: bool = False,
     adapter_root: str | Path | None = None,
+    model_cache: dict | None = None,
 ) -> GenerationResult:
     if mode not in MODES:
         raise ValueError(f"unknown mode: {mode}")
@@ -54,26 +55,31 @@ def infer(
             active_adapter_parameters=parameters,
         )
 
-    paths = [require_adapter(name, adapter_root) for name in adapter_names]
-    adapter_context = (
-        temporary_composed_adapter(paths)
-        if len(paths) > 1
-        else nullcontext(paths[0] if paths else None)
-    )
-    with adapter_context as adapter:
-        try:
-            import mlx.core as mx
+    cache_key = tuple(adapter_names)
+    cached = model_cache.get(cache_key) if model_cache is not None else None
+    try:
+        import mlx.core as mx
 
-            mx.reset_peak_memory()
-        except ImportError:
-            mx = None
-        start = time.perf_counter()
-        model, tokenizer = load_model(adapter)
-        generation, prompt_tokens, generated_tokens = generate_text(
-            model, tokenizer, prompt
+        mx.reset_peak_memory()
+    except ImportError:
+        mx = None
+    start = time.perf_counter()
+    if cached:
+        model, tokenizer = cached
+    else:
+        paths = [require_adapter(name, adapter_root) for name in adapter_names]
+        adapter_context = (
+            temporary_composed_adapter(paths)
+            if len(paths) > 1
+            else nullcontext(paths[0] if paths else None)
         )
-        latency = time.perf_counter() - start
-        peak_memory = int(mx.get_peak_memory()) if mx else None
+        with adapter_context as adapter:
+            model, tokenizer = load_model(adapter)
+        if model_cache is not None:
+            model_cache[cache_key] = (model, tokenizer)
+    generation, prompt_tokens, generated_tokens = generate_text(model, tokenizer, prompt)
+    latency = time.perf_counter() - start
+    peak_memory = int(mx.get_peak_memory()) if mx else None
     return GenerationResult(
         mode=mode,
         generation=generation,

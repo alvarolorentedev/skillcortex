@@ -35,6 +35,7 @@ def evaluate(
     output = Path(output) if output else _default_output()
     output.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
+    model_cache: dict = {}
     raw_path = output / "results.jsonl"
     with raw_path.open("w") as handle:
         for index, example in enumerate(examples):
@@ -51,6 +52,7 @@ def evaluate(
                         skills=example.skills,
                         dry_run=dry_run,
                         adapter_root=adapter_root,
+                        model_cache=model_cache,
                     )
                     text = (
                         example.target

@@ -19,6 +19,13 @@ from skill_lattice_coder.utils import write_json
 DEFAULT_SEEDS = (11, 22, 33, 44, 55)
 
 
+def adapters_ready(root: Path) -> bool:
+    return all(
+        (root / name / "adapters.safetensors").exists()
+        for name in (*SKILLS, "generic")
+    )
+
+
 def summarize(root: Path, seeds: list[int]) -> dict:
     rows = []
     for seed in seeds:
@@ -58,20 +65,21 @@ def main() -> None:
     for seed in args.seeds:
         seed_root = root / f"seed-{seed}"
         adapter_root = seed_root / "adapters"
-        for skill in SKILLS:
-            train_skill(
-                skill,
+        if not adapters_ready(adapter_root) or args.force:
+            for skill in SKILLS:
+                train_skill(
+                    skill,
+                    seed=seed,
+                    adapter_root=adapter_root,
+                    dry_run=args.dry_run,
+                    force=args.force,
+                )
+            train_generic(
                 seed=seed,
                 adapter_root=adapter_root,
                 dry_run=args.dry_run,
                 force=args.force,
             )
-        train_generic(
-            seed=seed,
-            adapter_root=adapter_root,
-            dry_run=args.dry_run,
-            force=args.force,
-        )
         evaluate(
             args.dataset,
             output=seed_root,

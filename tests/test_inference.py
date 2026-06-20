@@ -59,3 +59,15 @@ def test_oracle_lattice_uses_supplied_skills(monkeypatch):
         dry_run=True,
     )
     assert result.selected_skills == ["python_skill", "debugging_skill"]
+
+
+def test_inference_reuses_loaded_model(monkeypatch):
+    loads = []
+    cache = {}
+    monkeypatch.setattr(inference, "load_model", lambda adapter: loads.append(adapter) or ("model", "tokenizer"))
+    monkeypatch.setattr(inference, "generate_text", lambda *args: ("generated", 1, 1))
+
+    inference.infer("base", "first", model_cache=cache)
+    inference.infer("base", "second", model_cache=cache)
+
+    assert loads == [None]

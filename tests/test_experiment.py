@@ -1,6 +1,6 @@
 import json
 
-from scripts.run_seeds import summarize
+from scripts.run_seeds import adapters_ready, summarize
 
 
 def test_summarize_prefixes_seed_groups(tmp_path):
@@ -50,3 +50,12 @@ def test_summarize_without_execution_is_inconclusive(tmp_path):
         )
     )
     assert summarize(tmp_path, [1])["hypothesis"] == "inconclusive"
+
+
+def test_adapters_ready_requires_all_four(tmp_path):
+    assert not adapters_ready(tmp_path)
+    for name in ("python_skill", "debugging_skill", "test_generation_skill", "generic"):
+        path = tmp_path / name
+        path.mkdir()
+        (path / "adapters.safetensors").touch()
+    assert adapters_ready(tmp_path)
