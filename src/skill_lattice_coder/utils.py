@@ -1,0 +1,41 @@
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+from .schemas import ExecutionFixture
+
+
+def write_json(path: str | Path, value: object) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+
+
+def run_fixture(fixture: ExecutionFixture, generated_code: str) -> tuple[bool, str]:
+    with tempfile.TemporaryDirectory(prefix="skill-lattice-eval-") as directory:
+        root = Path(directory)
+        generated_filename = (
+            "test_generated.py" if "solution.py" in fixture.files else "solution.py"
+        )
+        (root / generated_filename).write_text(generated_code)
+        for name, content in fixture.files.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+        try:
+            command = list(fixture.command)
+            if command[0] == "python":
+                command[0] = sys.executable
+            result = subprocess.run(
+                command,
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=fixture.timeout_seconds,
+                check=False,
+            )
+            return result.returncode == 0, result.stdout + result.stderr
+        except subprocess.TimeoutExpired:
+            return False, "execution timed out"

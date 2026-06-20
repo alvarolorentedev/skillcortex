@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skill-lattice-coder"
+version = "0.1.0"
+description = "Sparse generative coding-skill adapter research prototype"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["mlx-lm>=0.31,<0.32", "PyYAML>=6,<7"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+skill-lattice = "skill_lattice_coder.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
