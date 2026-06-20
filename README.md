@@ -13,9 +13,10 @@ The experiment compares:
 3. one routed rank-8 skill LoRA;
 4. up to two routed rank-8 skill LoRAs composed at inference.
 
-The lattice is supported only when mode 4 beats the generic adapter overall
-and per active adapter parameter. It is falsified for this experiment when it
-does not beat the generic adapter overall.
+The primary statistical claim is supported when the lattice's paired execution
+improvement over generic has a 95% confidence interval above zero. A separate,
+stricter practical criterion requires at least five percentage points of
+absolute improvement and better performance per active parameter.
 
 This remains generative AI: the model generates code, tests, explanations, and
 fixes. Skills alter model weights during generation. They are not retrieval,
@@ -121,6 +122,28 @@ Adapters and per-seed results are stored under
 `artifacts/experiments/five-seed/`. The combined `summary.json` bootstraps
 seed × semantic-family pairs. Use `--dry-run` to validate the full control
 flow without training or model loading.
+
+### Phase 1 result
+
+Across five seeds and 750 executions per mode:
+
+- Generic LoRA: **40.67%**
+- Single skill: **44.27%**
+- Routed lattice: **45.60%**
+- Oracle lattice: **47.60%**
+
+Routed lattice improved over generic by **+4.93 percentage points**, with a
+cluster-bootstrap 95% confidence interval of **+1.47 to +8.40 points**, while
+using 54.2% fewer active adapter parameters. It won in all five seeds.
+
+This statistically supports the claim that the lattice beats generic, but
+narrowly misses the preregistered five-point practical threshold. Oracle
+routing improved by **+6.93 points**, showing that routing is the main next
+target. Python generation regressed after fine-tuning, so the result does not
+yet support a claim of general coding improvement.
+
+See [the complete Phase 1 results](docs/research-results.md) for methodology,
+per-task and per-seed tables, limitations, and reproduction details.
 
 Execution fixtures are for trusted local toy data only. They are isolated in a
 temporary directory with a timeout, but they are not a security sandbox.

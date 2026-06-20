@@ -77,7 +77,9 @@ def infer(
             model, tokenizer = load_model(adapter)
         if model_cache is not None:
             model_cache[cache_key] = (model, tokenizer)
-    generation, prompt_tokens, generated_tokens = generate_text(model, tokenizer, prompt)
+    generation, prompt_tokens, generated_tokens = generate_text(
+        model, tokenizer, prompt
+    )
     latency = time.perf_counter() - start
     peak_memory = int(mx.get_peak_memory()) if mx else None
     return GenerationResult(

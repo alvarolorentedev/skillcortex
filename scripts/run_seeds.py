@@ -21,8 +21,7 @@ DEFAULT_SEEDS = (11, 22, 33, 44, 55)
 
 def adapters_ready(root: Path) -> bool:
     return all(
-        (root / name / "adapters.safetensors").exists()
-        for name in (*SKILLS, "generic")
+        (root / name / "adapters.safetensors").exists() for name in (*SKILLS, "generic")
     )
 
 

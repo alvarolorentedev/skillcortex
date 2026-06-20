@@ -64,7 +64,11 @@ def test_oracle_lattice_uses_supplied_skills(monkeypatch):
 def test_inference_reuses_loaded_model(monkeypatch):
     loads = []
     cache = {}
-    monkeypatch.setattr(inference, "load_model", lambda adapter: loads.append(adapter) or ("model", "tokenizer"))
+    monkeypatch.setattr(
+        inference,
+        "load_model",
+        lambda adapter: loads.append(adapter) or ("model", "tokenizer"),
+    )
     monkeypatch.setattr(inference, "generate_text", lambda *args: ("generated", 1, 1))
 
     inference.infer("base", "first", model_cache=cache)
