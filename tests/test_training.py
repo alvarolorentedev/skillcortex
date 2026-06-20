@@ -17,4 +17,16 @@ def test_training_commands_use_expected_rank_and_mask_prompt(tmp_path):
     assert skill_config["mask_prompt"] is True
     assert skill_config["lora_parameters"]["rank"] == 8
     assert generic_config["lora_parameters"]["rank"] == 24
+    assert generic_config["iters"] == 300
     assert Path(skill_config["adapter_path"]).name == "adapter"
+
+
+def test_training_commands_accept_seed_override(tmp_path):
+    command = build_skill_command(
+        "debugging_skill",
+        tmp_path / "data",
+        tmp_path / "adapter",
+        seed=7,
+    )
+    config = yaml.safe_load(Path(command[-1]).read_text())
+    assert config["seed"] == 7

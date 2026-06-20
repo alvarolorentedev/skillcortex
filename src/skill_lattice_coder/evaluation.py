@@ -21,7 +21,7 @@ PRIMARY_SKILL = {
     "debugging": "debugging_skill",
     "test_generation": "test_generation_skill",
 }
-MODES = ("base", "generic", "single-skill", "lattice")
+MODES = ("base", "generic", "single-skill", "lattice", "oracle-lattice")
 
 
 def evaluate(
@@ -29,6 +29,7 @@ def evaluate(
     *,
     output: str | Path | None = None,
     dry_run: bool = False,
+    adapter_root: str | Path | None = None,
 ) -> Path:
     examples = load_jsonl(dataset)
     output = Path(output) if output else _default_output()
@@ -44,7 +45,12 @@ def evaluate(
                 )
                 try:
                     generation = infer(
-                        mode, example.prompt, skill=skill, dry_run=dry_run
+                        mode,
+                        example.prompt,
+                        skill=skill,
+                        skills=example.skills,
+                        dry_run=dry_run,
+                        adapter_root=adapter_root,
                     )
                     text = (
                         example.target

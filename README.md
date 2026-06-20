@@ -107,6 +107,21 @@ python scripts/build_eval.py data/eval.jsonl
 Confidence intervals bootstrap 50 semantic families rather than treating the
 three task formulations of each behavior as independent samples.
 
+## Five-seed experiment
+
+The conclusive experiment trains three rank-8 skills for 100 iterations each
+and the rank-24 generic baseline for 300 iterations, matching aggregate
+optimizer steps. It evaluates routed and oracle lattice modes:
+
+```bash
+python scripts/run_seeds.py --seeds 11 22 33 44 55
+```
+
+Adapters and per-seed results are stored under
+`artifacts/experiments/five-seed/`. The combined `summary.json` bootstraps
+seed × semantic-family pairs. Use `--dry-run` to validate the full control
+flow without training or model loading.
+
 Execution fixtures are for trusted local toy data only. They are isolated in a
 temporary directory with a timeout, but they are not a security sandbox.
 

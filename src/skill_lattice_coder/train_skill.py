@@ -15,15 +15,24 @@ from .schemas import SKILLS
 
 
 def build_skill_command(
-    skill: str, data_directory: str | Path, output_directory: str | Path
+    skill: str,
+    data_directory: str | Path,
+    output_directory: str | Path,
+    *,
+    seed: int | None = None,
 ) -> list[str]:
     if skill not in SKILLS:
         raise ValueError(f"unknown skill: {skill}")
-    return _training_command(data_directory, output_directory, rank=8)
+    return _training_command(data_directory, output_directory, rank=8, seed=seed)
 
 
 def _training_command(
-    data_directory: str | Path, output_directory: str | Path, rank: int
+    data_directory: str | Path,
+    output_directory: str | Path,
+    rank: int,
+    *,
+    seed: int | None = None,
+    iterations: int | None = None,
 ) -> list[str]:
     base = base_config()
     training = training_config()
@@ -39,10 +48,10 @@ def _training_command(
                 "fine_tune_type": "lora",
                 "mask_prompt": True,
                 "batch_size": training["batch_size"],
-                "iters": training["iterations"],
+                "iters": iterations or training["iterations"],
                 "learning_rate": training["learning_rate"],
                 "num_layers": training["lora_layers"],
-                "seed": training["seed"],
+                "seed": training["seed"] if seed is None else seed,
                 "lora_parameters": {
                     "rank": rank,
                     "dropout": 0.0,
@@ -63,12 +72,19 @@ def _training_command(
     ]
 
 
-def train_skill(skill: str, *, dry_run: bool = False, force: bool = False) -> dict:
+def train_skill(
+    skill: str,
+    *,
+    dry_run: bool = False,
+    force: bool = False,
+    seed: int | None = None,
+    adapter_root: str | Path | None = None,
+) -> dict:
     examples = select_for_skill(load_jsonl(DATA_DIR / "train.jsonl"), skill)
-    output = adapter_path(skill)
+    output = adapter_path(skill, adapter_root)
     with tempfile.TemporaryDirectory(prefix=f"skill-lattice-{skill}-") as directory:
         dataset = write_mlx_dataset(examples, Path(directory) / "data")
-        command = build_skill_command(skill, dataset, output)
+        command = build_skill_command(skill, dataset, output, seed=seed)
         if dry_run:
             return {"skill": skill, "examples": len(examples), "command": command}
         if output.exists() and any(output.iterdir()) and not force:
@@ -78,14 +94,27 @@ def train_skill(skill: str, *, dry_run: bool = False, force: bool = False) -> di
         start = time.perf_counter()
         subprocess.run(command, check=True)
         metadata = _metadata(
-            skill, examples, rank=8, elapsed=time.perf_counter() - start
+            skill,
+            examples,
+            rank=8,
+            elapsed=time.perf_counter() - start,
+            seed=seed,
+            iterations=training_config()["iterations"],
         )
         metadata["trainable_parameters"] = _saved_parameter_count(output)
         (output / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
         return metadata
 
 
-def _metadata(name: str, examples: list, rank: int, elapsed: float) -> dict:
+def _metadata(
+    name: str,
+    examples: list,
+    rank: int,
+    elapsed: float,
+    *,
+    seed: int | None = None,
+    iterations: int | None = None,
+) -> dict:
     base = base_config()
     training = training_config()
     return {
@@ -97,7 +126,8 @@ def _metadata(name: str, examples: list, rank: int, elapsed: float) -> dict:
         "dataset_hash": dataset_hash(examples),
         "rank": rank,
         "target_modules": training["target_modules"],
-        "seed": training["seed"],
+        "seed": training["seed"] if seed is None else seed,
+        "iterations": iterations or training["iterations"],
         "elapsed_seconds": elapsed,
         "trainable_parameters": None,
         "config": training,

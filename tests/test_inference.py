@@ -9,11 +9,13 @@ import skill_lattice_coder.inference as inference
 def test_all_inference_modes_use_expected_adapters(monkeypatch):
     loaded = []
 
-    monkeypatch.setattr(inference, "require_adapter", lambda name: Path(name))
+    monkeypatch.setattr(
+        inference, "require_adapter", lambda name, root=None: Path(name)
+    )
     monkeypatch.setattr(
         inference,
         "adapter_metadata",
-        lambda name: {"trainable_parameters": 10},
+        lambda name, root=None: {"trainable_parameters": 10},
     )
 
     @contextmanager
@@ -42,3 +44,18 @@ def test_all_inference_modes_use_expected_adapters(monkeypatch):
 def test_single_skill_requires_skill_name():
     with pytest.raises(ValueError, match="required"):
         inference.infer("single-skill", "Fix code", dry_run=True)
+
+
+def test_oracle_lattice_uses_supplied_skills(monkeypatch):
+    monkeypatch.setattr(
+        inference,
+        "adapter_metadata",
+        lambda name, root=None: {"trainable_parameters": 10},
+    )
+    result = inference.infer(
+        "oracle-lattice",
+        "ambiguous prompt",
+        skills=["python_skill", "debugging_skill"],
+        dry_run=True,
+    )
+    assert result.selected_skills == ["python_skill", "debugging_skill"]

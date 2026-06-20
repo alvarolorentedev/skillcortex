@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 SKILLS = ("python_skill", "debugging_skill", "test_generation_skill")
-MODES = ("base", "generic", "single-skill", "lattice")
+MODES = ("base", "generic", "single-skill", "lattice", "oracle-lattice")
 TASK_TYPES = ("python_generation", "debugging", "test_generation")
 
 

@@ -1,5 +1,6 @@
 import time
 from contextlib import nullcontext
+from pathlib import Path
 
 from .adapter_registry import adapter_metadata, require_adapter
 from .compose import temporary_composed_adapter
@@ -13,7 +14,9 @@ def infer(
     prompt: str,
     *,
     skill: str | None = None,
+    skills: list[str] | None = None,
     dry_run: bool = False,
+    adapter_root: str | Path | None = None,
 ) -> GenerationResult:
     if mode not in MODES:
         raise ValueError(f"unknown mode: {mode}")
@@ -29,11 +32,16 @@ def infer(
         route = RuleRouter().route(prompt)
         selected = route.selected_skills
         adapter_names = selected
+    elif mode == "oracle-lattice":
+        selected = list(dict.fromkeys(skills or []))[:2]
+        if not selected or any(name not in SKILLS for name in selected):
+            raise ValueError("oracle-lattice requires known skills")
+        adapter_names = selected
     else:
         adapter_names = []
 
     parameters = sum(
-        int(adapter_metadata(name).get("trainable_parameters") or 0)
+        int(adapter_metadata(name, adapter_root).get("trainable_parameters") or 0)
         for name in adapter_names
     )
     if dry_run:
@@ -46,7 +54,7 @@ def infer(
             active_adapter_parameters=parameters,
         )
 
-    paths = [require_adapter(name) for name in adapter_names]
+    paths = [require_adapter(name, adapter_root) for name in adapter_names]
     adapter_context = (
         temporary_composed_adapter(paths)
         if len(paths) > 1
