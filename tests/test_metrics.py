@@ -90,3 +90,28 @@ def test_paired_execution_comparison_matches_examples():
         )
         == "supported"
     )
+
+
+def test_paired_execution_comparison_bootstraps_semantic_groups():
+    rows = []
+    for group in range(10):
+        for task in range(3):
+            rows.extend(
+                [
+                    {
+                        "example_id": f"generic-{group}-{task}",
+                        "benchmark_group": str(group),
+                        "mode": "generic",
+                        "execution_passed": False,
+                    },
+                    {
+                        "example_id": f"lattice-{group}-{task}",
+                        "benchmark_group": str(group),
+                        "mode": "lattice",
+                        "execution_passed": group < 8,
+                    },
+                ]
+            )
+    comparison = paired_execution_comparison(rows, samples=1_000)
+    assert comparison["count"] == 10
+    assert comparison["difference"] == 0.8

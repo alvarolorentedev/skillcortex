@@ -75,6 +75,7 @@ def evaluate(
                         prompt_tokens=generation.prompt_tokens,
                         generated_tokens=generation.generated_tokens,
                         peak_memory_bytes=generation.peak_memory_bytes,
+                        benchmark_group=example.group,
                     )
                 except (
                     Exception
@@ -93,6 +94,7 @@ def evaluate(
                         active_adapter_count=0,
                         active_adapter_parameters=0,
                         error=str(error),
+                        benchmark_group=example.group,
                     )
                 row = result.to_dict()
                 rows.append(row)

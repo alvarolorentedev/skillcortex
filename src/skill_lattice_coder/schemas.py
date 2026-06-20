@@ -55,6 +55,7 @@ class DatasetExample:
     prompt: str
     target: str
     execution: ExecutionFixture | None = None
+    group: str | None = None
 
     def __post_init__(self) -> None:
         _nonempty("id", self.id)
@@ -136,6 +137,7 @@ class EvaluationResult:
     peak_memory_bytes: int | None = None
     qualitative_score: float | None = None
     error: str | None = None
+    benchmark_group: str | None = None
 
     def __post_init__(self) -> None:
         _nonempty("example_id", self.example_id)

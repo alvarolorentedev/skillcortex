@@ -87,13 +87,14 @@ def _optional_rate(rows: list[dict], key: str) -> float | None:
 def paired_execution_comparison(
     rows: list[dict], *, samples: int = 10_000, seed: int = 42
 ) -> dict:
-    by_example: dict[str, dict[str, bool]] = defaultdict(dict)
+    by_group: dict[str, dict[str, list[bool]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         if row.get("execution_passed") is not None:
-            by_example[row["example_id"]][row["mode"]] = row["execution_passed"]
+            group = row.get("benchmark_group") or row["example_id"]
+            by_group[group][row["mode"]].append(row["execution_passed"])
     differences = [
-        int(modes["lattice"]) - int(modes["generic"])
-        for modes in by_example.values()
+        mean(modes["lattice"]) - mean(modes["generic"])
+        for modes in by_group.values()
         if "generic" in modes and "lattice" in modes
     ]
     if not differences:

@@ -15,7 +15,7 @@ def test_dry_evaluation_writes_overall_and_task_summaries(tmp_path):
         "debugging",
         "test_generation",
     }
-    assert sum(1 for _ in (output / "results.jsonl").open()) == 72
+    assert sum(1 for _ in (output / "results.jsonl").open()) == 600
 
 
 def test_evaluation_scores_extracted_code(monkeypatch, tmp_path):

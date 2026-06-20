@@ -95,6 +95,18 @@ Evaluation writes raw JSONL, `summary.json`, and `report.md` under
 validity, trusted-fixture subprocess results, latency, token counts, peak MLX
 memory, and active adapter parameters.
 
+The checked-in benchmark contains 150 execution-backed cases: 50 Python
+generation, 50 debugging, and 50 test-generation tasks. Test-generation cases
+must pass against the correct implementation and fail against a paired mutant.
+Rebuild it deterministically with:
+
+```bash
+python scripts/build_eval.py data/eval.jsonl
+```
+
+Confidence intervals bootstrap 50 semantic families rather than treating the
+three task formulations of each behavior as independent samples.
+
 Execution fixtures are for trusted local toy data only. They are isolated in a
 temporary directory with a timeout, but they are not a security sandbox.
 

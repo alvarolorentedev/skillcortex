@@ -52,11 +52,11 @@ def test_filter_hash_and_mlx_conversion_are_deterministic(tmp_path):
     }
 
 
-def test_checked_in_toy_data_is_balanced_and_held_out():
+def test_checked_in_benchmark_is_balanced_executable_and_held_out():
     train = load_jsonl("data/train.jsonl")
     evaluation = load_jsonl("data/eval.jsonl")
     assert len(train) == 60
-    assert len(evaluation) == 18
+    assert len(evaluation) == 150
     assert {
         task: sum(row.task_type == task for row in train)
         for task in {"python_generation", "debugging", "test_generation"}
@@ -65,5 +65,18 @@ def test_checked_in_toy_data_is_balanced_and_held_out():
         "debugging": 20,
         "test_generation": 20,
     }
+    assert {
+        task: sum(row.task_type == task for row in evaluation)
+        for task in {"python_generation", "debugging", "test_generation"}
+    } == {
+        "python_generation": 50,
+        "debugging": 50,
+        "test_generation": 50,
+    }
     assert not ({row.id for row in train} & {row.id for row in evaluation})
     assert all(row.execution is not None for row in evaluation)
+    assert len({row.prompt for row in evaluation}) == len(evaluation)
+    assert len({row.group for row in evaluation}) == 50
+    assert all(
+        sum(other.group == row.group for other in evaluation) == 3 for row in evaluation
+    )
