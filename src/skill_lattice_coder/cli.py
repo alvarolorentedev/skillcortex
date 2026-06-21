@@ -1,7 +1,13 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 
+from .analysis import (
+    analyze_composition,
+    analyze_python_regression,
+    analyze_router,
+)
 from .evaluation import evaluate
 from .inference import infer
 from .schemas import MODES, SKILLS
@@ -39,6 +45,14 @@ def parser() -> argparse.ArgumentParser:
     evaluation.add_argument("--output")
     evaluation.add_argument("--dry-run", action="store_true")
     evaluation.add_argument("--adapter-root")
+
+    for name in (
+        "analyze-router",
+        "analyze-python-regression",
+        "analyze-composition",
+    ):
+        analysis = commands.add_parser(name)
+        analysis.add_argument("--experiment", required=True)
     return root
 
 
@@ -80,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                     indent=2,
                 )
             )
-        else:
+        elif arguments.command == "eval":
             output = evaluate(
                 arguments.dataset,
                 output=arguments.output,
@@ -88,6 +102,29 @@ def main(argv: list[str] | None = None) -> int:
                 adapter_root=arguments.adapter_root,
             )
             print(json.dumps({"output": str(output)}, indent=2))
+        else:
+            function, stem = {
+                "analyze-router": (analyze_router, "router_analysis"),
+                "analyze-python-regression": (
+                    analyze_python_regression,
+                    "python_regression_analysis",
+                ),
+                "analyze-composition": (
+                    analyze_composition,
+                    "composition_analysis",
+                ),
+            }[arguments.command]
+            function(arguments.experiment)
+            root = Path(arguments.experiment)
+            print(
+                json.dumps(
+                    {
+                        "json": str(root / f"{stem}.json"),
+                        "markdown": str(root / f"{stem}.md"),
+                    },
+                    indent=2,
+                )
+            )
         return 0
     except (FileNotFoundError, FileExistsError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)

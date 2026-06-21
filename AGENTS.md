@@ -34,6 +34,7 @@ Keep this repo work minimal. Optimize for the fewest tokens, the fewest commands
 - Run only fast, local checks when they are enough to confirm the change.
 - Do not launch repeat validation loops or retry expensive commands unless the user explicitly wants that work done here.
 - When a validation would take a long time, describe the command and hand it off to the developer.
+- When you recommend commands or steps the developer should run, present them as expected next steps, not as work already completed by the agent.
 
 ## Reporting
 

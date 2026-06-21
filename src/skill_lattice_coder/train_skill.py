@@ -33,6 +33,7 @@ def _training_command(
     *,
     seed: int | None = None,
     iterations: int | None = None,
+    learning_rate: float | None = None,
 ) -> list[str]:
     base = base_config()
     training = training_config()
@@ -48,8 +49,12 @@ def _training_command(
                 "fine_tune_type": "lora",
                 "mask_prompt": True,
                 "batch_size": training["batch_size"],
-                "iters": iterations or training["iterations"],
-                "learning_rate": training["learning_rate"],
+                "iters": training["iterations"] if iterations is None else iterations,
+                "learning_rate": (
+                    training["learning_rate"]
+                    if learning_rate is None
+                    else learning_rate
+                ),
                 "num_layers": training["lora_layers"],
                 "seed": training["seed"] if seed is None else seed,
                 "lora_parameters": {
