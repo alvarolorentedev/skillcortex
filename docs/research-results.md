@@ -5,6 +5,7 @@
 - Phase 1: **complete**
 - Phase 1.5: **complete**
 - Phase 2.1: **complete**
+- Phase 2.2 — Skill Registry / Immune Metadata / Capacity Budget: **complete**
 
 ## Executive conclusion
 
@@ -45,6 +46,12 @@ improves the target without non-target regression.
 `alternating_skill` is the first promoted failure-born skill. Its historical
 experiment remains quarantined and non-auto-promoting; production research
 activation is limited to the explicit `skillcortex_router_v1` semantic gate.
+
+### Validated Governance Layer 1: Bounded Skill Registry
+
+A growing SkillCortex must track skill origin, status, activation scope,
+promotion evidence, rollback metadata, and capacity impact before allowing
+further neurogenesis.
 
 ## Original five-seed lattice result
 

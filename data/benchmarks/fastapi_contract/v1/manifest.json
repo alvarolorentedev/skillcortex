@@ -1,0 +1,50 @@
+{
+  "behavior_group_counts": {
+    "bounded_route_service_separation": 4,
+    "contract_drift_detection": 4,
+    "contract_preserving_refactor": 4,
+    "enum_literal_validation": 4,
+    "invalid_state_error_behavior": 4,
+    "list_envelope_shape": 4,
+    "not_found_error_behavior": 4,
+    "optional_field_handling": 4,
+    "path_parameter_validation": 4,
+    "request_body_validation": 4,
+    "response_model_correctness": 4,
+    "status_code_correctness": 4
+  },
+  "benchmark_family": "fastapi_contract",
+  "benchmark_sha256": "05f903fbdb5271e15ebee6edb6d2583f02724678ae946b93817a17b5d9f6d85e",
+  "builder_version": 1,
+  "case_count": 48,
+  "dependency_versions": {
+    "fastapi": "0.138.0",
+    "httpx": "0.28.1",
+    "pydantic": "2.13.4",
+    "pytest": ">=8,<10"
+  },
+  "domain_allocation": {
+    "bounded_route_service_separation": "quotes",
+    "contract_drift_detection": "events",
+    "contract_preserving_refactor": "profiles",
+    "enum_literal_validation": "catalogs",
+    "invalid_state_error_behavior": "schedules",
+    "list_envelope_shape": "reviews",
+    "not_found_error_behavior": "teams",
+    "optional_field_handling": "messages",
+    "path_parameter_validation": "reports",
+    "request_body_validation": "payments",
+    "response_model_correctness": "devices",
+    "status_code_correctness": "comments"
+  },
+  "evaluation_only": true,
+  "existing_benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+  "schema_version": 1,
+  "seed": 0,
+  "task_counts": {
+    "fastapi_contract_debugging": 12,
+    "fastapi_contract_generation": 12,
+    "fastapi_contract_refactor": 12,
+    "fastapi_contract_test_generation": 12
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "router": "skillcortex_router_v1",
+  "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+  "skills": [
+    {
+      "skill_name": "python_skill",
+      "status": "core",
+      "origin": "seed_skill",
+      "semantic_family": "python",
+      "allowed_task_types": [
+        "debugging",
+        "test_generation"
+      ],
+      "activation_scope": "protected_router",
+      "active_by_default": true,
+      "router": "skillcortex_router_v1",
+      "rank": 8,
+      "trainable_parameters": 311296,
+      "created_from_failure_cluster": false,
+      "promotion_source_experiment": null,
+      "promotion_status": "not_applicable",
+      "promotion_reason": null,
+      "historical_quarantine": null,
+      "rollback_supported": false,
+      "rollback_router": null
+    },
+    {
+      "skill_name": "debugging_skill",
+      "status": "core",
+      "origin": "seed_skill",
+      "semantic_family": "debugging",
+      "allowed_task_types": [
+        "debugging"
+      ],
+      "activation_scope": "protected_router",
+      "active_by_default": true,
+      "router": "skillcortex_router_v1",
+      "rank": 8,
+      "trainable_parameters": 311296,
+      "created_from_failure_cluster": false,
+      "promotion_source_experiment": null,
+      "promotion_status": "not_applicable",
+      "promotion_reason": null,
+      "historical_quarantine": null,
+      "rollback_supported": false,
+      "rollback_router": null
+    },
+    {
+      "skill_name": "test_generation_skill",
+      "status": "core",
+      "origin": "seed_skill",
+      "semantic_family": "test_generation",
+      "allowed_task_types": [
+        "test_generation"
+      ],
+      "activation_scope": "protected_router",
+      "active_by_default": true,
+      "router": "skillcortex_router_v1",
+      "rank": 8,
+      "trainable_parameters": 311296,
+      "created_from_failure_cluster": false,
+      "promotion_source_experiment": null,
+      "promotion_status": "not_applicable",
+      "promotion_reason": null,
+      "historical_quarantine": null,
+      "rollback_supported": false,
+      "rollback_router": null
+    },
+    {
+      "skill_name": "alternating_skill",
+      "status": "promoted",
+      "origin": "failure_born",
+      "semantic_family": "alternating",
+      "allowed_task_types": [
+        "debugging",
+        "test_generation"
+      ],
+      "activation_scope": "strict_gate",
+      "active_by_default": false,
+      "router": "skillcortex_router_v1",
+      "rank": 8,
+      "trainable_parameters": 311296,
+      "created_from_failure_cluster": true,
+      "promotion_source_experiment": "artifacts/experiments/failure-born-skill/alternating_skill",
+      "promotion_status": "promoted",
+      "promotion_reason": "Improved independent holdout from 74.0% to 99.3%, improved fixed target from 0.0% to 50.0%, caused 0 non-target regressions.",
+      "historical_quarantine": {
+        "quarantined": true,
+        "active_by_default": false,
+        "auto_promotion": false,
+        "promotion_status_before_integration": "recommend_promotion"
+      },
+      "rollback_supported": true,
+      "rollback_router": "protected_skill_router_without_failure_born"
+    }
+  ],
+  "immune": {
+    "requires_quarantine_before_promotion": true,
+    "requires_independent_holdout": true,
+    "requires_non_target_regression_check": true,
+    "auto_promotion_allowed": false,
+    "rollback_on_regression": true
+  },
+  "capacity_budget": {
+    "max_promoted_failure_born_skills": 5,
+    "max_total_adapter_parameters": 2500000,
+    "current_total_adapter_parameters": 1245184,
+    "current_promoted_failure_born_skills": 1,
+    "requires_capacity_check_before_promotion": true
+  }
+}
