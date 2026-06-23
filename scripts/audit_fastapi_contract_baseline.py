@@ -482,6 +482,8 @@ def _markdown(report):
         f"- Benchmark SHA-256: `{report['benchmark_sha256']}`",
         f"- Reference fixtures: **{fixtures['passed']}/{fixtures['total']} passed**",
         f"- Test-generation correct/mutant validation: **{str(mutants['correct_app_passed_and_both_mutants_failed']).lower()}**",
+        f"- Correct apps passing generated tests: **{sum(result['correct_app_tests_passed'] for result in mutants['results'])}/{mutants['cases']}**",
+        f"- Assigned mutants independently rejected: **{sum(not mutant['tests_passed'] for result in mutants['results'] for mutant in result['mutants'])}/{sum(len(result['mutants']) for result in mutants['results'])}**",
         f"- Baseline rows audited: **{report['baseline_rows']}**",
         f"- Existing benchmark SHA-256: `{report['existing_benchmark_sha256']}`",
         "",
@@ -509,6 +511,10 @@ def _markdown(report):
             "",
             "The sample covers both routers, all four task types, at least six "
             "behavior groups, and seeds 11 and 22.",
+            f"Verified sample coverage: routers `{', '.join(report['sample_coverage']['routers'])}`; "
+            f"task types **{len(report['sample_coverage']['task_types'])}**; "
+            f"behavior groups **{len(report['sample_coverage']['behavior_groups'])}**; "
+            f"seeds `{', '.join(map(str, report['sample_coverage']['seeds']))}`.",
             "",
             "## Verified governance checks",
             "",
@@ -522,6 +528,14 @@ def _markdown(report):
         ]
     )
     thresholds = report["discovery_thresholds"]
+    lines.extend(
+        [
+            f"- failing behavior groups: **{thresholds['failing_behavior_groups']}**",
+            f"- failing task types: **{thresholds['failing_task_types']}**",
+            f"- failing seeds: **{thresholds['failing_seeds']}**",
+            f"- distinct failing examples: **{thresholds['distinct_failing_examples']}**",
+        ]
+    )
     for name, passed in thresholds["checks"].items():
         lines.append(f"- {name}: **{str(passed).lower()}**")
     lines.extend(
