@@ -1,4 +1,6 @@
+import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,7 +28,21 @@ def run_fixture(fixture: ExecutionFixture, generated_code: str) -> tuple[bool, s
             path.write_text(content)
         try:
             command = list(fixture.command)
-            if command[0] == "python":
+            if (
+                command[:3] == ["python", "-m", "pytest"]
+                and importlib.util.find_spec("pytest") is None
+                and shutil.which("uv")
+            ):
+                command = [
+                    shutil.which("uv"),
+                    "run",
+                    "--project",
+                    str(Path(__file__).resolve().parents[2]),
+                    "--extra",
+                    "test",
+                    *command,
+                ]
+            elif command[0] == "python":
                 command[0] = sys.executable
             result = subprocess.run(
                 command,

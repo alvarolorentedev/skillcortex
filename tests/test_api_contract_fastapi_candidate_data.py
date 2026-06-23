@@ -55,6 +55,11 @@ def test_candidate_data_is_deterministic_balanced_and_independent():
     assert all(set(row) == required for row in rows)
     assert all(row["leakage_guard"]["benchmark_overlap_checked"] for row in rows)
     assert all(row["leakage_guard"]["cross_split_overlap_checked"] for row in rows)
+    assert all(
+        row["leakage_guard"]["normalized_ast_sha256"]
+        == hashlib.sha256(row["target"].encode()).hexdigest()
+        for row in rows
+    )
     validate_candidate_data(first, execute_fixtures=False)
 
 
@@ -87,3 +92,31 @@ def test_explicit_write_uses_only_requested_temporary_directory(tmp_path):
     ]
     assert len((output / "train.jsonl").read_text().splitlines()) == 96
     assert len((output / "holdout.jsonl").read_text().splitlines()) == 96
+
+
+def test_explicit_write_is_idempotent_for_existing_matching_output(tmp_path):
+    result = build_candidate_data()
+    output = tmp_path / "candidate"
+
+    write_candidate_data(result, output)
+    before = {path.name: path.read_bytes() for path in output.iterdir()}
+
+    assert write_candidate_data(result, output) == output
+    after = {path.name: path.read_bytes() for path in output.iterdir()}
+    assert before == after
+
+
+def test_explicit_write_replaces_existing_generated_output(tmp_path):
+    result = build_candidate_data()
+    output = tmp_path / "candidate"
+
+    write_candidate_data(result, output)
+    manifest = json.loads((output / "manifest.json").read_text())
+    manifest["validation_command"] = "stale command"
+    (output / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    )
+
+    assert write_candidate_data(result, output) == output
+    refreshed = json.loads((output / "manifest.json").read_text())
+    assert refreshed["validation_command"] == result["manifest"]["validation_command"]

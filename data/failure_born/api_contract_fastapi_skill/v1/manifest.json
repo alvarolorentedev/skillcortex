@@ -1,0 +1,138 @@
+{
+  "active_by_default": false,
+  "adapter_created": false,
+  "benchmark_family": "fastapi_contract",
+  "candidate_activated": false,
+  "candidate_skill": "api_contract_fastapi_skill",
+  "combined_sha256": "34241236c0c4d83d42bf82dd76b30d7d0e960b6b57aaac10ae2398724c811525",
+  "dependency_versions": {
+    "fastapi": "0.138.0",
+    "httpx": "0.28.1",
+    "pydantic": "2.13.4",
+    "pytest": ">=8,<10"
+  },
+  "deterministic_seed": 2301,
+  "domain_partitions": {
+    "fixed_excluded": [
+      "catalogs",
+      "comments",
+      "devices",
+      "events",
+      "messages",
+      "payments",
+      "profiles",
+      "quotes",
+      "reports",
+      "reviews",
+      "schedules",
+      "teams"
+    ],
+    "holdout": [
+      "bookings",
+      "shipments",
+      "subscriptions",
+      "alerts",
+      "documents",
+      "workspaces",
+      "incidents",
+      "surveys",
+      "contracts",
+      "warehouses",
+      "calendars",
+      "expenses"
+    ],
+    "train": [
+      "orders",
+      "tickets",
+      "invoices",
+      "products",
+      "customers",
+      "tasks",
+      "projects",
+      "assets",
+      "notifications",
+      "files",
+      "memberships",
+      "approvals"
+    ]
+  },
+  "existing_benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+  "fixed_fastapi_benchmark_sha256": "05f903fbdb5271e15ebee6edb6d2583f02724678ae946b93817a17b5d9f6d85e",
+  "generator_version": 1,
+  "holdout_sha256": "86f4e1dec7ebe3321484a43f3d7483a4d825fc958fcecd6385d9186f3269b2f1",
+  "mutant_class_counts": {
+    "changed public contract to satisfy implementation": 8,
+    "changed route path or method": 48,
+    "missing required response field": 8,
+    "missing response_model": 4,
+    "permissive request model": 4,
+    "raw list instead of typed envelope": 4,
+    "wrong enum/literal handling": 4,
+    "wrong error status": 8,
+    "wrong path parameter type": 4,
+    "wrong success status": 4
+  },
+  "normalized_case_set_hashes": {
+    "holdout": "0628d5132e0d017f2d4776c1cdc3a968185cc9eb3b45bcd6e65e7a120179be95",
+    "train": "25b005ad6ac39e96a8fd2379773d6d6e33a1840c7f140801fc232a5382191da5"
+  },
+  "row_counts_by_behavior_group": {
+    "bounded_route_service_separation": 16,
+    "contract_drift_detection": 16,
+    "contract_preserving_refactor": 16,
+    "enum_literal_validation": 16,
+    "invalid_state_error_behavior": 16,
+    "list_envelope_shape": 16,
+    "not_found_error_behavior": 16,
+    "optional_field_handling": 16,
+    "path_parameter_validation": 16,
+    "request_body_validation": 16,
+    "response_model_correctness": 16,
+    "status_code_correctness": 16
+  },
+  "row_counts_by_domain": {
+    "alerts": 8,
+    "approvals": 8,
+    "assets": 8,
+    "bookings": 8,
+    "calendars": 8,
+    "contracts": 8,
+    "customers": 8,
+    "documents": 8,
+    "expenses": 8,
+    "files": 8,
+    "incidents": 8,
+    "invoices": 8,
+    "memberships": 8,
+    "notifications": 8,
+    "orders": 8,
+    "products": 8,
+    "projects": 8,
+    "shipments": 8,
+    "subscriptions": 8,
+    "surveys": 8,
+    "tasks": 8,
+    "tickets": 8,
+    "warehouses": 8,
+    "workspaces": 8
+  },
+  "row_counts_by_split": {
+    "holdout": 96,
+    "train": 96
+  },
+  "row_counts_by_task_type": {
+    "fastapi_contract_debugging": 48,
+    "fastapi_contract_generation": 48,
+    "fastapi_contract_refactor": 48,
+    "fastapi_contract_test_generation": 48
+  },
+  "schema_version": 1,
+  "template_set_hashes": {
+    "holdout": "7dbfae3295c903e7da6efce56b413681f82438d445b9249f5d711bef52fe953f",
+    "train": "1fba4dbd287a111c0e04ca9f43558e2209a8b8cb85fef9c509637ae5f0de240a"
+  },
+  "train_sha256": "207651bc7ce884a7b71a9e9e33a852b10c4a4acc19559849c55b055e71038954",
+  "training_performed": false,
+  "validation_command": "PYTHONPATH=.:src python3 scripts/build_api_contract_fastapi_candidate_data.py --check",
+  "validation_passed": true
+}

@@ -4,10 +4,12 @@
 import argparse
 import ast
 import hashlib
+import importlib.util
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -17,7 +19,6 @@ from scripts.build_fastapi_contract_benchmark import (
     _primary_mutant,
     _secondary_mutant,
     _test as fixed_test,
-    _verifier,
 )
 from skill_lattice_coder.schemas import ExecutionFixture
 from skill_lattice_coder.utils import run_fixture
@@ -30,6 +31,7 @@ SCHEMA_VERSION = 1
 GENERATOR_VERSION = 1
 FASTAPI_SHA256 = "05f903fbdb5271e15ebee6edb6d2583f02724678ae946b93817a17b5d9f6d85e"
 EXISTING_SHA256 = "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6"
+ROOT = Path(__file__).resolve().parents[1]
 FASTAPI_BENCHMARK = Path("data/benchmarks/fastapi_contract/v1/benchmark.jsonl")
 EXISTING_BENCHMARK = Path("data/eval.jsonl")
 DEFAULT_OUTPUT = Path("data/failure_born/api_contract_fastapi_skill/v1")
@@ -101,6 +103,11 @@ def _jsonl(rows):
     )
 
 
+def _normalized_target_sha(target):
+    ast.parse(target)
+    return _sha(target)
+
+
 def _stem(domain, split, variant):
     return "".join(part.title() for part in f"{split}_{domain}_{variant}".split("_"))
 
@@ -137,6 +144,45 @@ def _candidate_test(domain, split, variant, group, path, store):
     test = test.replace("'gamma'", repr(f"{split}-{domain}-gamma-{variant}"))
     test = test.replace("'not found'", repr(f"{domain} {split} missing {variant}"))
     return test
+
+
+def _pytest_command():
+    if importlib.util.find_spec("pytest") is not None:
+        return [sys.executable, "-m", "pytest"]
+    if shutil.which("uv"):
+        return [
+            "uv",
+            "run",
+            "--project",
+            str(ROOT),
+            "--extra",
+            "test",
+            "python",
+            "-m",
+            "pytest",
+        ]
+    raise RuntimeError(
+        "pytest is unavailable for fixture validation; install test extras or run via uv"
+    )
+
+
+def _verifier(primary, secondary):
+    command = _pytest_command() + ["-q", "test_generated.py"]
+    return (
+        "import os\nimport pathlib\nimport shutil\nimport subprocess\n\n"
+        "root = pathlib.Path(__file__).parent\n"
+        "env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}\n"
+        f"command = {command!r}\n"
+        "def run():\n"
+        "    shutil.rmtree(root / '__pycache__', ignore_errors=True)\n"
+        "    return subprocess.run(command, cwd=root, env=env).returncode\n"
+        "correct = run()\n"
+        f"(root / 'solution.py').write_text({primary!r})\n"
+        "primary = run()\n"
+        f"(root / 'solution.py').write_text({secondary!r})\n"
+        "secondary = run()\n"
+        "raise SystemExit(0 if correct == 0 and primary != 0 and secondary != 0 else 1)\n"
+    )
 
 
 def _mutants(app, group, path):
@@ -274,7 +320,7 @@ def _row(split, task, group, domain, variant, index):
             "domain_partition": split,
             "template_partition": split,
             "normalized_case_key": case_key,
-            "normalized_ast_sha256": _sha(ast.dump(ast.parse(target))),
+            "normalized_ast_sha256": _normalized_target_sha(target),
             "benchmark_overlap_checked": True,
             "cross_split_overlap_checked": True,
         },
@@ -335,7 +381,7 @@ def _run_test_target(tests, app):
         (root / "solution.py").write_text(app)
         (root / "test_generated.py").write_text(tests)
         result = __import__("subprocess").run(
-            [__import__("sys").executable, "-m", "pytest", "-q", "test_generated.py"],
+            _pytest_command() + ["-q", "test_generated.py"],
             cwd=root,
             capture_output=True,
             text=True,
@@ -507,7 +553,7 @@ def _manifest(train, holdout):
             )
         ),
         "validation_command": (
-            "PYTHONPATH=. python "
+            "PYTHONPATH=.:src python3 "
             "scripts/build_api_contract_fastapi_candidate_data.py --check"
         ),
         "validation_passed": True,
@@ -542,6 +588,7 @@ def write_candidate_data(result, output):
     output = _safe_output(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=f".{output.name}-", dir=output.parent))
+    expected_files = ("holdout.jsonl", "manifest.json", "train.jsonl")
     try:
         (temporary / "holdout.jsonl").write_text(_jsonl(result["holdout"]))
         (temporary / "train.jsonl").write_text(_jsonl(result["train"]))
@@ -549,6 +596,19 @@ def write_candidate_data(result, output):
             json.dumps(result["manifest"], indent=2, sort_keys=True) + "\n"
         )
         if output.exists():
+            if (
+                output.is_dir()
+                and sorted(path.name for path in output.iterdir()) == list(expected_files)
+            ):
+                if all(
+                    (output / name).read_bytes() == (temporary / name).read_bytes()
+                    for name in expected_files
+                ):
+                    shutil.rmtree(temporary, ignore_errors=True)
+                    return output
+                shutil.rmtree(output)
+                temporary.replace(output)
+                return output
             raise FileExistsError(f"output already exists: {output}")
         temporary.replace(output)
     except Exception:
