@@ -8,6 +8,7 @@ from skill_lattice_coder.schemas import SKILLS, TASK_TYPES
 
 from .composer import compose_skill_packages
 from .packaging import package_skill, train_skill_package, validate_skill_package
+from .agent import WRITE_MODES, run_agent
 from .runtime import SkillRuntime, load_chat_request, serve_runtime, validate_runtime_bundle
 
 
@@ -142,6 +143,17 @@ def _parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--dry-run", action="store_true")
+
+    agent = commands.add_parser("agent")
+    agent_commands = agent.add_subparsers(dest="agent_command", required=True)
+    agent_run = agent_commands.add_parser("run")
+    agent_run.add_argument("--runtime", required=True)
+    agent_run.add_argument("--repo", required=True)
+    agent_run.add_argument("--task", required=True)
+    agent_run.add_argument("--writes", choices=WRITE_MODES, default="confirm")
+    agent_run.add_argument("--test-command")
+    agent_run.add_argument("--trace-out")
+    agent_run.add_argument("--dry-run", action="store_true")
     return root
 
 
@@ -154,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         "compose-skills",
         "infer",
         "serve",
+        "agent",
     }
     is_product_train = bool(
         arguments and arguments[0] == "train-skill" and "--output" in arguments
@@ -220,6 +233,18 @@ def main(argv: list[str] | None = None) -> int:
                 runtime_path=Path(parsed.runtime),
                 host=parsed.host,
                 port=parsed.port,
+                dry_run=parsed.dry_run,
+            )
+        elif parsed.command == "agent":
+            if parsed.agent_command != "run":
+                raise ValueError(f"unknown agent command: {parsed.agent_command}")
+            result = run_agent(
+                runtime_path=Path(parsed.runtime),
+                repo=Path(parsed.repo),
+                task=parsed.task,
+                writes=parsed.writes,
+                test_command=parsed.test_command,
+                trace_out=Path(parsed.trace_out) if parsed.trace_out else None,
                 dry_run=parsed.dry_run,
             )
         else:

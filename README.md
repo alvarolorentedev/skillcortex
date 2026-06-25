@@ -169,6 +169,37 @@ Current Phase 3A limits:
 - registry enrichment remains optional provenance only
 - the OpenAI-compatible server is a thin compatibility layer over the shared runtime service
 
+## Run A Local Agent Task
+
+Phase 3B adds a native local agent loop on top of Runtime Core. The OpenAI API
+remains a compatibility surface; the agent uses the shared runtime service
+directly.
+
+Run a bounded local task against a repository:
+
+```bash
+skillcortex agent run \
+	--runtime runtime/debugging_bundle \
+	--repo ./toy-repo \
+	--task "Fix the failing answer implementation." \
+	--test-command "PYTHONPATH=. uv run pytest -q" \
+	--trace-out artifacts/agent-trace.json
+```
+
+Safety modes:
+
+- `--writes confirm` is the default and keeps file mutation human-gated
+- `--writes off` never mutates files and only emits proposed diffs
+- `--writes on` applies supported file-replacement actions inside the repo root
+
+Current Phase 3B limits:
+
+- local, single-run execution only
+- bounded safe tool loop: list files, read files, propose/apply file replacement, run one opt-in validation command
+- dynamic skill routing happens per inference step
+- execution traces record selected skills per step
+- no IDE orchestration, background tasks, or distributed coordination
+
 ## Train
 
 ```bash
