@@ -1,0 +1,1 @@
+{"id":"demo-eval-1","task_type":"debugging","prompt":"Fix the function so the test passes.","target":"def answer():\n    return 42\n","semantic_family":"demo"}

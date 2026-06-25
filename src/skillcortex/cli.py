@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from textwrap import dedent
 
 from skill_lattice_coder.cli import main as _main
 from skill_lattice_coder.schemas import SKILLS, TASK_TYPES
@@ -13,6 +14,16 @@ from .runtime import SkillRuntime, load_chat_request, serve_runtime, validate_ru
 
 
 COMPOSITION_SCOPES = ("task", "semantic_family")
+
+
+def _parser_kwargs(description: str, examples: str | None = None) -> dict:
+    kwargs = {
+        "description": description,
+        "formatter_class": argparse.RawDescriptionHelpFormatter,
+    }
+    if examples:
+        kwargs["epilog"] = f"Examples:\n{examples}"
+    return kwargs
 
 
 def _csv_paths(value: str) -> list[Path]:
@@ -77,10 +88,31 @@ def _package_composition(parsed: argparse.Namespace) -> dict | None:
 
 
 def _parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(prog="skillcortex")
-    commands = root.add_subparsers(dest="command", required=True)
+    root = argparse.ArgumentParser(
+        prog="skillcortex",
+        **_parser_kwargs(
+            "Package, compose, validate, and run Skill Cortex runtime bundles.",
+            dedent(
+                """
+                skillcortex package-skill --skill-id python_skill --name "Python Skill" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/python_skill
+                skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --strategy routed --output /tmp/skillcortex-demo/runtime
+                skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime
+                skillcortex infer --runtime /tmp/skillcortex-demo/runtime --prompt "Fix this Python traceback" --dry-run
+                skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task "Fix the failing answer implementation." --dry-run
+                """
+            ).strip(),
+        ),
+    )
+    commands = root.add_subparsers(dest="command", required=True, title="product commands")
 
-    train = commands.add_parser("train-skill")
+    train = commands.add_parser(
+        "train-skill",
+        **_parser_kwargs(
+            "Train one built-in research skill and package it as a Skill Cortex artifact.",
+            "skillcortex train-skill python_skill --output skills/python_skill_run --force\n"
+            "skillcortex train-skill debugging_skill --output /tmp/debugging-skill --dry-run",
+        ),
+    )
     train.add_argument("skill", choices=SKILLS)
     train.add_argument("--output", required=True)
     train.add_argument("--train-dataset", default="data/train.jsonl")
@@ -93,7 +125,14 @@ def _parser() -> argparse.ArgumentParser:
     train.add_argument("--force", action="store_true")
     train.add_argument("--dry-run", action="store_true")
 
-    package = commands.add_parser("package-skill")
+    package = commands.add_parser(
+        "package-skill",
+        **_parser_kwargs(
+            "Package an existing LoRA adapter into a self-describing skill artifact.",
+            "skillcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/python_skill\n"
+            "skillcortex package-skill --skill-id debugging_skill --name \"Debugging Skill\" --adapter-dir artifacts/adapters/debugging_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/debugging_skill",
+        ),
+    )
     package.add_argument("--skill-id", required=True)
     package.add_argument("--name", required=True)
     package.add_argument("--adapter-dir", required=True)
@@ -112,13 +151,31 @@ def _parser() -> argparse.ArgumentParser:
     package.add_argument("--force", action="store_true")
     package.add_argument("--dry-run", action="store_true")
 
-    validate = commands.add_parser("validate-skill-package")
+    validate = commands.add_parser(
+        "validate-skill-package",
+        **_parser_kwargs(
+            "Validate a packaged skill artifact and its recorded fingerprints.",
+            "skillcortex validate-skill-package --path /tmp/skillcortex-demo/python_skill",
+        ),
+    )
     validate.add_argument("--path", required=True)
 
-    validate_runtime = commands.add_parser("validate-runtime")
+    validate_runtime = commands.add_parser(
+        "validate-runtime",
+        **_parser_kwargs(
+            "Validate a composed runtime bundle before inference or serving.",
+            "skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime",
+        ),
+    )
     validate_runtime.add_argument("--runtime", required=True)
 
-    compose = commands.add_parser("compose-skills")
+    compose = commands.add_parser(
+        "compose-skills",
+        **_parser_kwargs(
+            "Compose validated skill packages into a deterministic runtime bundle.",
+            "skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --strategy routed --output /tmp/skillcortex-demo/runtime",
+        ),
+    )
     compose.add_argument("--skills", required=True)
     compose.add_argument("--strategy", choices=("routed",), required=True)
     compose.add_argument("--output", required=True)
@@ -126,7 +183,14 @@ def _parser() -> argparse.ArgumentParser:
     compose.add_argument("--force", action="store_true")
     compose.add_argument("--dry-run", action="store_true")
 
-    infer = commands.add_parser("infer")
+    infer = commands.add_parser(
+        "infer",
+        **_parser_kwargs(
+            "Run local inference against a Skill Cortex runtime bundle.",
+            "skillcortex infer --runtime /tmp/skillcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run\n"
+            "skillcortex infer --runtime /tmp/skillcortex-demo/runtime --request-file tests/fixtures/skillcortex_demo/request.json --dry-run",
+        ),
+    )
     infer.add_argument("--runtime", required=True)
     infer.add_argument("--prompt")
     infer.add_argument("--request-file")
@@ -138,15 +202,36 @@ def _parser() -> argparse.ArgumentParser:
     infer.add_argument("--temperature", type=float)
     infer.add_argument("--dry-run", action="store_true")
 
-    serve = commands.add_parser("serve")
+    serve = commands.add_parser(
+        "serve",
+        **_parser_kwargs(
+            "Start the minimal OpenAI-compatible server for a runtime bundle.",
+            "skillcortex serve --runtime /tmp/skillcortex-demo/runtime --host 127.0.0.1 --port 8000\n"
+            "skillcortex serve --runtime /tmp/skillcortex-demo/runtime --dry-run",
+        ),
+    )
     serve.add_argument("--runtime", required=True)
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--dry-run", action="store_true")
 
-    agent = commands.add_parser("agent")
+    agent = commands.add_parser(
+        "agent",
+        **_parser_kwargs(
+            "Run the bounded local agent on top of a runtime bundle.",
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --writes on --test-command \"pytest -q\"",
+        ),
+    )
     agent_commands = agent.add_subparsers(dest="agent_command", required=True)
-    agent_run = agent_commands.add_parser("run")
+    agent_run = agent_commands.add_parser(
+        "run",
+        **_parser_kwargs(
+            "Inspect a local repository, propose a change, and optionally validate it.",
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --writes confirm --trace-out /tmp/skillcortex-demo/agent-trace.json",
+        ),
+    )
     agent_run.add_argument("--runtime", required=True)
     agent_run.add_argument("--repo", required=True)
     agent_run.add_argument("--task", required=True)
@@ -158,7 +243,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    arguments = list(argv or [])
+    arguments = list(sys.argv[1:] if argv is None else argv)
     product_commands = {
         "package-skill",
         "validate-skill-package",
@@ -169,9 +254,17 @@ def main(argv: list[str] | None = None) -> int:
         "agent",
     }
     is_product_train = bool(
-        arguments and arguments[0] == "train-skill" and "--output" in arguments
+        arguments
+        and arguments[0] == "train-skill"
+        and ("--output" in arguments or "-h" in arguments or "--help" in arguments)
     )
-    if not arguments or (arguments[0] not in product_commands and not is_product_train):
+    if not arguments or arguments[0] in {"-h", "--help"}:
+        try:
+            _parser().parse_args(arguments or ["--help"])
+        except SystemExit as error:
+            return int(error.code or 0)
+        return 0
+    if arguments[0] not in product_commands and not is_product_train:
         return _main(argv, prog="skillcortex")
 
     parsed = _parser().parse_args(arguments)

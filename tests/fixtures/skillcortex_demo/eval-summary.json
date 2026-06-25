@@ -1,0 +1,17 @@
+{
+  "hypothesis": "not_applicable",
+  "modes": {
+    "single-skill": {
+      "count": 1,
+      "fuzzy_score": 1.0
+    }
+  },
+  "tasks": {
+    "debugging": {
+      "single-skill": {
+        "count": 1,
+        "fuzzy_score": 1.0
+      }
+    }
+  }
+}
