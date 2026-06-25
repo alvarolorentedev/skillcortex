@@ -71,6 +71,26 @@ skill-lattice infer --mode lattice --task-type debugging --prompt "Fix this Pyth
 skill-lattice eval --dataset data/eval.jsonl --dry-run
 ```
 
+Product packaging lives under `skillcortex` and keeps the research workflow
+unchanged:
+
+```bash
+skillcortex package-skill \
+	--skill-id python_skill \
+	--name "Python Skill" \
+	--adapter-dir artifacts/adapters/python_skill \
+	--train-dataset data/train.jsonl \
+	--eval-dataset data/eval.jsonl \
+	--eval-summary artifacts/evaluations/20260620T152056Z/summary.json \
+	--output skills/python_skill
+
+skillcortex validate-skill-package --path skills/python_skill
+skillcortex train-skill python_skill --output skills/python_skill_run --force
+```
+
+The product package contract, expected files, and reproducibility guarantees
+are documented in [docs/skill-package-contract.md](docs/skill-package-contract.md).
+
 ## Train
 
 ```bash
