@@ -19,7 +19,7 @@ from pathlib import Path
 SEED = 240624
 CANDIDATE = "api_contract_fastapi_skill"
 FAMILY = "fastapi_contract"
-VERSION = "v2-design"
+VERSION = "v2"
 SCHEMA_VERSION = 2
 GENERATOR_VERSION = 2
 ROOT = Path(__file__).resolve().parents[1]
@@ -750,6 +750,41 @@ def _manifest(train: list[dict[str, object]], holdout: list[dict[str, object]], 
     holdout_payload = _jsonl(holdout)
     combined_payload = holdout_payload + train_payload
     all_rows = holdout + train
+    size_gates = {
+        "estimated_target_tokens_max": SIZE_LIMITS["estimated_target_tokens_max"],
+        "character_count_max": SIZE_LIMITS["character_count_max"],
+        "non_empty_lines_max": SIZE_LIMITS["non_empty_lines_max"],
+        "all_rows_within_limits": all(
+            row["size_guard"]["estimated_target_tokens"] <= SIZE_LIMITS["estimated_target_tokens_max"]
+            and row["size_guard"]["character_count"] <= SIZE_LIMITS["character_count_max"]
+            and row["size_guard"]["non_empty_line_count"] <= SIZE_LIMITS["non_empty_lines_max"]
+            for row in all_rows
+        ),
+    }
+    shape_gates = {
+        "required_field_set_valid": all(set(row) == REQUIRED_FIELDS for row in all_rows),
+        "row_counts_by_split_valid": len(train) == 48 and len(holdout) == 48,
+        "row_counts_by_task_type_split_valid": all(
+            set(Counter(row["task_type"] for row in rows).values()) == {12}
+            for rows in (train, holdout)
+        ),
+        "row_counts_by_behavior_group_split_valid": all(
+            set(Counter(row["behavior_group"] for row in rows).values()) == {4}
+            for rows in (train, holdout)
+        ),
+    }
+    anchor_gates = {
+        "all_rows_anchor_valid": all(row["metadata"]["anchor_validation_result"] for row in all_rows),
+    }
+    fixture_gates = {
+        "fixtures_executed": execute_fixtures,
+        "all_rows_fixture_valid": all(row["metadata"]["fixture_validation_result"] for row in all_rows),
+    }
+    leakage_gates = {
+        "train_holdout_disjoint_domains": not (set(DOMAINS["train"]) & set(DOMAINS["holdout"])),
+        "excluded_domains_isolated": not ((set(DOMAINS["train"]) | set(DOMAINS["holdout"])) & FIXED_DOMAINS),
+        "all_rows_leakage_valid": all(row["metadata"]["leakage_validation_result"] for row in all_rows),
+    }
     manifest = {
         "candidate_skill": CANDIDATE,
         "benchmark_family": FAMILY,
@@ -767,6 +802,15 @@ def _manifest(train: list[dict[str, object]], holdout: list[dict[str, object]], 
             for split, rows in (("train", train), ("holdout", holdout))
         },
         "domain_partitions": {"train": list(DOMAINS["train"]), "holdout": list(DOMAINS["holdout"])},
+        "size_gates": size_gates,
+        "shape_gates": shape_gates,
+        "anchor_gates": anchor_gates,
+        "fixture_gates": fixture_gates,
+        "leakage_gates": leakage_gates,
+        "training_performed": False,
+        "adapter_created": False,
+        "candidate_activated": False,
+        "active_by_default": False,
         "checksums": {
             "train_jsonl_sha256": _sha_text(train_payload),
             "holdout_jsonl_sha256": _sha_text(holdout_payload),
@@ -775,7 +819,7 @@ def _manifest(train: list[dict[str, object]], holdout: list[dict[str, object]], 
         "validation_passed": True,
         "fixtures_executed": execute_fixtures,
         "write_performed": False,
-        "next_recommended_phase": "v2_frozen_candidate_data_generation",
+        "next_recommended_phase": "v2_candidate_training_execution",
     }
     manifest_payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     manifest["checksums"]["manifest_sha256"] = _sha_text(manifest_payload)
@@ -818,10 +862,14 @@ def write_candidate_data_v2(result: dict[str, object], output: Path) -> Path:
         raise ValueError("output path is not allowed for v2 candidate write mode")
     validate_candidate_data_v2(result, execute_fixtures=result["manifest"]["fixtures_executed"])
     output.mkdir(parents=True, exist_ok=True)
+    result["manifest"]["write_performed"] = True
+    manifest_payload = json.dumps(result["manifest"], indent=2, sort_keys=True) + "\n"
+    result["manifest"]["checksums"]["manifest_sha256"] = _sha_text(manifest_payload)
+    manifest_payload = json.dumps(result["manifest"], indent=2, sort_keys=True) + "\n"
     payloads = {
         "train.jsonl": _jsonl(result["train"]),
         "holdout.jsonl": _jsonl(result["holdout"]),
-        "manifest.json": json.dumps(result["manifest"], indent=2, sort_keys=True) + "\n",
+        "manifest.json": manifest_payload,
     }
     for name, content in payloads.items():
         tmp = output / f".{name}.tmp"
@@ -847,7 +895,6 @@ def main(argv: list[str] | None = None) -> int:
         result = build_candidate_data_v2(execute_fixtures=not args.skip_fixtures)
         if args.write:
             write_candidate_data_v2(result, args.output)
-            result["manifest"]["write_performed"] = True
         print(json.dumps(summary_from_result(result), indent=2, sort_keys=True))
         return 0
     except Exception as exc:

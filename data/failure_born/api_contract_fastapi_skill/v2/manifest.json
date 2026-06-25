@@ -1,0 +1,124 @@
+{
+  "active_by_default": false,
+  "adapter_created": false,
+  "anchor_gates": {
+    "all_rows_anchor_valid": true
+  },
+  "benchmark_family": "fastapi_contract",
+  "candidate_activated": false,
+  "candidate_skill": "api_contract_fastapi_skill",
+  "checksums": {
+    "combined_jsonl_sha256": "e72781c60815cd0c60807d7b42d8230fd9de9ad452e0038f50621df71a371873",
+    "holdout_jsonl_sha256": "2bd9fbcce86f5252cbaba59e18ce3413d0cd173cbe699500b9e59ed69976edde",
+    "manifest_sha256": "ce35594872a29d54615faeca62c88401ffe1f97fd2e457bf2f292373592e0252",
+    "train_jsonl_sha256": "665a1b9796151670ae58d350312b765d6470cb1935c7f508099162064f083a6a"
+  },
+  "deterministic_seed": 240624,
+  "domain_partitions": {
+    "holdout": [
+      "vouchers",
+      "lockers",
+      "forums",
+      "clinics",
+      "memos",
+      "audits",
+      "parcels",
+      "recipes",
+      "galleries",
+      "notebooks",
+      "briefings",
+      "terminals"
+    ],
+    "train": [
+      "ledgers",
+      "rosters",
+      "journals",
+      "permits",
+      "badges",
+      "bundles",
+      "digests",
+      "kiosks",
+      "charters",
+      "folios",
+      "capsules",
+      "playlists"
+    ]
+  },
+  "fixture_gates": {
+    "all_rows_fixture_valid": true,
+    "fixtures_executed": true
+  },
+  "fixtures_executed": true,
+  "generator_version": 2,
+  "leakage_gates": {
+    "all_rows_leakage_valid": true,
+    "excluded_domains_isolated": true,
+    "train_holdout_disjoint_domains": true
+  },
+  "next_recommended_phase": "v2_candidate_training_execution",
+  "row_counts_by_behavior_group_split": {
+    "holdout": {
+      "bounded_route_service_separation": 4,
+      "contract_drift_detection": 4,
+      "contract_preserving_refactor": 4,
+      "enum_literal_validation": 4,
+      "invalid_state_error_behavior": 4,
+      "list_envelope_shape": 4,
+      "not_found_error_behavior": 4,
+      "optional_field_handling": 4,
+      "path_parameter_validation": 4,
+      "request_body_validation": 4,
+      "response_model_correctness": 4,
+      "status_code_correctness": 4
+    },
+    "train": {
+      "bounded_route_service_separation": 4,
+      "contract_drift_detection": 4,
+      "contract_preserving_refactor": 4,
+      "enum_literal_validation": 4,
+      "invalid_state_error_behavior": 4,
+      "list_envelope_shape": 4,
+      "not_found_error_behavior": 4,
+      "optional_field_handling": 4,
+      "path_parameter_validation": 4,
+      "request_body_validation": 4,
+      "response_model_correctness": 4,
+      "status_code_correctness": 4
+    }
+  },
+  "row_counts_by_split": {
+    "holdout": 48,
+    "train": 48
+  },
+  "row_counts_by_task_type_split": {
+    "holdout": {
+      "fastapi_contract_debugging": 12,
+      "fastapi_contract_generation": 12,
+      "fastapi_contract_refactor": 12,
+      "fastapi_contract_test_generation": 12
+    },
+    "train": {
+      "fastapi_contract_debugging": 12,
+      "fastapi_contract_generation": 12,
+      "fastapi_contract_refactor": 12,
+      "fastapi_contract_test_generation": 12
+    }
+  },
+  "schema_version": 2,
+  "shape_gates": {
+    "required_field_set_valid": true,
+    "row_counts_by_behavior_group_split_valid": true,
+    "row_counts_by_split_valid": true,
+    "row_counts_by_task_type_split_valid": true
+  },
+  "size_gates": {
+    "all_rows_within_limits": true,
+    "character_count_max": 768,
+    "estimated_target_tokens_max": 192,
+    "non_empty_lines_max": 32
+  },
+  "training_performed": false,
+  "validation_passed": true,
+  "version": "v2",
+  "write_performed": true
+}
