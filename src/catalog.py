@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from .agent.sandbox import SKIP_DIRS
+from .composer import compose_skill_packages
+from .runtime import validate_runtime_bundle
 from .shared.io import read_json, read_yaml
 
 
@@ -137,6 +139,77 @@ def route_task(
         "fallback": "base",
         "errors": catalog.errors,
         "warnings": catalog.warnings,
+    }
+
+
+def compose_from_route(
+    *,
+    skills_dir: Path,
+    repo: Path,
+    task: str,
+    runtime_out: Path,
+    explain: bool = False,
+    allow_base: bool = False,
+    overwrite: bool = False,
+) -> dict[str, Any]:
+    routing_decision = route_task(
+        skills_dir=skills_dir,
+        repo=repo,
+        task=task,
+        explain=explain,
+    )
+    catalog = SkillCatalog.discover(skills_dir)
+    by_skill_id = {skill.skill_id: skill for skill in catalog.skills}
+    selected = list(routing_decision["selected_skills"])
+    warnings = list(routing_decision["warnings"])
+    if not selected:
+        if not allow_base:
+            raise ValueError("no skill selected; pass --allow-base or improve routing metadata")
+        warnings.append("base fallback allowed; no runtime was composed")
+        return {
+            "routing_decision": routing_decision,
+            "selected_skills": [],
+            "runtime_out": None,
+            "composition_strategy": "routed",
+            "composition_status": "skipped",
+            "validation_status": "not_run",
+            "warnings": warnings,
+            "errors": [],
+        }
+
+    selected_paths = []
+    for item in selected:
+        skill_id = item["skill_id"]
+        skill = by_skill_id.get(skill_id)
+        if skill is None:
+            raise ValueError(f"selected skill not found in catalog: {skill_id}")
+        selected_paths.append(skill.path)
+
+    try:
+        compose_skill_packages(
+            skills=selected_paths,
+            strategy="routed",
+            output=runtime_out,
+            force=overwrite,
+        )
+    except (FileNotFoundError, FileExistsError, ValueError) as error:
+        context = ", ".join(
+            f"{item['skill_id']}={path}" for item, path in zip(selected, selected_paths, strict=True)
+        )
+        raise type(error)(f"selected skill package is not composable ({context}): {error}") from error
+
+    validation = validate_runtime_bundle(runtime_out)
+    if validation.get("status") != "valid":
+        raise ValueError(f"runtime validation failed: {validation.get('status')}")
+    return {
+        "routing_decision": routing_decision,
+        "selected_skills": selected,
+        "runtime_out": str(runtime_out.resolve()),
+        "composition_strategy": "routed",
+        "composition_status": "written",
+        "validation_status": "passed" if validation.get("status") == "valid" else validation.get("status"),
+        "warnings": warnings,
+        "errors": [],
     }
 
 

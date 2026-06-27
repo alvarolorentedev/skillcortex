@@ -174,6 +174,7 @@ Skill Cortex ships one public CLI with command-specific help and examples.
 | `skillcortex validate-skill-package` | verify package structure, fingerprints, and protected inputs |
 | `skillcortex compose-skills` | compose validated skill packages into a deterministic runtime bundle |
 | `skillcortex route` | route a task against discovered skill packages without loading adapters |
+| `skillcortex compose-from-route` | compose a runtime from the capability router's selected packages |
 | `skillcortex validate-runtime` | verify a runtime bundle before inference or serving |
 | `skillcortex infer` | run local inference or dry-run routing against a runtime bundle |
 | `skillcortex serve` | expose the minimal OpenAI-compatible compatibility server |
@@ -238,11 +239,12 @@ Canonical built-in skills such as `python_skill`, `debugging_skill`, and `test_g
 skillcortex train-skill python_skill --output /tmp/skillcortex-demo/python_skill
 ```
 
-### Discover and route skills without a runtime
+### Discover, route, and compose from skills
 
 Auto-discovery mode scans skill folders for `skill.yaml` and optional routing
-metadata. It is deterministic and route-only; it does not load adapter weights.
-`task_type` is only a compatibility hint in this mode.
+metadata. It is deterministic and does not load adapter weights while routing.
+`task_type` is only a compatibility hint in this mode. Dynamic agent mode now
+routes, composes, validates, and executes the existing agent path.
 
 ```bash
 skillcortex route \
@@ -253,8 +255,42 @@ skillcortex route \
 ```
 
 ```bash
+skillcortex compose-from-route \
+  --skills-dir skills \
+  --repo . \
+  --task "Create a FastAPI endpoint with Pydantic validation" \
+  --runtime-out runtime/generated
+```
+
+```bash
 skillcortex agent run \
   --skills-dir skills \
+  --repo . \
+  --task "Create a FastAPI endpoint with Pydantic validation" \
+  --dry-run \
+  --compose-runtime-out runtime/generated \
+  --trace-out /tmp/skillcortex-trace.json
+```
+
+Dry-run does not modify repo files. Confirmed dynamic mode uses the existing
+review-artifact path before any repo file is changed:
+
+```bash
+skillcortex agent run \
+  --skills-dir skills \
+  --repo . \
+  --task "Create a FastAPI endpoint with Pydantic validation" \
+  --write-mode confirm \
+  --compose-runtime-out runtime/generated \
+  --trace-out /tmp/skillcortex-trace.json
+```
+
+Unconfirmed dynamic `--write-mode on` is intentionally disabled. Explicit
+runtime mode remains supported:
+
+```bash
+skillcortex agent run \
+  --runtime runtime/generated \
   --repo . \
   --task "Create a FastAPI endpoint with Pydantic validation" \
   --dry-run

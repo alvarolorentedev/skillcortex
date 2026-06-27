@@ -35,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_validate_runtime_parser(commands)
     _add_compose_skills_parser(commands)
     _add_route_parser(commands)
+    _add_compose_from_route_parser(commands)
     _add_infer_parser(commands)
     _add_serve_parser(commands)
     _add_agent_parser(commands)
@@ -184,6 +185,23 @@ def _add_route_parser(commands) -> None:
     route.add_argument("--explain", action="store_true")
 
 
+def _add_compose_from_route_parser(commands) -> None:
+    compose = commands.add_parser(
+        "compose-from-route",
+        **parser_kwargs(
+            "Route a task and compose selected skill packages into a runtime bundle.",
+            "skillcortex compose-from-route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
+        ),
+    )
+    compose.add_argument("--skills-dir", required=True)
+    compose.add_argument("--repo", required=True)
+    compose.add_argument("--task", required=True)
+    compose.add_argument("--runtime-out", required=True)
+    compose.add_argument("--explain", action="store_true")
+    compose.add_argument("--allow-base", action="store_true")
+    compose.add_argument("--overwrite", action="store_true")
+
+
 def _add_infer_parser(commands) -> None:
     infer = commands.add_parser(
         "infer",
@@ -249,4 +267,6 @@ def _add_agent_parser(commands) -> None:
     agent_run.add_argument("--writes", "--write-mode", dest="writes", choices=WRITE_MODES, default="confirm")
     agent_run.add_argument("--test-command")
     agent_run.add_argument("--trace-out")
+    agent_run.add_argument("--compose-runtime-out")
+    agent_run.add_argument("--overwrite", action="store_true")
     agent_run.add_argument("--dry-run", action="store_true")
