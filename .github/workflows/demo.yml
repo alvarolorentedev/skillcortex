@@ -24,4 +24,4 @@ jobs:
           pip install -e '.[test]'
 
       - name: Validate no-model demo
-        run: pytest tests/test_skillcortex_demo.py -q
+        run: pytest tests/cli/test_skillcortex_demo.py -q

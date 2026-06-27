@@ -30,14 +30,22 @@ def _write_bytes(path: Path, content: bytes, *, overwrite: bool = False) -> None
 def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) -> None:
     weights = f"fixture:{skill_id}\n".encode("utf-8")
     checksum = hashlib.sha256(weights).hexdigest()
+    target_modules = ["self_attn.q_proj", "self_attn.v_proj"]
+    rank = 8
     metadata = {
         "skill_id": skill_id,
         "adapter": skill_id,
-        "base_model": "mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+        "base_model": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
+        "source_model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
         "format": "mlx-lora",
+        "quantization": "4bit",
         "training_command": ["python", "-m", "mlx_lm", "lora"],
         "adapter_parameters": 262144,
         "parameter_count": 262144,
+        "rank": rank,
+        "target_modules": target_modules,
+        "seed": 42,
+        "trainable_parameters": 311296,
         "allowed_task_types": task_types,
         "task_types": task_types,
         "activation_scope": "task",
@@ -50,13 +58,59 @@ def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) ->
             "activation_scope": "task",
             "semantic_families": [skill_id],
         },
+        "config": {
+            "seed": 42,
+            "batch_size": 1,
+            "iterations": 100,
+            "learning_rate": 0.0001,
+            "lora_layers": 8,
+            "skill_rank": rank,
+            "generic_rank": 24,
+            "target_modules": target_modules,
+        },
         "description": f"Fixture adapter for {skill_id}.",
     }
     config = {
-        "lora_layers": 8,
-        "lora_rank": 8,
-        "lora_alpha": 16,
-        "lora_dropout": 0.0,
+        "adapter_path": str(base),
+        "batch_size": 1,
+        "clear_cache_threshold": 0,
+        "config": str(base / "training-rank-8.yaml"),
+        "data": str(base.parent.parent / "data"),
+        "fine_tune_type": "lora",
+        "grad_accumulation_steps": 1,
+        "grad_checkpoint": False,
+        "iters": 100,
+        "learning_rate": 0.0001,
+        "lora_parameters": {
+            "rank": rank,
+            "dropout": 0.0,
+            "scale": 20.0,
+            "keys": target_modules,
+        },
+        "lr_schedule": None,
+        "mask_prompt": True,
+        "max_seq_length": 2048,
+        "model": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
+        "num_layers": 8,
+        "optimizer": "adam",
+        "optimizer_config": {
+            "adam": {},
+            "adamw": {},
+            "muon": {},
+            "sgd": {},
+            "adafactor": {},
+        },
+        "project_name": None,
+        "report_to": None,
+        "resume_adapter_file": None,
+        "save_every": 100,
+        "seed": 42,
+        "steps_per_eval": 200,
+        "steps_per_report": 10,
+        "test": False,
+        "test_batches": 500,
+        "train": True,
+        "val_batches": 25,
     }
     _write_bytes(base / "adapters.safetensors", weights)
     _write_text(base / "adapter_config.json", json.dumps(config, indent=2) + "\n")
@@ -70,18 +124,39 @@ import json
 from pathlib import Path
 
 REPORT_NAME = "validation_report.json"
-MAX_EXAMPLE_CHARS = 1200
-REQUIRED_ANCHORS = ("FastAPI", "@app.", "def ")
+ACTIVE_GENERATION_MAX_TOKENS = 256
+REQUIRED_HEADROOM_PERCENT = 25
+MAX_ALLOWED_ESTIMATED_TARGET_TOKENS = ACTIVE_GENERATION_MAX_TOKENS * (100 - REQUIRED_HEADROOM_PERCENT) // 100
+RESULT_JSON = Path.cwd() / "validation_results.json"
+
 REPRESENTATIVE_EXAMPLES = [
     {
-        "name": "list-items",
-        "prompt": "Build a FastAPI GET route that returns a list of items.",
-        "candidate": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/items')\ndef list_items():\n    return {'items': []}\n",
+        "task_type": "fastapi_contract_generation",
+        "artifact_type": "app_file",
+        "reference": "single route app",
+        "candidate": """from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get('/items')
+def list_items():
+    return {'items': []}
+""",
+        "fixture": {"language": "python"},
     },
     {
-        "name": "health-check",
-        "prompt": "Build a FastAPI health route.",
-        "candidate": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/health')\ndef health():\n    return {'status': 'ok'}\n",
+        "task_type": "fastapi_contract_test_generation",
+        "artifact_type": "test_file",
+        "reference": "test client smoke test",
+        "candidate": """from fastapi.testclient import TestClient
+from solution import app
+
+client = TestClient(app)
+
+def test_items():
+    assert client.get('/items').status_code == 200
+""",
+        "fixture": {"language": "python"},
     },
 ]
 
@@ -98,49 +173,92 @@ def get_representative_examples():
     return representative_examples()
 
 
-def _check_budget(text: str, budget: int = MAX_EXAMPLE_CHARS) -> None:
-    if len(text) > budget:
-        raise ValueError("candidate exceeds budget")
+def parse_safely(text: str) -> bool:
+    try:
+        compile(text, "<candidate>", "exec")
+        return True
+    except SyntaxError:
+        return False
 
 
-def _check_anchors(text: str) -> None:
-    missing = [anchor for anchor in REQUIRED_ANCHORS if anchor not in text]
-    if missing:
-        raise ValueError("missing anchor")
+def mixes_app_and_test_code(text: str) -> bool:
+    has_app = "app = FastAPI()" in text or "@app." in text
+    has_test = "TestClient" in text or "def test_" in text
+    return has_app and has_test
 
 
-def _check_shape(text: str) -> None:
-    if "train.jsonl" in text or "holdout.jsonl" in text:
-        raise ValueError("fixture isolation violated")
-    if "return" not in text:
-        raise ValueError("missing response body")
+def single_artifact(text: str) -> bool:
+    normalized = text.lstrip()
+    return not normalized.startswith("# file:") and "\n# file:" not in text and "\n---" not in text
 
 
-def validate_output_text(text: str, budget: int = MAX_EXAMPLE_CHARS) -> dict[str, object]:
-    _check_budget(text, budget)
-    _check_anchors(text)
-    _check_shape(text)
-    return {"ok": True, "chars": len(text)}
+def app_anchor_checks(text: str) -> dict[str, bool]:
+    return {
+        "valid_python_syntax": parse_safely(text),
+        "required_fastapi_imports": "from fastapi import FastAPI" in text,
+        "app_fastapi_present": "app = FastAPI()" in text,
+        "route_decorator_present": "@app." in text,
+        "route_handler_present": "def " in text,
+        "no_test_code": "TestClient" not in text and "def test_" not in text,
+    }
 
 
-def validate_candidate_output(text: str, budget: int = MAX_EXAMPLE_CHARS) -> dict[str, object]:
-    return validate_output_text(text, budget=budget)
+def test_anchor_checks(text: str) -> dict[str, bool]:
+    return {
+        "valid_python_syntax": parse_safely(text),
+        "test_framework_imports": "from fastapi.testclient import TestClient" in text,
+        "testclient_usage": "TestClient(" in text,
+        "imports_app_under_test": "from solution import app" in text,
+        "test_functions_exist": "def test_" in text,
+        "no_app_implementation": "app = FastAPI()" not in text and "@app." not in text,
+    }
+
+
+def _estimate_tokens(text: str) -> int:
+    return max(1, (len(text) + 3) // 4)
+
+
+def _validate_example(example: dict[str, object]) -> dict[str, object]:
+    candidate = str(example["candidate"])
+    estimated_tokens = _estimate_tokens(candidate)
+    anchor_checks = (
+        app_anchor_checks(candidate)
+        if example["artifact_type"] == "app_file"
+        else test_anchor_checks(candidate)
+    )
+    return {
+        "task_type": example["task_type"],
+        "artifact_type": example["artifact_type"],
+        "estimated_target_tokens": estimated_tokens,
+        "fits_under_active_budget": estimated_tokens <= ACTIVE_GENERATION_MAX_TOKENS,
+        "has_required_headroom": estimated_tokens <= MAX_ALLOWED_ESTIMATED_TARGET_TOKENS,
+        "fixture_passed": all(anchor_checks.values()),
+        "mixes_app_and_test_code": mixes_app_and_test_code(candidate),
+        "single_artifact": single_artifact(candidate),
+    }
+
+
+def validate_candidate_output(text: str, budget: int = ACTIVE_GENERATION_MAX_TOKENS) -> dict[str, object]:
+    estimated_tokens = _estimate_tokens(text)
+    return {
+        "fits_under_active_budget": estimated_tokens <= budget,
+        "has_required_headroom": estimated_tokens <= MAX_ALLOWED_ESTIMATED_TARGET_TOKENS,
+        "fixture_passed": parse_safely(text) and single_artifact(text) and not mixes_app_and_test_code(text),
+    }
 
 
 def validate_anchor_and_shape(text: str) -> dict[str, object]:
-    return validate_output_text(text)
+    return validate_candidate_output(text)
 
 
 def assert_anchor_and_shape_guards(text: str) -> dict[str, object]:
-    return validate_output_text(text)
+    return validate_candidate_output(text)
 
 
-def validate_examples(examples=None, budget: int = MAX_EXAMPLE_CHARS) -> dict[str, object]:
+def validate_examples(examples=None, budget: int = ACTIVE_GENERATION_MAX_TOKENS) -> dict[str, object]:
     items = representative_examples() if examples is None else list(examples)
-    checked = []
-    for item in items:
-        checked.append(validate_output_text(item["candidate"], budget=budget))
-    return {"ok": True, "count": len(checked), "budget": budget}
+    checked = [_validate_example(item) for item in items]
+    return {"ok": True, "count": len(checked), "budget": budget, "results": checked}
 
 
 def validate_representative_examples(examples=None, budget: int = MAX_EXAMPLE_CHARS) -> dict[str, object]:
@@ -164,21 +282,32 @@ def _coerce_output_dir(value) -> Path | None:
 
 
 def run(output_dir: str | Path | list[str] | tuple[str, ...] | None = None) -> Path:
-    report_dir = _coerce_output_dir(output_dir) or Path.cwd()
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / REPORT_NAME
+    report_path = RESULT_JSON
+    if output_dir is not None:
+        report_dir = _coerce_output_dir(output_dir)
+        if report_dir is not None:
+            report_path = report_dir / REPORT_JSON.name
+    checked = [_validate_example(item) for item in REPRESENTATIVE_EXAMPLES]
     payload = {
-        "ok": True,
-        "count": len(REPRESENTATIVE_EXAMPLES),
-        "examples": [example["name"] for example in REPRESENTATIVE_EXAMPLES],
+        "active_budget": {
+            "active_generation_max_tokens": ACTIVE_GENERATION_MAX_TOKENS,
+            "maximum_allowed_estimated_target_tokens": MAX_ALLOWED_ESTIMATED_TARGET_TOKENS,
+        },
+        "representative_results": checked,
+        "shape_risk_classification": {
+            item["task_type"]: "safe_for_single_file_v2" for item in REPRESENTATIVE_EXAMPLES
+        },
+        "final_recommendation": "proceed_to_v2_data_design",
     }
-    report_path.write_text(json.dumps(payload, indent=2) + "\n")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return report_path
 
 
-def main(argv=None, output_dir: str | Path | None = None) -> Path:
+def main(argv=None, output_dir: str | Path | None = None) -> int:
     validate_examples()
-    return run(output_dir if output_dir is not None else argv)
+    run(output_dir if output_dir is not None else argv)
+    return 0
 
 
 run_validation = main
@@ -192,27 +321,107 @@ import json
 from pathlib import Path
 
 REPORT_NAME = "reference_schema_report.json"
-REQUIRED_FIELDS = ("id", "task_type", "prompt", "target")
-REFERENCE_ROWS = [
+RESULT_JSON = Path.cwd() / "schema_validation_results.json"
+REQUIRED_FIELDS = {
+    "id",
+    "task_type",
+    "prompt",
+    "target",
+    "size_guard",
+    "shape_guard",
+    "leakage_guard",
+}
+SIZE_LIMITS = {
+    "estimated_target_tokens_max": 192,
+    "character_count_max": 768,
+    "non_empty_lines_max": 32,
+}
+REPRESENTATIVE_ROWS = [
     {
         "id": "row-1",
-        "task_type": "python_generation",
+        "task_type": "fastapi_contract_generation",
         "prompt": "Write a FastAPI route.",
-        "target": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/items')\ndef list_items():\n    return {'items': []}\n",
-        "semantic_family": "fastapi_contract",
+        "target": """from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get('/items')
+def list_items():
+    return {'items': []}
+""",
+        "size_guard": {},
+        "shape_guard": {},
+        "leakage_guard": {},
     },
     {
         "id": "row-2",
-        "task_type": "debugging",
+        "task_type": "fastapi_contract_debugging",
         "prompt": "Fix the FastAPI route.",
-        "target": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/health')\ndef health():\n    return {'status': 'ok'}\n",
-        "semantic_family": "fastapi_contract",
+        "target": """from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get('/health')
+def health():
+    return {'status': 'ok'}
+""",
+        "size_guard": {},
+        "shape_guard": {},
+        "leakage_guard": {},
+    },
+    {
+        "id": "row-3",
+        "task_type": "fastapi_contract_test_generation",
+        "prompt": "Write a FastAPI test.",
+        "target": """from fastapi.testclient import TestClient
+from solution import app
+
+client = TestClient(app)
+
+def test_items():
+    assert client.get('/items').status_code == 200
+""",
+        "size_guard": {},
+        "shape_guard": {},
+        "leakage_guard": {},
+    },
+    {
+        "id": "row-4",
+        "task_type": "fastapi_contract_refactor",
+        "prompt": "Refactor a FastAPI route.",
+        "target": """from fastapi import FastAPI
+
+app = FastAPI()
+
+def _payload() -> dict[str, str]:
+    return {'status': 'ok'}
+
+@app.get('/status')
+def status():
+    return _payload()
+""",
+        "size_guard": {},
+        "shape_guard": {},
+        "leakage_guard": {},
+    },
+]
+
+REJECTED_ROWS = [
+    {
+        **REPRESENTATIVE_ROWS[0],
+        "id": "reject-1",
+        "target": REPRESENTATIVE_ROWS[0]["target"] + "\n# train.jsonl overlap",
+    },
+    {
+        **REPRESENTATIVE_ROWS[0],
+        "id": "reject-2",
+        "target": REPRESENTATIVE_ROWS[0]["target"] + "\nfrom fastapi.testclient import TestClient\n",
     },
 ]
 
 
 def representative_rows():
-    return list(REFERENCE_ROWS)
+    return list(REPRESENTATIVE_ROWS)
 
 
 def load_reference_rows():
@@ -223,17 +432,47 @@ def get_reference_rows():
     return representative_rows()
 
 
+def _estimate_tokens(text: str) -> int:
+    return max(1, (len(text) + 3) // 4)
+
+
+def _non_empty_lines(text: str) -> int:
+    return sum(1 for line in text.splitlines() if line.strip())
+
+
 def validate_row(row: dict[str, object]) -> dict[str, object]:
-    for field in REQUIRED_FIELDS:
+    missing = sorted(field for field in REQUIRED_FIELDS if field not in row)
+    if missing:
+        raise ValueError(f"missing required field: {missing[0]}")
+    for field in ("id", "task_type", "prompt", "target"):
         value = row.get(field)
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"missing required field: {field}")
     text = f"{row['prompt']}\n{row['target']}"
+    estimated_target_tokens = _estimate_tokens(str(row["target"]))
+    size_guard = {
+        "estimated_target_tokens": estimated_target_tokens,
+        "character_count": len(str(row["target"])),
+        "non_empty_line_count": _non_empty_lines(str(row["target"])),
+    }
+    reasons: list[str] = []
     if "train.jsonl" in text or "holdout.jsonl" in text:
-        raise ValueError("fixture isolation violated")
-    if str(row["task_type"]).startswith("holdout"):
-        raise ValueError("holdout rows are not allowed")
-    return {"ok": True, "id": row["id"]}
+        reasons.append("leakage_overlap_train_or_holdout")
+    if "app = FastAPI()" in text and "TestClient" in text:
+        reasons.append("shape_gate_no_app_test_mixing")
+    if estimated_target_tokens > SIZE_LIMITS["estimated_target_tokens_max"]:
+        reasons.append("size_guard_estimated_tokens")
+    if len(str(row["target"])) > SIZE_LIMITS["character_count_max"]:
+        reasons.append("size_guard_characters")
+    if size_guard["non_empty_line_count"] > SIZE_LIMITS["non_empty_lines_max"]:
+        reasons.append("size_guard_non_empty_lines")
+    decision = "reject" if reasons else "accept"
+    return {
+        "id": row["id"],
+        "decision": decision,
+        "reasons": reasons,
+        "size_guard": size_guard,
+    }
 
 
 def validate_rows(rows=None) -> dict[str, object]:
@@ -267,21 +506,26 @@ def _coerce_output_dir(value) -> Path | None:
 
 
 def run(output_dir: str | Path | list[str] | tuple[str, ...] | None = None) -> Path:
-    report_dir = _coerce_output_dir(output_dir) or Path.cwd()
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / REPORT_NAME
+    report_path = RESULT_JSON
+    if output_dir is not None:
+        report_dir = _coerce_output_dir(output_dir)
+        if report_dir is not None:
+            report_path = report_dir / RESULT_JSON.name
     payload = {
-        "ok": True,
-        "count": len(REFERENCE_ROWS),
-        "rows": [row["id"] for row in REFERENCE_ROWS],
+        "required_fields": sorted(REQUIRED_FIELDS),
+        "size_limits": SIZE_LIMITS,
+        "accepted_representatives": [validate_row(dict(row)) for row in REPRESENTATIVE_ROWS],
+        "rejected_representatives": [validate_row(dict(row)) for row in REJECTED_ROWS],
     }
-    report_path.write_text(json.dumps(payload, indent=2) + "\n")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return report_path
 
 
-def main(argv=None, output_dir: str | Path | None = None) -> Path:
+def main(argv=None, output_dir: str | Path | None = None) -> int:
     validate_rows()
-    return run(output_dir if output_dir is not None else argv)
+    run(output_dir if output_dir is not None else argv)
+    return 0
 
 
 run_validation = main

@@ -33,7 +33,7 @@ pytest -q
 Run the focused product CLI and demo checks:
 
 ```bash
-pytest tests/test_skillcortex_cli.py tests/test_skillcortex_demo.py -q
+pytest tests/cli/test_skillcortex_cli.py tests/cli/test_skillcortex_demo.py -q
 ```
 
 Run the no-model demo manually:
