@@ -492,6 +492,90 @@ def test_dynamic_infer_trains_reloads_and_reuses_plasticity_lora(tmp_path, monke
     assert str(loaded[0]).endswith("adapter")
 
 
+def test_dynamic_acceptance_flow_local_remote_and_plasticity(tmp_path, monkeypatch):
+    _skill(tmp_path, "fastapi_skill", description="FastAPI endpoint validation", capabilities=["fastapi"])
+    runtime = DynamicRuntime.load(tmp_path / "skills", allow_remote_loras=True)
+    train_calls = []
+    remote_calls = []
+    loaded = []
+    monkeypatch.setattr(
+        "skillcortex.runtime.dynamic.base_config",
+        lambda: {
+            "model": "mlx-test-base",
+            "default_runtime_model": "mlx-test-base",
+            "training_enabled": True,
+            "plasticity_train_dataset": "data/train.jsonl",
+            "plasticity_eval_dataset": "data/eval.jsonl",
+            "plasticity_publish_dir": str(tmp_path / "skills"),
+            "max_plasticity_loras": 8,
+            "remote_lora_catalog": [
+                {"skill_id": "sql_remote", "source": "hf://owner/sql", "cues": ["sql"]}
+            ],
+        },
+    )
+
+    def fake_resolve(source, skill_id, name=None):
+        remote_calls.append((source, skill_id))
+        _skill(tmp_path, skill_id, description="SQL remote adapter", capabilities=["sql"])
+        runtime.registry.reload()
+        return runtime.registry.local[skill_id]
+
+    def fake_train_skill_package(**kwargs):
+        train_calls.append(kwargs["skill"])
+        eval_summary = tmp_path / "acceptance-eval.json"
+        eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
+        package_skill(
+            skill_id=kwargs["skill"],
+            name=kwargs["name"],
+            adapter_dir=Path("artifacts/adapters/python_skill"),
+            output=kwargs["output"],
+            train_dataset=kwargs["train_dataset"],
+            eval_dataset=kwargs["eval_dataset"],
+            eval_summary=eval_summary,
+            version=kwargs["version"],
+            description=kwargs["description"],
+            composition=kwargs["composition"],
+            force=True,
+        )
+        return {"status": "complete", "skill_id": kwargs["skill"]}
+
+    def router(messages, skills):
+        text = messages[-1]["content"]
+        if "train" in text:
+            return DynamicRouteDecision(
+                base_model="mlx-test-base",
+                selected_skills=[],
+                remote_loras=[],
+                task_type="python_generation",
+                semantic_family="custom",
+                train_new_lora=True,
+                reason="needs training",
+            )
+        return runtime._rule_router(messages, skills)
+
+    runtime._router_model = router
+    monkeypatch.setattr(runtime.registry, "resolve_remote", fake_resolve)
+    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr(
+        "skillcortex.runtime.dynamic.load_model",
+        lambda model_name=None, adapter=None: (loaded.append(adapter) or "m", "t"),
+    )
+    monkeypatch.setattr("skillcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("answer", 1, 2))
+
+    local = runtime.infer(prompt="Fix a FastAPI validation bug")
+    remote = runtime.infer(prompt="Tune a SQL query")
+    trained = runtime.infer(prompt="train custom adapter")
+
+    assert local["route_branch"] == "local_lora"
+    assert local["selected_skills"] == ["fastapi_skill"]
+    assert remote["route_branch"] == "remote_lora"
+    assert remote["selected_skills"] == ["sql_remote"]
+    assert remote_calls == [("hf://owner/sql", "sql_remote")]
+    assert trained["route_branch"] == "plasticity_train"
+    assert trained["selected_skills"] == train_calls
+    assert len(loaded) == 3
+
+
 def test_dynamic_runtime_cache_key_includes_base_model_and_loras(tmp_path, monkeypatch):
     _skill(tmp_path, "fastapi_skill", description="FastAPI endpoint validation", capabilities=["fastapi"])
     runtime = DynamicRuntime.load(tmp_path / "skills")

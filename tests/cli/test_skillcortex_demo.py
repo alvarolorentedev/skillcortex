@@ -111,3 +111,30 @@ def test_arbitrary_skill_smoke_script_runs_default_no_model_loop(tmp_path):
     assert output_root.joinpath("fastapi_contract", "skill.yaml").exists()
     assert output_root.joinpath("runtime", "composition.yaml").exists()
     assert output_root.joinpath("agent-trace.json").exists()
+
+
+def test_dynamic_adaptive_smoke_script_runs_mock_loop(tmp_path):
+    output_root = tmp_path / "dynamic-adaptive-smoke"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/run_dynamic_adaptive_smoke.py",
+            "--output-root",
+            str(output_root),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    summary = json.loads(completed.stdout)
+    assert summary["status"] == "complete"
+    assert summary["mode"] == "mock"
+    assert summary["branches"] == {
+        "local": "local_lora",
+        "remote": "remote_lora",
+        "plasticity": "plasticity_train",
+    }
+    assert output_root.joinpath("skills", "fastapi_skill", "skill.yaml").exists()
+    assert output_root.joinpath("skills", "sql_remote", "skill.yaml").exists()
