@@ -210,8 +210,6 @@ def main(argv: list[str] | None = None) -> int:
                     "compose-skills",
                     "--skills",
                     str(package_output),
-                    "--strategy",
-                    "routed",
                     "--output",
                     str(runtime),
                 ],

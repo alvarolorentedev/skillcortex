@@ -193,10 +193,10 @@ skillcortex train-skill \
   --name "FastAPI Contract Skill" \
   --train-dataset examples/fastapi_contract_tiny/train.jsonl \
   --eval-dataset examples/fastapi_contract_tiny/eval.jsonl \
-  --output skills/fastapi_contract \
-  --allowed-task-types python_generation debugging \
-  --activation-scope task
+  --output skills/fastapi_contract
 ```
+
+When omitted for arbitrary `--skill-id`, composition metadata defaults to `allowed_task_types=["python_generation"]` and `activation.scope="task"`. Pass explicit routing flags when you want something narrower or semantic-family scoped.
 
 Canonical built-in skills such as `python_skill`, `debugging_skill`, and `test_generation_skill` still work as legacy preset shortcuts:
 
@@ -222,7 +222,6 @@ skillcortex package-skill \
 ```bash
 skillcortex compose-skills \
   --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill \
-  --strategy routed \
   --output /tmp/skillcortex-demo/runtime
 ```
 

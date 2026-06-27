@@ -164,8 +164,6 @@ def main(argv: list[str] | None = None) -> int:
                 "compose-skills",
                 "--skills",
                 f"{python_skill},{debugging_skill}",
-                "--strategy",
-                "routed",
                 "--output",
                 str(runtime),
             ],

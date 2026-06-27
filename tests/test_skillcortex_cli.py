@@ -311,6 +311,182 @@ def test_product_train_skill_accepts_arbitrary_skill_id_and_composes(monkeypatch
     assert main(["validate-runtime", "--runtime", str(runtime)]) == 0
 
 
+def test_product_train_skill_defaults_routing_metadata_for_arbitrary_skill(
+    monkeypatch, tmp_path, capsys
+):
+    import skillcortex.packaging as packaging
+
+    train_dataset = tmp_path / "train.jsonl"
+    eval_dataset = tmp_path / "eval.jsonl"
+    train_dataset.write_text(
+        json.dumps(
+            {
+                "id": "train-1",
+                "task_type": "python_generation",
+                "prompt": "Write a FastAPI route.",
+                "target": "def build_route():\n    return 42\n",
+            }
+        )
+        + "\n"
+    )
+    eval_dataset.write_text(
+        json.dumps(
+            {
+                "id": "eval-1",
+                "task_type": "python_generation",
+                "prompt": "Write a second FastAPI route.",
+                "target": "def build_second_route():\n    return 42\n",
+            }
+        )
+        + "\n"
+    )
+
+    def fake_train(*, skill_id, train_dataset, run_directory, seed, force):
+        adapter_dir = run_directory / "adapters" / skill_id
+        adapter_dir.mkdir(parents=True, exist_ok=True)
+        shutil_source = Path("artifacts/adapters/python_skill/adapters.safetensors")
+        adapter_config = Path("artifacts/adapters/python_skill/adapter_config.json")
+        adapter_metadata = json.loads(Path("artifacts/adapters/python_skill/metadata.json").read_text())
+        adapter_metadata["adapter"] = skill_id
+        adapter_metadata["training_command"] = ["python", "-m", "mlx_lm", "lora"]
+        adapter_dir.joinpath("adapters.safetensors").write_bytes(shutil_source.read_bytes())
+        adapter_dir.joinpath("adapter_config.json").write_text(adapter_config.read_text())
+        adapter_dir.joinpath("metadata.json").write_text(json.dumps(adapter_metadata, indent=2) + "\n")
+        return adapter_dir, adapter_metadata
+
+    def fake_eval(*, skill_id, dataset, output, adapter_dir):
+        output.mkdir(parents=True, exist_ok=True)
+        path = output / "summary.json"
+        path.write_text(json.dumps({"hypothesis": None, "modes": {}, "tasks": {}}) + "\n")
+        return path
+
+    monkeypatch.setattr(packaging, "_train_generic_skill_to_run_directory", fake_train)
+    monkeypatch.setattr(packaging, "_evaluate_generic_skill_adapter", fake_eval)
+
+    output = tmp_path / "fastapi_contract"
+    assert (
+        main(
+            [
+                "train-skill",
+                "--skill-id",
+                "fastapi_contract",
+                "--name",
+                "FastAPI Contract Skill",
+                "--train-dataset",
+                str(train_dataset),
+                "--eval-dataset",
+                str(eval_dataset),
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    result = json.loads(capsys.readouterr().out)
+    assert result["defaults_applied"] == {
+        "allowed_task_types": ["python_generation"],
+        "activation_scope": "task",
+    }
+    assert "default composition metadata applied" in result["warnings"][0]
+
+    skill_manifest = yaml.safe_load((output / "skill.yaml").read_text())
+    assert skill_manifest["composition"]["capabilities"]["allowed_task_types"] == [
+        "python_generation"
+    ]
+    assert skill_manifest["composition"]["activation"]["scope"] == "task"
+
+
+def test_product_train_skill_explicit_routing_metadata_overrides_defaults(
+    monkeypatch, tmp_path, capsys
+):
+    import skillcortex.packaging as packaging
+
+    train_dataset = tmp_path / "train.jsonl"
+    eval_dataset = tmp_path / "eval.jsonl"
+    train_dataset.write_text(
+        json.dumps(
+            {
+                "id": "train-1",
+                "task_type": "debugging",
+                "prompt": "Fix a FastAPI route.",
+                "target": "def build_route():\n    return 42\n",
+            }
+        )
+        + "\n"
+    )
+    eval_dataset.write_text(
+        json.dumps(
+            {
+                "id": "eval-1",
+                "task_type": "debugging",
+                "prompt": "Fix another FastAPI route.",
+                "target": "def build_second_route():\n    return 42\n",
+            }
+        )
+        + "\n"
+    )
+
+    def fake_train(*, skill_id, train_dataset, run_directory, seed, force):
+        adapter_dir = run_directory / "adapters" / skill_id
+        adapter_dir.mkdir(parents=True, exist_ok=True)
+        shutil_source = Path("artifacts/adapters/python_skill/adapters.safetensors")
+        adapter_config = Path("artifacts/adapters/python_skill/adapter_config.json")
+        adapter_metadata = json.loads(Path("artifacts/adapters/python_skill/metadata.json").read_text())
+        adapter_metadata["adapter"] = skill_id
+        adapter_metadata["training_command"] = ["python", "-m", "mlx_lm", "lora"]
+        adapter_dir.joinpath("adapters.safetensors").write_bytes(shutil_source.read_bytes())
+        adapter_dir.joinpath("adapter_config.json").write_text(adapter_config.read_text())
+        adapter_dir.joinpath("metadata.json").write_text(json.dumps(adapter_metadata, indent=2) + "\n")
+        return adapter_dir, adapter_metadata
+
+    def fake_eval(*, skill_id, dataset, output, adapter_dir):
+        output.mkdir(parents=True, exist_ok=True)
+        path = output / "summary.json"
+        path.write_text(json.dumps({"hypothesis": None, "modes": {}, "tasks": {}}) + "\n")
+        return path
+
+    monkeypatch.setattr(packaging, "_train_generic_skill_to_run_directory", fake_train)
+    monkeypatch.setattr(packaging, "_evaluate_generic_skill_adapter", fake_eval)
+
+    output = tmp_path / "fastapi_contract"
+    assert (
+        main(
+            [
+                "train-skill",
+                "--skill-id",
+                "fastapi_contract",
+                "--name",
+                "FastAPI Contract Skill",
+                "--train-dataset",
+                str(train_dataset),
+                "--eval-dataset",
+                str(eval_dataset),
+                "--output",
+                str(output),
+                "--allowed-task-types",
+                "debugging",
+                "--activation-scope",
+                "semantic_family",
+                "--semantic-families",
+                "fastapi_contract",
+            ]
+        )
+        == 0
+    )
+
+    result = json.loads(capsys.readouterr().out)
+    assert "defaults_applied" not in result
+    skill_manifest = yaml.safe_load((output / "skill.yaml").read_text())
+    assert skill_manifest["composition"]["capabilities"]["allowed_task_types"] == [
+        "debugging"
+    ]
+    assert skill_manifest["composition"]["activation"]["scope"] == "semantic_family"
+    assert skill_manifest["composition"]["activation"]["semantic_families"] == [
+        "fastapi_contract"
+    ]
+
+
 def test_product_train_skill_unknown_positional_skill_has_actionable_message(capsys, tmp_path):
     output = tmp_path / "fastapi_contract"
     assert main(["train-skill", "fastapi_contract", "--output", str(output)]) == 2
@@ -419,6 +595,51 @@ def test_compose_skills_writes_runtime_bundle(tmp_path):
     )
     assert python_route["route_type"] == "base_fallback"
     assert python_route["selected_skills"] == []
+
+
+def test_compose_skills_defaults_strategy_to_routed(tmp_path):
+    output = tmp_path / "python_skill"
+    eval_summary = tmp_path / "eval-summary.json"
+    eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
+
+    assert (
+        main(
+            [
+                "package-skill",
+                "--skill-id",
+                "python_skill",
+                "--name",
+                "Python Skill",
+                "--adapter-dir",
+                "artifacts/adapters/python_skill",
+                "--output",
+                str(output),
+                "--train-dataset",
+                "data/train.jsonl",
+                "--eval-dataset",
+                "data/eval.jsonl",
+                "--eval-summary",
+                str(eval_summary),
+            ]
+        )
+        == 0
+    )
+
+    runtime = tmp_path / "runtime"
+    assert (
+        main(
+            [
+                "compose-skills",
+                "--skills",
+                str(output),
+                "--output",
+                str(runtime),
+            ]
+        )
+        == 0
+    )
+    composition = yaml.safe_load((runtime / "composition.yaml").read_text())
+    assert composition["strategy"] == "routed"
 
 
 def test_official_composer_routes_match_validated_alternating_behavior(tmp_path):

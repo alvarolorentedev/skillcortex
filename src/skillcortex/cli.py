@@ -87,25 +87,53 @@ def _package_composition(parsed: argparse.Namespace) -> dict | None:
     }
 
 
-def _resolve_train_skill(parsed: argparse.Namespace) -> tuple[str, str]:
+def _train_skill_composition(parsed: argparse.Namespace) -> tuple[dict | None, dict[str, object]]:
+    if not parsed.skill_id:
+        return _package_composition(parsed), {}
+
+    defaults_applied: dict[str, object] = {}
+    allowed_task_types = list(parsed.allowed_task_types or [])
+    activation_scope = parsed.activation_scope
+    if not allowed_task_types:
+        allowed_task_types = ["python_generation"]
+        defaults_applied["allowed_task_types"] = list(allowed_task_types)
+    if activation_scope is None:
+        activation_scope = "task"
+        defaults_applied["activation_scope"] = activation_scope
+    return {
+        "capabilities": {
+            "allowed_task_types": allowed_task_types,
+        },
+        "activation": {
+            "default_route_type": "adapter",
+            "scope": activation_scope,
+            "semantic_families": list(parsed.semantic_families or []),
+        },
+        "compatibility": {
+            "compatible_skills": list(parsed.compatible_skills or []),
+            "incompatible_skills": list(parsed.incompatible_skills or []),
+        },
+        "routing": {
+            "tasks": {},
+        },
+    }, defaults_applied
+
+
+def _resolve_train_skill(parsed: argparse.Namespace) -> tuple[str, str, dict | None, dict[str, object]]:
     preset_skill = parsed.skill
     explicit_skill_id = parsed.skill_id
     if explicit_skill_id and preset_skill and explicit_skill_id != preset_skill:
         raise ValueError("provide either a preset positional skill or a matching --skill-id")
     if explicit_skill_id:
-        composition = _package_composition(parsed)
-        if composition is None:
-            raise ValueError(
-                "--allowed-task-types and --activation-scope are required when using --skill-id"
-            )
-        return "generic", explicit_skill_id
+        composition, defaults_applied = _train_skill_composition(parsed)
+        return "generic", explicit_skill_id, composition, defaults_applied
     if preset_skill is None:
         raise ValueError("train-skill requires either a preset skill or --skill-id")
     if preset_skill not in SKILLS:
         raise ValueError(
             f"unknown built-in preset: {preset_skill}; use --skill-id for arbitrary skills"
         )
-    return "preset", preset_skill
+    return "preset", preset_skill, None, {}
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -130,7 +158,7 @@ def _parser() -> argparse.ArgumentParser:
         "train-skill",
         **_parser_kwargs(
             "Train a LoRA skill from datasets and package it as a Skill Cortex artifact.",
-            "skillcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract --allowed-task-types python_generation debugging --activation-scope task\n"
+            "skillcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract\n"
             "skillcortex train-skill python_skill --output skills/python_skill_run --force",
         ),
     )
@@ -200,11 +228,11 @@ def _parser() -> argparse.ArgumentParser:
         "compose-skills",
         **_parser_kwargs(
             "Compose validated skill packages into a deterministic runtime bundle.",
-            "skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --strategy routed --output /tmp/skillcortex-demo/runtime",
+            "skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --output /tmp/skillcortex-demo/runtime",
         ),
     )
     compose.add_argument("--skills", required=True)
-    compose.add_argument("--strategy", choices=("routed",), required=True)
+    compose.add_argument("--strategy", choices=("routed",), default="routed")
     compose.add_argument("--output", required=True)
     compose.add_argument("--registry")
     compose.add_argument("--force", action="store_true")
@@ -297,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     parsed = _parser().parse_args(arguments)
     try:
         if parsed.command == "train-skill":
-            mode, skill_id = _resolve_train_skill(parsed)
+            mode, skill_id, composition, defaults_applied = _resolve_train_skill(parsed)
             result = train_skill_package(
                 skill=skill_id,
                 mode=mode,
@@ -308,11 +336,16 @@ def main(argv: list[str] | None = None) -> int:
                 version=parsed.version,
                 description=parsed.description,
                 examples=Path(parsed.examples) if parsed.examples else None,
-                composition=_package_composition(parsed) if mode == "generic" else None,
+                composition=composition,
                 seed=parsed.seed,
                 force=parsed.force,
                 dry_run=parsed.dry_run,
             )
+            if defaults_applied:
+                result["defaults_applied"] = defaults_applied
+                result["warnings"] = [
+                    "default composition metadata applied for arbitrary train-skill"
+                ]
         elif parsed.command == "package-skill":
             result = package_skill(
                 skill_id=parsed.skill_id,
