@@ -618,6 +618,74 @@ def test_generate_dataset_creates_deterministic_fastapi_files(tmp_path):
     assert sorted(report["coverage"]["required_features"]) == sorted(REQUIRED_FASTAPI_FEATURES)
 
 
+def test_generate_dataset_uses_beginner_defaults(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--skill-id",
+                "fastapi_contract",
+                "--domain",
+                "fastapi",
+            ]
+        )
+        == 0
+    )
+
+    output = tmp_path / "datasets" / "fastapi_contract" / "train.jsonl"
+    eval_output = tmp_path / "datasets" / "fastapi_contract" / "eval.jsonl"
+    report_output = tmp_path / "datasets" / "fastapi_contract" / "dataset-report.json"
+    assert output.exists()
+    assert eval_output.exists()
+    assert report_output.exists()
+
+    report = json.loads(report_output.read_text())
+    assert report["generation"]["seed"] == 42
+    assert report["generation"]["task_type"] == "python_generation"
+    assert report["generation"]["train_examples"] == 100
+    assert report["generation"]["eval_examples"] == 20
+
+
+def test_generate_dataset_explicit_overrides_are_honored(tmp_path):
+    output = tmp_path / "custom" / "train.jsonl"
+    eval_output = tmp_path / "custom" / "eval.jsonl"
+    report_output = tmp_path / "custom" / "report.json"
+
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--skill-id",
+                "fastapi_contract",
+                "--domain",
+                "fastapi",
+                "--task-type",
+                "python_generation",
+                "--num-examples",
+                "12",
+                "--output",
+                str(output),
+                "--eval-output",
+                str(eval_output),
+                "--seed",
+                "99",
+                "--report-output",
+                str(report_output),
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(report_output.read_text())
+    assert report["generation"]["seed"] == 99
+    assert report["generation"]["train_examples"] == 12
+    assert report["generation"]["eval_examples"] >= 1
+    assert output.exists()
+    assert eval_output.exists()
+
+
 def test_validate_dataset_detects_leakage_and_writes_report(tmp_path):
     train_dataset = tmp_path / "train.jsonl"
     eval_dataset = tmp_path / "eval.jsonl"

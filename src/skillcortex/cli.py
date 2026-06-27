@@ -32,6 +32,11 @@ def _csv_paths(value: str) -> list[Path]:
     return [Path(item.strip()) for item in value.split(",") if item.strip()]
 
 
+def _default_dataset_outputs(skill_id: str) -> tuple[Path, Path]:
+    root = Path("datasets") / skill_id
+    return root / "train.jsonl", root / "eval.jsonl"
+
+
 def _infer_payload(parsed: argparse.Namespace) -> dict:
     if bool(parsed.prompt) == bool(parsed.request_file):
         raise ValueError("exactly one of --prompt or --request-file is required")
@@ -160,15 +165,16 @@ def _parser() -> argparse.ArgumentParser:
         "generate-dataset",
         **_parser_kwargs(
             "Generate a deterministic train/eval JSONL dataset for product train-skill.",
-            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 100 --output datasets/fastapi_contract/train.jsonl --eval-output datasets/fastapi_contract/eval.jsonl",
+            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi\n"
+            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
         ),
     )
     generate.add_argument("--skill-id", required=True)
     generate.add_argument("--domain", required=True)
-    generate.add_argument("--task-type", required=True, choices=TASK_TYPES)
-    generate.add_argument("--num-examples", required=True, type=int)
-    generate.add_argument("--output", required=True)
-    generate.add_argument("--eval-output", required=True)
+    generate.add_argument("--task-type", default="python_generation", choices=TASK_TYPES)
+    generate.add_argument("--num-examples", default=100, type=int)
+    generate.add_argument("--output")
+    generate.add_argument("--eval-output")
     generate.add_argument("--eval-size", type=int)
     generate.add_argument("--seed", type=int, default=DEFAULT_DATASET_SEED)
     generate.add_argument("--report-output")
@@ -340,13 +346,14 @@ def main(argv: list[str] | None = None) -> int:
     parsed = _parser().parse_args(arguments)
     try:
         if parsed.command == "generate-dataset":
+            default_output, default_eval_output = _default_dataset_outputs(parsed.skill_id)
             result = generate_dataset_bundle(
                 skill_id=parsed.skill_id,
                 domain=parsed.domain,
                 task_type=parsed.task_type,
                 num_examples=parsed.num_examples,
-                output=Path(parsed.output),
-                eval_output=Path(parsed.eval_output),
+                output=Path(parsed.output) if parsed.output else default_output,
+                eval_output=Path(parsed.eval_output) if parsed.eval_output else default_eval_output,
                 eval_size=parsed.eval_size,
                 seed=parsed.seed,
                 report_output=Path(parsed.report_output) if parsed.report_output else None,

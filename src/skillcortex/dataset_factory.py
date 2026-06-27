@@ -5,7 +5,7 @@ from pathlib import Path
 from .datasets import default_report_path, validate_training_datasets, write_validation_report
 
 
-DEFAULT_DATASET_SEED = 7
+DEFAULT_DATASET_SEED = 42
 DEFAULT_EVAL_RATIO = 0.2
 SUPPORTED_DOMAINS = {"fastapi": "fastapi_contract", "fastapi_contract": "fastapi_contract"}
 REQUIRED_FASTAPI_FEATURES = [
@@ -312,10 +312,6 @@ def _resolve_domain(domain: str) -> str:
 
 
 def _build_examples(*, skill_id: str, task_type: str, total_examples: int, seed: int) -> list[dict]:
-    max_examples = len(ENTITY_VARIANTS) * len(BLUEPRINTS)
-    if total_examples > max_examples:
-        raise ValueError(f"requested {total_examples} examples but only {max_examples} deterministic examples are available")
-
     rng = random.Random(seed)
     entity_indices = list(range(len(ENTITY_VARIANTS)))
     blueprint_indices = list(range(len(BLUEPRINTS)))
@@ -324,8 +320,14 @@ def _build_examples(*, skill_id: str, task_type: str, total_examples: int, seed:
 
     rows: list[dict] = []
     for offset in range(total_examples):
-        entity = ENTITY_VARIANTS[entity_indices[offset % len(entity_indices)]]
-        blueprint = BLUEPRINTS[blueprint_indices[offset % len(blueprint_indices)]]
+        entity_round = offset // len(entity_indices)
+        blueprint_round = offset // len(blueprint_indices)
+        entity = ENTITY_VARIANTS[
+            entity_indices[(offset + entity_round) % len(entity_indices)]
+        ]
+        blueprint = BLUEPRINTS[
+            blueprint_indices[(offset + blueprint_round) % len(blueprint_indices)]
+        ]
         variant_number = offset + 1
         rows.append(
             _render_example(
