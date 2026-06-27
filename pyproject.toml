@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 urls = { Homepage = "https://github.com/alvarolorentedev/crazy-coding-llm", Repository = "https://github.com/alvarolorentedev/crazy-coding-llm", Issues = "https://github.com/alvarolorentedev/crazy-coding-llm/issues" }
-dependencies = ["mlx-lm>=0.31,<0.32", "PyYAML>=6,<7"]
+dependencies = ["huggingface-hub>=1.20,<2", "mlx-lm>=0.31,<0.32", "PyYAML>=6,<7"]
 
 [project.optional-dependencies]
 test = [

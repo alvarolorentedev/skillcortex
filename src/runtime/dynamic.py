@@ -10,82 +10,51 @@ from typing import Callable
 
 from ..composer.adapters import temporary_composed_adapter
 from ..shared.config import base_config
-from ..shared.io import read_yaml
 from .generation import generate_text, load_model
 from .request import normalize_messages
-
-
-@dataclass(slots=True)
-class DynamicSkill:
-    skill_id: str
-    description: str
-    capabilities: list[str]
-    activation_cues: list[str]
-    base_model: str | None
-    adapter_path: Path
+from .registry import AdapterRegistry, ResolvedAdapter
 
 
 @dataclass(slots=True)
 class DynamicRouteDecision:
     base_model: str
     selected_skills: list[str]
+    remote_loras: list[str]
     task_type: str | None
     semantic_family: str | None
     train_new_lora: bool
     reason: str
 
 
-Router = Callable[[list[dict[str, str]], list[DynamicSkill]], DynamicRouteDecision]
+Router = Callable[[list[dict[str, str]], list[ResolvedAdapter]], DynamicRouteDecision]
 
 
 class DynamicRuntime:
-    def __init__(self, skills: list[DynamicSkill]):
-        self.skills = {skill.skill_id: skill for skill in skills}
+    def __init__(self, registry: AdapterRegistry):
+        self.registry = registry
+        self.skills = registry.local
         self._cache: dict[tuple[str, tuple[str, ...]], tuple[object, object]] = {}
         self._lock = threading.Lock()
 
     @classmethod
-    def load(cls, skills_dir: Path) -> "DynamicRuntime":
-        root = skills_dir.resolve()
-        if not root.exists() or not root.is_dir():
-            raise FileNotFoundError(f"skills directory not found: {root}")
-        skills = []
-        for package in sorted(path for path in root.iterdir() if path.is_dir()):
-            manifest_path = package / "skill.yaml"
-            if not manifest_path.exists():
-                continue
-            manifest = read_yaml(manifest_path)
-            skill_id = str(manifest.get("skill_id") or "").strip()
-            if not skill_id:
-                raise ValueError(f"{package.name}: skill_id must be a non-empty string")
-            adapter = manifest.get("adapter") or {}
-            base = manifest.get("base") or {}
-            composition = manifest.get("composition") or {}
-            capabilities = composition.get("capabilities") or {}
-            activation = composition.get("activation") or {}
-            skills.append(
-                DynamicSkill(
-                    skill_id=skill_id,
-                    description=" ".join(
-                        item
-                        for item in (
-                            skill_id.replace("_", " "),
-                            str(manifest.get("name") or ""),
-                            str(manifest.get("description") or ""),
-                        )
-                        if item
-                    ),
-                    capabilities=[
-                        *_text_list(manifest.get("capabilities")),
-                        *_text_list(capabilities.get("allowed_task_types")),
-                        *_text_list(activation.get("semantic_families")),
-                    ],
-                    activation_cues=_text_list(manifest.get("activation_cues")),
-                    base_model=base.get("runtime_model") or base.get("source_model"),
-                    adapter_path=package / (adapter.get("path") or "adapter/adapters.safetensors"),
-                )
+    def load(
+        cls,
+        skills_dir: Path,
+        *,
+        allow_remote_loras: bool = False,
+        cache_dir: Path | None = None,
+    ) -> "DynamicRuntime":
+        return cls(
+            AdapterRegistry.load(
+                skills_dir,
+                allow_remote=allow_remote_loras,
+                cache_dir=cache_dir,
             )
-        return cls(skills)
+        )
+
+    def reload(self) -> None:
+        self.registry.reload()
+        self.skills = self.registry.local
 
     def infer(
         self,
@@ -130,12 +99,22 @@ class DynamicRuntime:
     ) -> DynamicRouteDecision:
         decision = (router or self._rule_router)(messages, list(self.skills.values()))
         unknown = [skill_id for skill_id in decision.selected_skills if skill_id not in self.skills]
-        if unknown:
+        if unknown and not decision.remote_loras:
             raise ValueError(f"unknown dynamic skill: {unknown[0]}")
+        if unknown:
+            resolved = [
+                self.registry.resolve_remote(source, skill_id)
+                for source, skill_id in zip(decision.remote_loras, unknown, strict=False)
+            ]
+            self.reload()
+            decision.selected_skills = [skill.skill_id for skill in resolved]
         return decision
 
     def _get_model(self, base_model: str, selected_skills: tuple[str, ...]) -> tuple[object, object]:
-        key = (base_model, selected_skills)
+        key = (
+            base_model,
+            tuple(f"{skill_id}:{self.skills[skill_id].fingerprint}" for skill_id in selected_skills),
+        )
         cached = self._cache.get(key)
         if cached is not None:
             return cached
@@ -160,7 +139,7 @@ class DynamicRuntime:
     def _rule_router(
         self,
         messages: list[dict[str, str]],
-        skills: list[DynamicSkill],
+        skills: list[ResolvedAdapter],
     ) -> DynamicRouteDecision:
         text = "\n".join(message["content"] for message in messages if message["role"] == "user")
         words = set(re.findall(r"[a-z0-9]+", text.lower()))
@@ -177,6 +156,7 @@ class DynamicRuntime:
         return DynamicRouteDecision(
             base_model=config.get("default_runtime_model") or config["model"],
             selected_skills=selected,
+            remote_loras=[],
             task_type="python_generation",
             semantic_family=None,
             train_new_lora=False,
@@ -186,7 +166,7 @@ class DynamicRuntime:
     def _router_model(
         self,
         messages: list[dict[str, str]],
-        skills: list[DynamicSkill],
+        skills: list[ResolvedAdapter],
     ) -> DynamicRouteDecision:
         config = base_config()
         model, tokenizer = load_model(model_name=config.get("router_model") or config["model"])
@@ -200,21 +180,35 @@ class DynamicRuntime:
             for skill in skills
         ]
         prompt = (
-            "Return JSON with base_model, selected_loras, task_type, semantic_family, "
+            "Return JSON with base_model, selected_skills, remote_loras, task_type, semantic_family, "
             "train_new_lora, reason.\n"
             f"Available LoRAs: {json.dumps(catalog)}\n"
             f"Messages: {json.dumps(messages)}"
         )
-        raw, _, _ = generate_text(model, tokenizer, prompt=prompt)
-        payload = json.loads(raw)
-        return DynamicRouteDecision(
-            base_model=str(payload.get("base_model") or config.get("default_runtime_model") or config["model"]),
-            selected_skills=list(payload.get("selected_loras") or []),
-            task_type=payload.get("task_type"),
-            semantic_family=payload.get("semantic_family"),
-            train_new_lora=bool(payload.get("train_new_lora")),
-            reason=str(payload.get("reason") or "router model"),
-        )
+        try:
+            raw, _, _ = generate_text(model, tokenizer, prompt=prompt)
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                raise ValueError("router payload must be an object")
+            return DynamicRouteDecision(
+                base_model=str(payload.get("base_model") or config.get("default_runtime_model") or config["model"]),
+                selected_skills=list(payload.get("selected_skills") or payload.get("selected_loras") or []),
+                remote_loras=list(payload.get("remote_loras") or []),
+                task_type=payload.get("task_type"),
+                semantic_family=payload.get("semantic_family"),
+                train_new_lora=bool(payload.get("train_new_lora")),
+                reason=str(payload.get("reason") or "router model"),
+            )
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return DynamicRouteDecision(
+                base_model=str(config.get("default_runtime_model") or config["model"]),
+                selected_skills=[],
+                remote_loras=[],
+                task_type=None,
+                semantic_family=None,
+                train_new_lora=False,
+                reason="router fallback",
+            )
 
     def _result(self, status: str, decision: DynamicRouteDecision) -> dict:
         active = [
@@ -228,13 +222,8 @@ class DynamicRuntime:
             "task_type": decision.task_type,
             "semantic_family": decision.semantic_family,
             "selected_skills": decision.selected_skills,
+            "remote_loras": decision.remote_loras,
             "train_new_lora": decision.train_new_lora,
             "reason": decision.reason,
             "active_adapter_count": len(active),
         }
-
-
-def _text_list(value: object) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item.strip() for item in value if isinstance(item, str) and item.strip()]

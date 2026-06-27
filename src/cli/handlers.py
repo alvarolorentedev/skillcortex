@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Callable
 
@@ -70,29 +72,54 @@ def execute_command(
             ]
         return result
     if parsed.command == "train-plasticity-lora":
-        return train_skill_package(
-            skill=parsed.skill_id,
-            mode="generic",
-            output=Path(parsed.output),
-            train_dataset=Path(parsed.prompt_file),
-            eval_dataset=Path(parsed.eval_dataset or parsed.prompt_file),
-            name=parsed.name,
-            version=parsed.version,
-            description=parsed.description,
-            composition={
-                "capabilities": {"allowed_task_types": ["python_generation"]},
-                "activation": {
-                    "default_route_type": "adapter",
-                    "scope": "task",
-                    "semantic_families": [],
+        output = _plasticity_output(parsed)
+        if parsed.dry_run:
+            return {
+                "status": "dry-run",
+                "skill": parsed.skill_id,
+                "output": str(output.resolve()),
+                "publish_dir": str(output.parent.resolve()),
+            }
+        with tempfile.TemporaryDirectory(prefix=f"skillcortex-{parsed.skill_id}-publish-") as directory:
+            staging = Path(directory) / parsed.skill_id
+            result = train_skill_package(
+                skill=parsed.skill_id,
+                mode="generic",
+                output=staging,
+                train_dataset=Path(parsed.prompt_file),
+                eval_dataset=Path(parsed.eval_dataset or parsed.prompt_file),
+                name=parsed.name,
+                version=parsed.version,
+                description=parsed.description,
+                composition={
+                    "capabilities": {"allowed_task_types": ["python_generation"]},
+                    "activation": {
+                        "default_route_type": "adapter",
+                        "scope": "task",
+                        "semantic_families": [],
+                    },
+                    "compatibility": {"compatible_skills": [], "incompatible_skills": []},
+                    "routing": {"tasks": {}},
                 },
-                "compatibility": {"compatible_skills": [], "incompatible_skills": []},
-                "routing": {"tasks": {}},
-            },
-            seed=parsed.seed,
-            force=parsed.force,
-            dry_run=parsed.dry_run,
+                seed=parsed.seed,
+                force=True,
+                dry_run=False,
+            )
+            validate_skill_package(staging)
+            if output.exists():
+                if not parsed.force:
+                    raise FileExistsError(f"{output} exists; pass --force to replace it")
+                shutil.rmtree(output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(staging), str(output))
+        result.update(
+            {
+                "output": str(output.resolve()),
+                "publish_dir": str(output.parent.resolve()),
+                "validation_status": "valid",
+            }
         )
+        return result
     if parsed.command == "import-lora":
         return import_lora(
             source=parsed.source,
@@ -103,6 +130,8 @@ def execute_command(
             eval_dataset=Path(parsed.eval_dataset),
             version=parsed.version,
             description=parsed.description,
+            cache_dir=Path(parsed.cache_dir) if parsed.cache_dir else None,
+            max_download_bytes=parsed.max_download_bytes,
             force=parsed.force,
         )
     if parsed.command == "package-skill":
@@ -155,7 +184,11 @@ def execute_command(
             raise ValueError("infer requires exactly one of --runtime or --skills-dir")
         payload = infer_payload(parsed)
         if parsed.skills_dir:
-            return DynamicRuntime.load(Path(parsed.skills_dir)).infer(
+            return DynamicRuntime.load(
+                Path(parsed.skills_dir),
+                allow_remote_loras=parsed.allow_remote_loras,
+                cache_dir=Path(parsed.lora_cache_dir) if parsed.lora_cache_dir else None,
+            ).infer(
                 messages=payload["messages"],
                 max_tokens=payload.get("max_tokens"),
                 temperature=payload.get("temperature"),
@@ -220,6 +253,14 @@ def execute_command(
             task_provider=task_provider,
         )
     return validate_skill_package(Path(parsed.path))
+
+
+def _plasticity_output(parsed: argparse.Namespace) -> Path:
+    if bool(parsed.output) == bool(parsed.publish_dir):
+        raise ValueError("train-plasticity-lora requires exactly one of --output or --publish-dir")
+    if parsed.output:
+        return Path(parsed.output)
+    return Path(parsed.publish_dir) / parsed.skill_id
 
 
 def _default_dynamic_runtime_path(repo: Path, skills_dir: Path, task: str) -> Path:

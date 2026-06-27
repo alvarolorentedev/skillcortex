@@ -1,15 +1,70 @@
 from __future__ import annotations
 
 import json
+import shutil
 import tempfile
-import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
-from ..shared.config import base_config
+from huggingface_hub import snapshot_download
 
-def download_file(url: str, destination: Path) -> None:
-    with urllib.request.urlopen(url) as response:
-        destination.write_bytes(response.read())
+from ..shared.config import base_config
+from ..shared.hashing import sha256
+
+
+ADAPTER_FILES = ("adapters.safetensors", "adapter_model.safetensors")
+
+
+def parse_hf_source(source: str) -> tuple[str, str, str]:
+    if not source.startswith("hf://"):
+        raise ValueError("only hf://owner/repo sources are supported")
+    value = source.removeprefix("hf://").strip("/")
+    repo, _, revision = value.partition("@")
+    if repo.count("/") != 1:
+        raise ValueError("hf source must be hf://owner/repo[@revision]")
+    owner, name = repo.split("/", 1)
+    return owner, name, revision or "main"
+
+
+def resolve_hf_lora_cache(
+    *,
+    source: str,
+    cache_dir: Path,
+    force: bool = False,
+    max_download_bytes: int | None = None,
+) -> Path:
+    config = base_config()
+    owner, repo_name, revision = parse_hf_source(source)
+    allowed = list(config.get("allowed_hf_publishers") or [])
+    if allowed and owner not in allowed:
+        raise ValueError(f"publisher is not allowed: {owner}")
+
+    target = cache_dir.resolve() / "hf" / owner / repo_name / revision
+    if (target / "source.json").exists() and not force:
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging_root = Path(
+        tempfile.mkdtemp(prefix=f".{repo_name}-{revision}-", dir=target.parent)
+    )
+    try:
+        snapshot_download(
+            f"{owner}/{repo_name}",
+            revision=revision,
+            local_dir=staging_root,
+            allow_patterns=["adapter_config.json", *ADAPTER_FILES],
+        )
+        adapter = _adapter_file(staging_root)
+        limit = int(max_download_bytes or config.get("max_download_bytes") or 0)
+        if limit and adapter.stat().st_size > limit and not force:
+            raise ValueError("download exceeds max_download_bytes")
+        _write_source_json(staging_root, source, owner=owner, repo_name=repo_name, revision=revision)
+    except Exception:
+        shutil.rmtree(staging_root)
+        raise
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.move(str(staging_root), str(target))
+    return target
 
 
 def import_lora(
@@ -22,25 +77,25 @@ def import_lora(
     eval_dataset: Path,
     version: str = "0.1.0",
     description: str | None = None,
+    cache_dir: Path | None = None,
+    max_download_bytes: int | None = None,
     force: bool = False,
 ) -> dict:
     from . import package_skill
 
-    if not source.startswith("hf://"):
-        raise ValueError("only hf://owner/repo sources are supported")
-    repo = source.removeprefix("hf://").strip("/")
-    if repo.count("/") != 1:
-        raise ValueError("hf source must be hf://owner/repo")
-    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    cache_root = cache_dir or Path(base_config().get("lora_cache_dir") or ".skillcortex/lora-cache")
+    cached = resolve_hf_lora_cache(
+        source=source,
+        cache_dir=cache_root,
+        force=force,
+        max_download_bytes=max_download_bytes,
+    )
     with tempfile.TemporaryDirectory(prefix=f"skillcortex-import-{skill_id}-") as directory:
         root = Path(directory)
         adapter = root / "adapter"
         adapter.mkdir()
-        download_file(f"{base_url}/adapter_config.json", adapter / "adapter_config.json")
-        try:
-            download_file(f"{base_url}/adapters.safetensors", adapter / "adapters.safetensors")
-        except Exception:
-            download_file(f"{base_url}/adapter_model.safetensors", adapter / "adapters.safetensors")
+        shutil.copy2(cached / "adapter_config.json", adapter / "adapter_config.json")
+        shutil.copy2(_adapter_file(cached), adapter / "adapters.safetensors")
         config = base_config()
         (adapter / "metadata.json").write_text(
             json.dumps(
@@ -74,4 +129,34 @@ def import_lora(
             source_artifacts={"source": source},
         )
     result["source"] = source
+    result["cache_path"] = str(cached)
     return result
+
+
+def _adapter_file(root: Path) -> Path:
+    for name in ADAPTER_FILES:
+        path = root / name
+        if path.exists():
+            return path
+    raise FileNotFoundError(f"adapter weights not found in cache: {root}")
+
+
+def _write_source_json(root: Path, source: str, *, owner: str, repo_name: str, revision: str) -> None:
+    files = {}
+    for path in sorted(root.iterdir()):
+        if path.is_file() and path.name != "source.json":
+            files[path.name] = {"bytes": path.stat().st_size, "sha256": sha256(path)}
+    (root / "source.json").write_text(
+        json.dumps(
+            {
+                "source": source,
+                "repo_id": f"{owner}/{repo_name}",
+                "revision": revision,
+                "cached_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "files": files,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
