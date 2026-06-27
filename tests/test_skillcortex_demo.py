@@ -73,7 +73,7 @@ def test_skillcortex_demo_script_runs_end_to_end(tmp_path):
     infer_step = next(step for step in summary["steps"] if step["name"] == "infer_dry_run")
     assert infer_step["status"] == "dry-run"
     agent_step = next(step for step in summary["steps"] if step["name"] == "agent_run_dry_run")
-    assert agent_step["status"] == "complete"
+    assert agent_step["status"] == "dry-run"
 
 
 def test_arbitrary_skill_smoke_script_runs_default_no_model_loop(tmp_path):

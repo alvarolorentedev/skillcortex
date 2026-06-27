@@ -10,7 +10,7 @@ from .runtime import SkillRuntime
 
 
 WRITE_MODES = ("off", "confirm", "on")
-SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache"}
+SKIP_DIRS = {".git", ".venv", ".skillcortex", "__pycache__", ".pytest_cache", ".ruff_cache"}
 
 
 class ToolSandbox:
@@ -33,7 +33,7 @@ class ToolSandbox:
         path = self._resolve(relative_path)
         return path.read_text()[:max_chars]
 
-    def materialize_action(self, action: dict[str, Any]) -> dict[str, Any]:
+    def materialize_action(self, action: dict[str, Any], *, review_path: Path | None = None) -> dict[str, Any]:
         kind = action.get("kind") or "proposed_diff"
         if kind == "no_change":
             return {
@@ -41,14 +41,26 @@ class ToolSandbox:
                 "write_status": "skipped",
                 "files_changed": [],
                 "diff": "",
+                "review_artifact_path": None,
                 "summary": action.get("summary") or "No change proposed.",
             }
         if kind == "proposed_diff":
+            diff = action.get("diff") or ""
+            files_changed = _files_from_unified_diff(diff)
+            artifact_path = None
+            write_status = "proposed"
+            if self.writes_mode == "on":
+                _apply_unified_diff(self.repo, diff)
+                write_status = "applied"
+            elif self.writes_mode == "confirm":
+                artifact_path = _write_review_artifact(review_path, diff)
+                write_status = "review_required"
             return {
                 "kind": kind,
-                "write_status": "not_applicable",
-                "files_changed": [],
-                "diff": action.get("diff") or "",
+                "write_status": write_status,
+                "files_changed": files_changed,
+                "diff": diff,
+                "review_artifact_path": str(artifact_path) if artifact_path is not None else None,
                 "summary": action.get("summary") or "Proposed diff.",
             }
         if kind != "file_replace":
@@ -62,19 +74,67 @@ class ToolSandbox:
         path = self._resolve(relative_path)
         before = path.read_text() if path.exists() else ""
         diff = _unified_diff(before, content, relative_path)
+        artifact_path = None
         write_status = "proposed"
         if self.writes_mode == "on":
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
             write_status = "applied"
         elif self.writes_mode == "confirm":
-            write_status = "approval_required"
+            artifact_path = _write_review_artifact(review_path, diff)
+            write_status = "review_required"
         return {
             "kind": kind,
             "write_status": write_status,
             "files_changed": [relative_path],
             "diff": diff,
+            "review_artifact_path": str(artifact_path) if artifact_path is not None else None,
             "summary": action.get("summary") or f"Replace {relative_path}.",
+        }
+
+    def materialize_actions(self, actions: list[dict[str, Any]], *, review_path: Path | None = None) -> dict[str, Any]:
+        if not actions:
+            return {
+                "kind": "no_change",
+                "write_status": "skipped",
+                "files_changed": [],
+                "diff": "",
+                "review_artifact_path": None,
+                "summary": "No actions proposed.",
+                "actions": [],
+            }
+        parts = []
+        files_changed: list[str] = []
+        write_status = "skipped"
+        summaries: list[str] = []
+        action_results: list[dict[str, Any]] = []
+        review_artifact_path = None
+        for action in actions:
+            result = self.materialize_action(action)
+            action_results.append(result)
+            if result["diff"]:
+                parts.append(result["diff"])
+            for path in result["files_changed"]:
+                if path not in files_changed:
+                    files_changed.append(path)
+            if result["summary"]:
+                summaries.append(result["summary"])
+            write_status = _merge_write_status(write_status, result["write_status"])
+        diff = "\n".join(part.rstrip("\n") for part in parts if part).strip()
+        if diff:
+            diff += "\n"
+        if self.writes_mode == "confirm" and review_path is not None and diff:
+            artifact = _write_review_artifact(review_path, diff)
+            review_artifact_path = str(artifact) if artifact is not None else None
+            write_status = "review_required"
+        return {
+            "kind": "action_list" if len(actions) > 1 else action_results[0]["kind"],
+            "write_status": write_status,
+            "files_changed": files_changed,
+            "diff": diff,
+            "review_artifact_path": review_artifact_path,
+            "summary": " ".join(summaries).strip() or f"Materialized {len(actions)} action(s).",
+            "actions": actions,
         }
 
     def _resolve(self, relative_path: str) -> Path:
@@ -110,6 +170,7 @@ def run_agent(
         "repo": str(repo_root),
         "runtime": str(runtime_path.resolve()),
         "writes_mode": writes,
+        "execution_mode": "dry-run-route-plan-only" if dry_run else f"write-mode-{writes}",
         "test_command": test_command,
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "steps": [],
@@ -118,9 +179,9 @@ def run_agent(
     repo_files = sandbox.list_files()
     read_targets = _default_read_targets(repo_files)
     repo_context = {path: sandbox.read_file(path) for path in read_targets}
-    trace["steps"].append(
+    _append_step(
+        trace,
         {
-            "step_index": len(trace["steps"]) + 1,
             "step_type": "inspect_repo",
             "selected_skills": [],
             "route_type": None,
@@ -130,7 +191,7 @@ def run_agent(
             "files_changed": [],
             "status": "complete",
             "result_summary": f"Inspected {len(repo_files)} files and read {len(read_targets)} files.",
-        }
+        },
     )
 
     plan_result = runtime.infer(
@@ -146,16 +207,26 @@ def run_agent(
         task_type="python_generation",
         dry_run=dry_run,
     )
-    trace["steps"].append(_inference_step("plan", plan_result, files_read=read_targets))
+    _append_step(
+        trace,
+        _inference_step(
+            "plan",
+            plan_result,
+            files_read=read_targets,
+            mode_label="route/plan only" if dry_run else None,
+        ),
+    )
 
     patch_target = _choose_patch_target(repo_files)
     patch_result = runtime.infer(
         messages=_step_messages(
             task,
             (
-                "Produce a JSON action for the next coding step. "
-                "Return one JSON object with kind=file_replace, proposed_diff, or no_change. "
-                f"Prefer editing {patch_target}."
+                "Produce JSON-only coding actions for the next step. "
+                "Return either a JSON array of action objects or an object with an 'actions' array. "
+                "Each action must use kind=file_replace, proposed_diff, or no_change. "
+                "Use explicit path and content fields for file_replace actions whenever possible. "
+                f"Prefer editing {patch_target} only when no better path is clear."
             ),
             repo_files=repo_files,
             repo_context=repo_context,
@@ -163,8 +234,16 @@ def run_agent(
         task_type="python_generation",
         dry_run=dry_run,
     )
-    patch_materialization = _materialize_inference_action(sandbox, patch_result, patch_target, dry_run)
-    trace["steps"].append(
+    review_path = _default_review_path(repo_root, trace["run_id"]) if writes == "confirm" and not dry_run else None
+    patch_materialization = _materialize_inference_action(
+        sandbox,
+        patch_result,
+        patch_target,
+        dry_run,
+        review_path=review_path,
+    )
+    _append_step(
+        trace,
         _inference_step(
             "propose_patch",
             patch_result,
@@ -174,19 +253,15 @@ def run_agent(
             tool_result_summary=patch_materialization["summary"],
             proposed_diff=patch_materialization["diff"],
             write_status=patch_materialization["write_status"],
-        )
+            review_artifact_path=patch_materialization.get("review_artifact_path"),
+            mode_label="route/plan only" if dry_run else None,
+        ),
     )
 
-    validation = _run_validation_command(test_command, repo_root) if test_command else {
-        "status": "skipped",
-        "command": None,
-        "exit_code": None,
-        "stdout": "",
-        "stderr": "",
-    }
-    trace["steps"].append(
+    validation = _validation_result_for_mode(test_command, repo_root, dry_run)
+    _append_step(
+        trace,
         {
-            "step_index": len(trace["steps"]) + 1,
             "step_type": "run_validation",
             "selected_skills": [],
             "route_type": None,
@@ -198,7 +273,7 @@ def run_agent(
             "validation_exit_code": validation["exit_code"],
             "status": validation["status"],
             "result_summary": (validation["stderr"] or validation["stdout"] or validation["status"])[:400],
-        }
+        },
     )
 
     debug_materialization = None
@@ -207,8 +282,10 @@ def run_agent(
             messages=_step_messages(
                 task,
                 (
-                    "Debug the failed validation and propose the next code change as JSON. "
-                    "Return one JSON object with kind=file_replace, proposed_diff, or no_change."
+                    "Debug the failed validation and propose the next code change as JSON-only actions. "
+                    "Return either a JSON array of action objects or an object with an 'actions' array. "
+                    "Each action must use kind=file_replace, proposed_diff, or no_change. "
+                    "Use explicit path and content fields for file_replace actions whenever possible."
                 ),
                 repo_files=repo_files,
                 repo_context=repo_context,
@@ -217,8 +294,16 @@ def run_agent(
             task_type="debugging",
             dry_run=dry_run,
         )
-        debug_materialization = _materialize_inference_action(sandbox, debug_result, patch_target, dry_run)
-        trace["steps"].append(
+        debug_review_path = _default_review_path(repo_root, f"{trace['run_id']}-debug") if writes == "confirm" and not dry_run else None
+        debug_materialization = _materialize_inference_action(
+            sandbox,
+            debug_result,
+            patch_target,
+            dry_run,
+            review_path=debug_review_path,
+        )
+        _append_step(
+            trace,
             _inference_step(
                 "debug_failure",
                 debug_result,
@@ -228,22 +313,30 @@ def run_agent(
                 tool_result_summary=debug_materialization["summary"],
                 proposed_diff=debug_materialization["diff"],
                 write_status=debug_materialization["write_status"],
-            )
+                review_artifact_path=debug_materialization.get("review_artifact_path"),
+            ),
         )
 
-    final_summary = _final_summary(trace["steps"], validation, writes)
+    final_status = _final_status(trace["steps"], validation, dry_run)
+    final_summary = _final_summary(trace["steps"], validation, writes, dry_run=dry_run)
+    final_materialization = debug_materialization or patch_materialization
     trace["ended_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    trace["status"] = "complete"
+    trace["status"] = final_status
     trace["final_summary"] = final_summary
+    trace["review_artifact_path"] = final_materialization.get("review_artifact_path")
+    trace["generated_patch"] = final_materialization["diff"]
+    trace["generated_actions"] = final_materialization.get("actions")
+    trace["validation"] = validation
     if trace_out is not None:
         trace_out = trace_out.resolve()
         trace_out.parent.mkdir(parents=True, exist_ok=True)
         trace_out.write_text(json.dumps(trace, indent=2) + "\n")
 
     return {
-        "status": "complete",
+        "status": final_status,
         "task": task,
         "writes_mode": writes,
+        "execution_mode": trace["execution_mode"],
         "repo": str(repo_root),
         "runtime": str(runtime_path.resolve()),
         "trace_path": str(trace_out.resolve()) if trace_out is not None else None,
@@ -251,7 +344,9 @@ def run_agent(
         "final_summary": final_summary,
         "steps": trace["steps"],
         "validation": validation,
-        "last_proposed_diff": (debug_materialization or patch_materialization)["diff"],
+        "review_artifact_path": final_materialization.get("review_artifact_path"),
+        "generated_actions": final_materialization.get("actions"),
+        "last_proposed_diff": final_materialization["diff"],
     }
 
 
@@ -267,28 +362,56 @@ def _default_read_targets(files: list[str]) -> list[str]:
     return preferred[:5]
 
 
-def _extract_action(generation: str, default_path: str) -> dict[str, Any]:
-    text = (generation or "").strip()
+def _extract_actions(generation: str, default_path: str) -> list[dict[str, Any]]:
+    text = _strip_code_fence((generation or "").strip())
     if not text:
-        return {"kind": "no_change", "summary": "Empty model output."}
+        return [{"kind": "no_change", "summary": "Empty model output."}]
     try:
         value = json.loads(text)
+        if isinstance(value, dict) and isinstance(value.get("actions"), list):
+            return _normalize_actions(value["actions"], default_path)
+        if isinstance(value, list):
+            return _normalize_actions(value, default_path)
         if isinstance(value, dict):
-            if value.get("kind") == "file_replace" and "path" not in value:
-                value["path"] = default_path
-            return value
+            return _normalize_actions([value], default_path)
     except json.JSONDecodeError:
         pass
-    return {
-        "kind": "proposed_diff",
-        "diff": text,
-        "summary": f"Unstructured model output for {default_path}.",
-    }
+    if _looks_like_unified_diff(text):
+        return [{
+            "kind": "proposed_diff",
+            "diff": text,
+            "summary": f"Unstructured diff output for {default_path}.",
+        }]
+    content = _extract_code_content(text)
+    return [{
+        "kind": "file_replace",
+        "path": default_path,
+        "content": content,
+        "summary": f"Unstructured model output converted to file update for {default_path}.",
+    }]
 
 
-def _final_summary(steps: list[dict[str, Any]], validation: dict[str, Any], writes: str) -> str:
+def _normalize_actions(actions: list[Any], default_path: str) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for item in actions:
+        if not isinstance(item, dict):
+            continue
+        action = dict(item)
+        if action.get("kind") == "file_replace" and "path" not in action:
+            action["path"] = default_path
+        normalized.append(action)
+    return normalized or [{"kind": "no_change", "summary": "Empty action list."}]
+
+
+def _final_summary(steps: list[dict[str, Any]], validation: dict[str, Any], writes: str, *, dry_run: bool) -> str:
     selected = [tuple(step.get("selected_skills") or []) for step in steps if step.get("selected_skills") is not None]
     unique = [list(item) for index, item in enumerate(selected) if item not in selected[:index]]
+    if dry_run:
+        return (
+            f"Executed {len(steps)} steps in route/plan only dry-run mode. "
+            f"Observed {len(unique)} distinct skill selections. "
+            "Generation, writes, and validation were skipped."
+        )
     return (
         f"Executed {len(steps)} steps with writes mode '{writes}'. "
         f"Observed {len(unique)} distinct skill selections. "
@@ -306,9 +429,10 @@ def _inference_step(
     tool_result_summary: str | None = None,
     proposed_diff: str | None = None,
     write_status: str | None = None,
+    review_artifact_path: str | None = None,
+    mode_label: str | None = None,
 ) -> dict[str, Any]:
     return {
-        "step_index": 0,
         "step_type": step_type,
         "selected_skills": result.get("selected_skills") or [],
         "route_type": result.get("route_type"),
@@ -321,6 +445,8 @@ def _inference_step(
         "result_summary": tool_result_summary or result.get("generation") or result.get("reason"),
         "proposed_diff": proposed_diff,
         "write_status": write_status,
+        "review_artifact_path": review_artifact_path,
+        "mode_label": mode_label,
     }
 
 
@@ -329,6 +455,8 @@ def _materialize_inference_action(
     result: dict[str, Any],
     default_path: str,
     dry_run: bool,
+    *,
+    review_path: Path | None = None,
 ) -> dict[str, Any]:
     if dry_run:
         return {
@@ -336,10 +464,213 @@ def _materialize_inference_action(
             "write_status": "dry-run",
             "files_changed": [],
             "diff": "",
-            "summary": "Dry-run skipped artifact materialization.",
+            "review_artifact_path": None,
+            "summary": "Dry-run route/plan only: skipped artifact materialization.",
+            "actions": [],
         }
-    action = _extract_action(result.get("generation") or "", default_path)
-    return sandbox.materialize_action(action)
+    actions = _extract_actions(result.get("generation") or "", default_path)
+    return sandbox.materialize_actions(actions, review_path=review_path)
+
+
+def _append_step(trace: dict[str, Any], step: dict[str, Any]) -> None:
+    step["step_index"] = len(trace["steps"]) + 1
+    trace["steps"].append(step)
+
+
+def _default_review_path(repo: Path, run_id: str) -> Path:
+    return repo / ".skillcortex" / "reviews" / f"{run_id}.patch"
+
+
+def _write_review_artifact(review_path: Path | None, diff: str) -> Path | None:
+    if review_path is None or not diff:
+        return None
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    review_path.write_text(diff)
+    return review_path.resolve()
+
+
+def _merge_write_status(current: str, new: str) -> str:
+    priority = {
+        "skipped": 0,
+        "not_applicable": 0,
+        "proposed": 1,
+        "review_required": 2,
+        "approval_required": 2,
+        "applied": 3,
+    }
+    return new if priority.get(new, 0) >= priority.get(current, 0) else current
+
+
+def _files_from_unified_diff(diff: str) -> list[str]:
+    files: list[str] = []
+    for line in diff.splitlines():
+        if line.startswith("+++ b/"):
+            path = line[6:]
+            if path and path not in files:
+                files.append(path)
+    return files
+
+
+def _looks_like_unified_diff(text: str) -> bool:
+    lines = text.splitlines()
+    if len(lines) < 3:
+        return False
+    return lines[0].startswith("--- ") and lines[1].startswith("+++ ") and any(
+        line.startswith("@@") for line in lines[2:]
+    )
+
+
+def _extract_code_content(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```") and stripped.endswith("```"):
+        lines = stripped.splitlines()
+        if len(lines) >= 3:
+            return "\n".join(lines[1:-1]).strip() + "\n"
+    return stripped + ("\n" if stripped and not stripped.endswith("\n") else "")
+
+
+def _strip_code_fence(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```") and stripped.endswith("```"):
+        lines = stripped.splitlines()
+        if len(lines) >= 3:
+            return "\n".join(lines[1:-1]).strip()
+    return stripped
+
+
+def _apply_unified_diff(repo: Path, diff: str) -> None:
+    if not diff.strip():
+        return
+    patches = _parse_unified_diff(diff)
+    if not patches:
+        raise ValueError("proposed_diff action requires a unified diff payload")
+    for patch in patches:
+        _apply_single_patch(repo, patch)
+
+
+def _parse_unified_diff(diff: str) -> list[dict[str, Any]]:
+    lines = diff.splitlines()
+    index = 0
+    patches: list[dict[str, Any]] = []
+    while index < len(lines):
+        line = lines[index]
+        if not line.startswith("--- "):
+            index += 1
+            continue
+        if index + 1 >= len(lines) or not lines[index + 1].startswith("+++ "):
+            raise ValueError("malformed unified diff: missing destination header")
+        from_file = lines[index][4:]
+        to_file = lines[index + 1][4:]
+        index += 2
+        hunks: list[dict[str, Any]] = []
+        while index < len(lines) and lines[index].startswith("@@"):
+            header = lines[index]
+            old_range, new_range = header.split("@@")[1].strip().split(" ")
+            old_start, old_length = _parse_range(old_range)
+            new_start, new_length = _parse_range(new_range)
+            index += 1
+            hunk_lines: list[tuple[str, str]] = []
+            while index < len(lines):
+                current = lines[index]
+                if current.startswith("@@") or current.startswith("--- "):
+                    break
+                marker = current[0] if current else " "
+                value = current[1:] if current else ""
+                if marker not in {" ", "+", "-"}:
+                    raise ValueError(f"unsupported diff line: {current}")
+                hunk_lines.append((marker, value))
+                index += 1
+            hunks.append(
+                {
+                    "old_start": old_start,
+                    "old_length": old_length,
+                    "new_start": new_start,
+                    "new_length": new_length,
+                    "lines": hunk_lines,
+                }
+            )
+        patches.append({"from_file": from_file, "to_file": to_file, "hunks": hunks})
+    return patches
+
+
+def _parse_range(token: str) -> tuple[int, int]:
+    token = token[1:]
+    if "," in token:
+        start, length = token.split(",", 1)
+        return int(start), int(length)
+    return int(token), 1
+
+
+def _apply_single_patch(repo: Path, patch: dict[str, Any]) -> None:
+    relative_path = _normalize_diff_path(patch["to_file"])
+    path = (repo / relative_path).resolve()
+    if repo not in (path, *path.parents):
+        raise ValueError(f"patch escapes repo root: {relative_path}")
+    original_exists = path.exists()
+    original_text = path.read_text() if original_exists else ""
+    original_lines = original_text.splitlines()
+    result_lines: list[str] = []
+    source_index = 0
+    for hunk in patch["hunks"]:
+        target_index = max(hunk["old_start"] - 1, 0)
+        result_lines.extend(original_lines[source_index:target_index])
+        source_index = target_index
+        for marker, value in hunk["lines"]:
+            if marker == " ":
+                if source_index >= len(original_lines) or original_lines[source_index] != value:
+                    raise ValueError(f"diff context mismatch for {relative_path}")
+                result_lines.append(value)
+                source_index += 1
+            elif marker == "-":
+                if source_index >= len(original_lines) or original_lines[source_index] != value:
+                    raise ValueError(f"diff removal mismatch for {relative_path}")
+                source_index += 1
+            elif marker == "+":
+                result_lines.append(value)
+    result_lines.extend(original_lines[source_index:])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    trailing_newline = original_text.endswith("\n") if original_exists else True
+    path.write_text("\n".join(result_lines) + ("\n" if result_lines or trailing_newline else ""))
+
+
+def _normalize_diff_path(path: str) -> str:
+    normalized = path.strip()
+    if normalized.startswith("a/") or normalized.startswith("b/"):
+        normalized = normalized[2:]
+    return normalized
+
+
+def _validation_result_for_mode(command: str | None, repo: Path, dry_run: bool) -> dict[str, Any]:
+    if dry_run:
+        return {
+            "status": "skipped",
+            "command": command,
+            "exit_code": None,
+            "stdout": "",
+            "stderr": "dry-run route/plan only: validation skipped",
+        }
+    if not command:
+        return {
+            "status": "skipped",
+            "command": None,
+            "exit_code": None,
+            "stdout": "",
+            "stderr": "",
+        }
+    return _run_validation_command(command, repo)
+
+
+def _final_status(steps: list[dict[str, Any]], validation: dict[str, Any], dry_run: bool) -> str:
+    if dry_run:
+        return "dry-run"
+    if validation["status"] == "failed":
+        return "validation_failed"
+    write_statuses = {step.get("write_status") for step in steps if step.get("write_status")}
+    if "applied" in write_statuses:
+        return "applied"
+    if "review_required" in write_statuses:
+        return "review_required"
+    return "complete"
 
 
 def _run_validation_command(command: str, repo: Path) -> dict[str, Any]:

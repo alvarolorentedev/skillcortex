@@ -312,7 +312,7 @@ def _parser() -> argparse.ArgumentParser:
         **_parser_kwargs(
             "Run the bounded local agent on top of a runtime bundle.",
             "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --writes on --test-command \"pytest -q\"",
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode on --test-command \"pytest -q\"",
         ),
     )
     agent_commands = agent.add_subparsers(dest="agent_command", required=True)
@@ -321,13 +321,13 @@ def _parser() -> argparse.ArgumentParser:
         **_parser_kwargs(
             "Inspect a local repository, propose a change, and optionally validate it.",
             "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --writes confirm --trace-out /tmp/skillcortex-demo/agent-trace.json",
+            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode confirm --trace-out /tmp/skillcortex-demo/agent-trace.json",
         ),
     )
     agent_run.add_argument("--runtime", required=True)
     agent_run.add_argument("--repo", required=True)
     agent_run.add_argument("--task", required=True)
-    agent_run.add_argument("--writes", choices=WRITE_MODES, default="confirm")
+    agent_run.add_argument("--writes", "--write-mode", dest="writes", choices=WRITE_MODES, default="confirm")
     agent_run.add_argument("--test-command")
     agent_run.add_argument("--trace-out")
     agent_run.add_argument("--dry-run", action="store_true")
