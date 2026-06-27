@@ -11,6 +11,9 @@ from .runtime import SkillRuntime
 
 WRITE_MODES = ("off", "confirm", "on")
 SKIP_DIRS = {".git", ".venv", ".skillcortex", "__pycache__", ".pytest_cache", ".ruff_cache"}
+ARTIFACT_DIR_PREFIXES = ("datasets/", "runtime/", "skills/", "tmp/")
+CODE_FILE_SUFFIXES = (".py", ".pyi", ".ts", ".tsx", ".js", ".jsx")
+TEXT_FILE_SUFFIXES = CODE_FILE_SUFFIXES + (".md", ".txt", ".json", ".yaml", ".yml")
 
 
 class ToolSandbox:
@@ -217,7 +220,7 @@ def run_agent(
         ),
     )
 
-    patch_target = _choose_patch_target(repo_files)
+    patch_target = _choose_patch_target(repo_files, task)
     patch_result = runtime.infer(
         messages=_step_messages(
             task,
@@ -226,7 +229,8 @@ def run_agent(
                 "Return either a JSON array of action objects or an object with an 'actions' array. "
                 "Each action must use kind=file_replace, proposed_diff, or no_change. "
                 "Use explicit path and content fields for file_replace actions whenever possible. "
-                f"Prefer editing {patch_target} only when no better path is clear."
+                "Do not rewrite runtime bundles, datasets, skill packages, or other generated artifacts unless the task explicitly asks for that. "
+                f"Prefer editing {patch_target} only when no better path is clear, and create a new source file when the repo has no suitable code target."
             ),
             repo_files=repo_files,
             repo_context=repo_context,
@@ -285,7 +289,8 @@ def run_agent(
                     "Debug the failed validation and propose the next code change as JSON-only actions. "
                     "Return either a JSON array of action objects or an object with an 'actions' array. "
                     "Each action must use kind=file_replace, proposed_diff, or no_change. "
-                    "Use explicit path and content fields for file_replace actions whenever possible."
+                    "Use explicit path and content fields for file_replace actions whenever possible. "
+                    "Do not rewrite runtime bundles, datasets, skill packages, or other generated artifacts unless the task explicitly asks for that."
                 ),
                 repo_files=repo_files,
                 repo_context=repo_context,
@@ -350,16 +355,42 @@ def run_agent(
     }
 
 
-def _choose_patch_target(files: list[str]) -> str:
-    for path in files:
+def _choose_patch_target(files: list[str], task: str) -> str:
+    for path in _preferred_source_files(files):
         if path.endswith(".py") and not path.startswith("tests/"):
             return path
-    return files[0] if files else "README.md"
+    preferred = _preferred_source_files(files)
+    if preferred:
+        return preferred[0]
+    return _default_new_source_path(task)
 
 
 def _default_read_targets(files: list[str]) -> list[str]:
-    preferred = [path for path in files if path.endswith((".py", ".md", ".txt", ".json", ".yaml", ".yml"))]
+    preferred = _preferred_source_files(files)
     return preferred[:5]
+
+
+def _preferred_source_files(files: list[str]) -> list[str]:
+    source_files = [
+        path for path in files
+        if path.endswith(TEXT_FILE_SUFFIXES)
+        and not _is_artifact_path(path)
+    ]
+    if source_files:
+        code_files = [path for path in source_files if path.endswith(CODE_FILE_SUFFIXES)]
+        return code_files + [path for path in source_files if path not in code_files]
+    return []
+
+
+def _is_artifact_path(path: str) -> bool:
+    return path.startswith(ARTIFACT_DIR_PREFIXES)
+
+
+def _default_new_source_path(task: str) -> str:
+    lowered = task.lower()
+    if any(token in lowered for token in ("fastapi", "endpoint", "router", "api")):
+        return "app.py"
+    return "main.py"
 
 
 def _extract_actions(generation: str, default_path: str) -> list[dict[str, Any]]:

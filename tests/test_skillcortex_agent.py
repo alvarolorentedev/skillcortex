@@ -204,6 +204,17 @@ def _toy_repo(tmp_path):
     return repo
 
 
+def _artifact_only_repo(tmp_path):
+    repo = tmp_path / "artifact-repo"
+    (repo / "datasets" / "fastapi_contract").mkdir(parents=True)
+    (repo / "runtime" / "fastapi_contract_runtime").mkdir(parents=True)
+    (repo / "skills" / "fastapi_contract").mkdir(parents=True)
+    (repo / "tmp").mkdir(parents=True)
+    (repo / "datasets" / "fastapi_contract" / "dataset-report.json").write_text('{"status": "ok"}\n')
+    (repo / "runtime" / "fastapi_contract_runtime" / "README.md").write_text("runtime bundle\n")
+    return repo
+
+
 def test_agent_run_records_dynamic_skill_switch_and_trace(tmp_path, monkeypatch, capsys):
     repo = _toy_repo(tmp_path)
     trace = tmp_path / "trace.json"
@@ -533,3 +544,43 @@ def test_agent_run_can_apply_multiple_explicit_actions_when_writes_on(tmp_path, 
     assert result["generated_actions"][0]["path"] == "app.py"
     assert result["generated_actions"][1]["path"] == "schemas.py"
     assert set(result["steps"][2]["files_changed"]) == {"app.py", "schemas.py"}
+
+
+def test_agent_run_avoids_artifact_files_when_repo_has_no_source_files(tmp_path, monkeypatch, capsys):
+    repo = _artifact_only_repo(tmp_path)
+    fake_runtime = FakeRawCodeRuntime()
+
+    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr(
+        "skillcortex.agent._run_validation_command",
+        lambda command, repo: {
+            "status": "skipped",
+            "command": command,
+            "exit_code": None,
+            "stdout": "",
+            "stderr": "",
+        },
+    )
+
+    assert (
+        main(
+            [
+                "agent",
+                "run",
+                "--runtime",
+                str(tmp_path / "runtime"),
+                "--repo",
+                str(repo),
+                "--task",
+                "Create a FastAPI endpoint for creating a user with Pydantic validation.",
+                "--write-mode",
+                "on",
+            ]
+        )
+        == 0
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert repo.joinpath("app.py").read_text() == "def answer():\n    return 42\n"
+    assert repo.joinpath("datasets", "fastapi_contract", "dataset-report.json").read_text() == '{"status": "ok"}\n'
+    assert result["generated_actions"][0]["path"] == "app.py"
+    assert result["steps"][2]["files_changed"] == ["app.py"]
