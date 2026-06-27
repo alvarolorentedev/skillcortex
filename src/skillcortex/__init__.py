@@ -1,4 +1,5 @@
 """SkillCortex product façade."""
 
-from .backends.legacy import legacy_version as __version__
+__version__ = "0.1.0"
+
 from .cli import main

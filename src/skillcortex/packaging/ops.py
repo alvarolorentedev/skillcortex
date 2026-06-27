@@ -6,27 +6,14 @@ import subprocess
 import time
 from pathlib import Path
 
-from ..backends.legacy import (
-    EvaluationResult,
-    evaluator_backend,
-    infer,
-    load_jsonl,
-    research_metadata,
-    saved_parameter_count,
-    select_for_skill,
-    trainer_backend,
-    training_config,
-    write_mlx_dataset,
-)
+from ..runtime.generation import infer
+from ..shared.config import training_config
 from ..training import evaluate_product_skill_adapter, train_product_skill_to_run_directory
-
-
-aggregate_results = evaluator_backend.aggregate_results
-extract_code = evaluator_backend.extract_code
-fuzzy_match = evaluator_backend.fuzzy_match
-python_syntax_valid = evaluator_backend.python_syntax_valid
-run_fixture = evaluator_backend.run_fixture
-build_skill_command = trainer_backend.build_skill_command
+from ..training.commands import build_skill_command, saved_parameter_count, training_metadata
+from ..training.data import load_jsonl, select_for_skill, write_mlx_dataset
+from ..training.metrics import aggregate_results, extract_code, fuzzy_match, python_syntax_valid
+from ..training.execution import run_fixture
+from ..training.types import EvaluationResult
 
 
 def train_generic_skill_to_run_directory(
@@ -81,7 +68,7 @@ def train_skill_to_run_directory(
     command = build_skill_command(skill, dataset_directory, adapter_directory, seed=seed)
     start = time.perf_counter()
     subprocess.run(command, check=True)
-    metadata = research_metadata(
+    metadata = training_metadata(
         skill,
         examples,
         rank=8,

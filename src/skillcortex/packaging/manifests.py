@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 from .. import __version__
-from ..backends.legacy import base_config, training_config
+from ..shared.config import base_config, training_config
 from ..shared.hashing import sha256
 from .artifacts import line_count
 from .composition import default_composition

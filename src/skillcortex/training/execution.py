@@ -1,22 +1,17 @@
+from __future__ import annotations
+
 import importlib.util
-import json
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from .schemas import ExecutionFixture
-
-
-def write_json(path: str | Path, value: object) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+from .types import ExecutionFixture
 
 
 def run_fixture(fixture: ExecutionFixture, generated_code: str) -> tuple[bool, str]:
-    with tempfile.TemporaryDirectory(prefix="skill-lattice-eval-") as directory:
+    with tempfile.TemporaryDirectory(prefix="skillcortex-eval-") as directory:
         root = Path(directory)
         generated_filename = (
             "test_generated.py" if "solution.py" in fixture.files else "solution.py"

@@ -10,11 +10,11 @@ from .backends import (
     generate_text,
     load_model,
     python_syntax_valid,
-    research_metadata,
     run_fixture,
     saved_parameter_count,
     training_command,
     training_config,
+    training_metadata,
 )
 from .data import load_product_jsonl
 from .reporting import evaluation_report
@@ -44,7 +44,7 @@ def train_product_skill_to_run_directory(
     command = training_command(dataset_directory, adapter_directory, rank=8, seed=seed)
     start = time.perf_counter()
     subprocess.run(command, check=True)
-    metadata = research_metadata(
+    metadata = training_metadata(
         skill_id,
         examples,
         rank=8,

@@ -1,9 +1,10 @@
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Iterable
 
-from ..contracts import TASK_TYPES
-from .backends import ExecutionFixture
+from ..contracts import KNOWN_SKILLS, TASK_TYPES
+from .types import ExecutionFixture
 
 
 @dataclass(slots=True)
@@ -66,6 +67,28 @@ def load_product_jsonl(path: str | Path) -> list[ProductTrainingExample]:
     return examples
 
 
+def load_jsonl(path: str | Path) -> list[ProductTrainingExample]:
+    return load_product_jsonl(path)
+
+
+def select_for_skill(
+    examples: Iterable[ProductTrainingExample], skill: str
+) -> list[ProductTrainingExample]:
+    if skill not in KNOWN_SKILLS:
+        raise ValueError(f"unknown skill: {skill}")
+    return [example for example in examples if skill in (example.skills or [])]
+
+
+def dataset_hash(examples: Iterable[ProductTrainingExample]) -> str:
+    import hashlib
+
+    payload = "\n".join(
+        json.dumps(example.to_dict(), sort_keys=True, separators=(",", ":"))
+        for example in examples
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
 def write_product_mlx_dataset(examples: list[ProductTrainingExample], directory: str | Path) -> Path:
     candidate = Path(directory)
     candidate.mkdir(parents=True, exist_ok=True)
@@ -79,3 +102,7 @@ def write_product_mlx_dataset(examples: list[ProductTrainingExample], directory:
             )
         )
     return candidate
+
+
+def write_mlx_dataset(examples: list[ProductTrainingExample], directory: str | Path) -> Path:
+    return write_product_mlx_dataset(examples, directory)

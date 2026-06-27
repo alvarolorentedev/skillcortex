@@ -6,8 +6,8 @@ import json
 import sys
 from pathlib import Path
 
-from skill_lattice_coder.router import SkillCortexRouterV1
-from skill_lattice_coder.schemas import KNOWN_SKILLS, TASK_TYPES
+from skillcortex.contracts import KNOWN_SKILLS, TASK_TYPES
+from skillcortex.runtime.router_rules import SkillCortexRouterV1
 
 
 ROOT = Path(__file__).resolve().parents[1]

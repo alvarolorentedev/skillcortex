@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import math
 import tempfile
@@ -134,5 +136,5 @@ def compose_adapter_directories(
 def temporary_composed_adapter(
     paths: Sequence[Path], weights: Sequence[float] | None = None
 ) -> Iterator[Path]:
-    with tempfile.TemporaryDirectory(prefix="skill-lattice-adapter-") as directory:
+    with tempfile.TemporaryDirectory(prefix="skillcortex-adapter-") as directory:
         yield compose_adapter_directories(paths, directory, weights)

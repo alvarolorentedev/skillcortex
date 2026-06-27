@@ -37,6 +37,7 @@ skillcortex = "skillcortex.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["skillcortex*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

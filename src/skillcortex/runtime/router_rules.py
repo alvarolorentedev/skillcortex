@@ -1,6 +1,11 @@
-from collections import Counter
+from __future__ import annotations
 
-from .schemas import RouteDecision, SKILLS, TASK_TYPES
+from collections import Counter
+from dataclasses import asdict, dataclass
+from typing import Any
+
+from ..contracts import KNOWN_SKILLS, SKILLS, TASK_TYPES
+
 
 RULES = {
     "debugging_skill": ("traceback", "error", "exception", "failing", "fix", "bug"),
@@ -22,6 +27,37 @@ RULES = {
     ),
 }
 PRIORITY = ("debugging_skill", "test_generation_skill", "python_skill")
+
+
+def _nonempty(name: str, value: str) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be non-empty")
+
+
+def _known_skills(skills: list[str]) -> None:
+    unknown = set(skills) - set(KNOWN_SKILLS)
+    if unknown:
+        raise ValueError(f"unknown skill: {sorted(unknown)[0]}")
+
+
+@dataclass(slots=True)
+class RouteDecision:
+    selected_skills: list[str]
+    confidence: float
+    reason: str
+    route_type: str = "adapter"
+
+    def __post_init__(self) -> None:
+        _known_skills(self.selected_skills)
+        if len(self.selected_skills) > 3:
+            raise ValueError("at most three skills may be selected")
+        if not 0 <= self.confidence <= 1:
+            raise ValueError("confidence must be between 0 and 1")
+        _nonempty("reason", self.reason)
+        _nonempty("route_type", self.route_type)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 class RuleRouter:
@@ -88,11 +124,7 @@ class SkillCortexRouterV1:
             if task_type == "debugging"
             else ["python_skill", "test_generation_skill", "alternating_skill"]
         )
-        return RouteDecision(
-            selected,
-            1.0,
-            "Promoted alternating route.",
-        )
+        return RouteDecision(selected, 1.0, "Promoted alternating route.")
 
 
 class ProtectedRouterPlusAlternatingSkill:
@@ -113,3 +145,7 @@ class ProtectedRouterPlusAlternatingSkill:
             "Quarantined alternating candidate route.",
             route_type="quarantined_candidate",
         )
+
+
+def route_text(text: str) -> list[str]:
+    return list(RuleRouter().route(text).selected_skills)

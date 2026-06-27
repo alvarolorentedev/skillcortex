@@ -6,16 +6,13 @@ from typing import Any
 from wsgiref.simple_server import make_server
 
 from .http import OpenAICompatApp
+from .generation import generate_text, load_model
 from .loading import load_runtime_bundle
 from .models import REQUIRED_RUNTIME_FILES, RuntimeBundle, RuntimeRouteDecision, RuntimeSkill
 from .request import load_chat_request, normalize_chat_request, normalize_messages
 from .routing import build_route_decision
-from ..backends.legacy import adapter_composition_backend, model_backend
-
-
-temporary_composed_adapter = adapter_composition_backend.temporary_composed_adapter
-generate_text = model_backend.generate_text
-load_model = model_backend.load_model
+from .router_rules import route_text
+from ..composer.adapters import temporary_composed_adapter
 
 
 class SkillRuntime:
@@ -115,7 +112,7 @@ class SkillRuntime:
             semantic_family=semantic_family,
             skill_override=skill_override,
             available_skills=set(self.bundle.skills),
-            route_text=model_backend.route_text,
+            route_text=route_text,
         )
 
     def chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:

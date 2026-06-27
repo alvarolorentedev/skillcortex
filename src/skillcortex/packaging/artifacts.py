@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..backends.legacy import ARTIFACT_DIR, CONFIG_DIR, ROOT
+from ..shared.config import ARTIFACT_DIR, CONFIG_DIR, ROOT
 from ..shared.hashing import sha256
 
 

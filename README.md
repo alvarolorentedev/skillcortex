@@ -26,9 +26,6 @@ as one opaque system. Skill Cortex separates those concerns:
 - validate the bundle before inference or serving
 - run a bounded local agent against the same runtime the CLI and server use
 
-This repository keeps the original research workflow, but the canonical public
-product surface is `skillcortex`.
-
 ## Product Overview
 
 Skill Cortex v0.1 ships one narrow but complete path from checked-in adapters to

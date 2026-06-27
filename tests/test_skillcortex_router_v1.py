@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from scripts.build_skillcortex_router_v1_report import main
-from skill_lattice_coder.schemas import PROMOTED_SKILLS, QUARANTINED_SKILLS
+from skillcortex.contracts import PROMOTED_SKILLS, QUARANTINED_SKILLS
 
 
 ROOT = Path(__file__).resolve().parents[1]

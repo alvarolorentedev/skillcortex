@@ -2,12 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..backends.legacy import adapter_composition_backend
+from .adapters import validate_adapter_configs, validate_adapter_metadata
 from ..shared.io import read_json
-
-
-validate_adapter_configs = adapter_composition_backend.validate_adapter_configs
-validate_adapter_metadata = adapter_composition_backend.validate_adapter_metadata
 
 
 def build_compatibility_report(loaded: list[dict], enrichment: dict) -> dict:
