@@ -20,14 +20,12 @@ Versioning for public releases.
 
 - Canonical public identity is now Skill Cortex in top-level docs and package
   metadata
-- Legacy research workflow guidance moved out of the top-level README into
-  dedicated docs
+- Research workflows, reports, and experiment outputs were extracted into the
+  separate `skill_lattice_coder_research` repository
 - Repo boundary documentation now distinguishes the public product surface from
-  the legacy research surface
+  archived research assets
 
 ### Notes
 
-- The legacy `skill-lattice` research CLI remains available for backward
-  compatibility
 - Product functionality, package contracts, runtime bundle contracts, adapters,
   and benchmarks are unchanged in this release

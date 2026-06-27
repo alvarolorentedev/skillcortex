@@ -7,9 +7,16 @@ import pytest
 from scripts.validate_skill_registry import build_report, validate_registry
 
 
-ROOT = Path(__file__).resolve().parents[1]
+def _repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    raise RuntimeError("repository root not found")
+
+
+ROOT = _repo_root()
 REGISTRY = ROOT / "configs/skill_registry.json"
-ROUTER_REPORT = ROOT / "artifacts/experiments/skillcortex-router-v1/summary.json"
+ROUTER_REPORT = ROOT / "artifacts/governance-fixtures/skillcortex-router-v1/summary.json"
 
 
 def load_registry():

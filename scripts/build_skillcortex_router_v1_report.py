@@ -91,10 +91,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--source",
-        default="artifacts/experiments/failure-born-skill/alternating_skill/summary.json",
+        default="artifacts/governance-fixtures/alternating_skill/summary.json",
     )
     parser.add_argument(
-        "--output", default="artifacts/experiments/skillcortex-router-v1"
+        "--output", default="artifacts/governance/skillcortex-router-v1"
     )
     args = parser.parse_args(argv)
     summary = build_summary(json.loads(Path(args.source).read_text()))

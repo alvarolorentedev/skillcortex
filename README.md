@@ -63,7 +63,7 @@ Deep-dive docs:
 | Scenario | Status | Notes |
 | --- | --- | --- |
 | Package, compose, validate, and no-model demo | Supported | Documented for macOS with Python 3.11+ |
-| Real runtime inference | Supported with constraints | Requires model-compatible local environment; current research path is Apple Silicon-first because of `mlx-lm` |
+| Real runtime inference | Supported with constraints | Requires model-compatible local environment; current local stack is Apple Silicon-first because of `mlx-lm` |
 | Compatibility server | Supported | Minimal, non-streaming OpenAI-compatible surface |
 | Bounded local agent | Supported | Local single-run workflow only |
 | Linux and Windows | Not yet documented | Treat as experimental until verified and documented |
@@ -90,7 +90,7 @@ python -m skillcortex --help
 - Python 3.11+ is required
 - The documented no-model demo avoids model downloads and weight loading
 - Real model execution currently follows the repository's Apple Silicon-first
-  `mlx-lm` research environment
+  `mlx-lm` environment
 
 ## Quickstart: No-Model Demo
 
@@ -296,14 +296,6 @@ Skill Cortex v0.1 is intentionally narrow.
 - The compatibility server is intentionally minimal and non-streaming
 - Agent Runtime is a bounded local task runner, not a full IDE agent
 - Runtime bundles, not raw registry files, are the runtime source of truth
-
-## Research Surface
-
-Research-oriented docs live here:
-
-- [Research Workflow](docs/research-workflow.md)
-- [Research Results](docs/research-results.md)
-- [Five-Seed Artifact Resume](docs/five-seed-artifact-resume.md)
 
 ## Contributing And Release Notes
 

@@ -7,12 +7,11 @@ Thanks for contributing to Skill Cortex.
 Skill Cortex v0.1 is intentionally narrow. Contributions are welcome, but
 changes should preserve the current product boundaries:
 
-- do not change adapters, benchmarks, or checked-in research artifacts unless
+- do not change adapters, benchmarks, or checked-in validation fixtures unless
   the change explicitly targets those assets
 - do not change the skill package contract or runtime bundle contract without a
   coordinated design update
 - keep the public product surface `skillcortex` clear and documented
-- preserve the legacy `skill-lattice` research CLI when practical
 
 ## Local setup
 
@@ -50,7 +49,6 @@ When you change the public product surface, update the relevant docs:
 - `README.md` for first-time user experience
 - `docs/architecture/` for product-layer responsibilities
 - `docs/skill-package-contract.md` for package/runtime contract changes
-- `docs/research-workflow.md` for legacy research CLI guidance
 - `CHANGELOG.md` for user-visible release changes
 
 ## Pull requests

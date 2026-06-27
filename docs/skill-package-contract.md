@@ -15,11 +15,11 @@ skillcortex package-skill \
   --adapter-dir artifacts/adapters/python_skill \
   --train-dataset data/train.jsonl \
   --eval-dataset data/eval.jsonl \
-  --eval-summary artifacts/evaluations/20260620T152056Z/summary.json \
+  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
   --output skills/python_skill
 ```
 
-Train and package one of the current research skills:
+Train and package one of the built-in skills:
 
 ```bash
 skillcortex train-skill python_skill --output skills/python_skill_run --force
@@ -68,7 +68,7 @@ evaluation summary used to build the final package.
 ## Package-First Composition Metadata
 
 Phase 2 Composer treats package metadata as the source of truth. The internal
-research registry is optional enrichment only.
+registry is optional enrichment only.
 
 Minimal required fields for a self-describing package:
 

@@ -8,8 +8,15 @@ from scripts.build_skillcortex_router_v1_report import main
 from skillcortex.contracts import PROMOTED_SKILLS, QUARANTINED_SKILLS
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "artifacts/experiments/failure-born-skill/alternating_skill/summary.json"
+def _repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    raise RuntimeError("repository root not found")
+
+
+ROOT = _repo_root()
+SOURCE = ROOT / "artifacts/governance-fixtures/alternating_skill/summary.json"
 
 
 def test_alternating_skill_is_promoted_and_historical_quarantine_is_preserved(tmp_path):

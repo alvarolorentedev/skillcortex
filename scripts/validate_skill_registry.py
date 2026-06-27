@@ -194,10 +194,10 @@ def main(argv=None) -> int:
     parser.add_argument("--registry", default="configs/skill_registry.json")
     parser.add_argument(
         "--router-report",
-        default="artifacts/experiments/skillcortex-router-v1/summary.json",
+        default="artifacts/governance-fixtures/skillcortex-router-v1/summary.json",
     )
     parser.add_argument(
-        "--output", default="artifacts/experiments/skill-registry"
+        "--output", default="artifacts/governance/skill-registry"
     )
     args = parser.parse_args(argv)
     try:

@@ -12,10 +12,9 @@ Public documentation and runtime behavior should stay product-first.
 - `skills/`: skill catalog mirror and package artifacts.
 - `examples/`: runnable examples and smoke snippets.
 - `docs/`: specs, architecture notes, and user-facing documentation.
-- `reports/`: curated human-readable summaries.
-- `scripts/`: research, validation, and experiment helpers.
+- `scripts/`: validation, demo, and governance helpers.
 - `tests/`: unit, integration, and regression coverage.
-- `artifacts/`: immutable generated evidence, adapters, and experiment outputs.
+- `artifacts/`: immutable adapters, validation fixtures, and generated governance outputs.
 
 ## Stability policy
 
@@ -32,4 +31,4 @@ Public documentation and runtime behavior should stay product-first.
 - Skill metadata: `configs/skills.yaml`
 - Skill mirror: `skills/skill_registry.json`, `skills/skills.yaml`
 - Datasets and benchmarks: `data/`
-- Reports and provenance: `artifacts/`
+- Checked-in adapters and validation fixtures: `artifacts/`

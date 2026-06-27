@@ -4,8 +4,15 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "artifacts/experiments/api_contract_fastapi_skill/v2-contract-validation/validate_v2_contract.py"
+def _repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    raise RuntimeError("repository root not found")
+
+
+ROOT = _repo_root()
+MODULE_PATH = ROOT / "artifacts/validation/api_contract_fastapi_v2/validate_v2_contract.py"
 
 
 def _load_module():

@@ -919,7 +919,7 @@ def test_official_composer_routes_match_validated_alternating_behavior(tmp_path)
         (
             "alternating_skill",
             "Alternating Skill",
-            "artifacts/experiments/failure-born-skill/alternating_skill/seed-11/adapters/alternating_skill",
+            "artifacts/governance-fixtures/alternating_skill/seed-11/adapters/alternating_skill",
         ),
     )
     for skill_id, name, adapter_dir in specs:

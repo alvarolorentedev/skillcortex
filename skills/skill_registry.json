@@ -81,7 +81,7 @@
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": true,
-      "promotion_source_experiment": "artifacts/experiments/failure-born-skill/alternating_skill",
+      "promotion_source_experiment": "artifacts/governance-fixtures/alternating_skill",
       "promotion_status": "promoted",
       "promotion_reason": "Improved independent holdout from 74.0% to 99.3%, improved fixed target from 0.0% to 50.0%, caused 0 non-target regressions.",
       "historical_quarantine": {
