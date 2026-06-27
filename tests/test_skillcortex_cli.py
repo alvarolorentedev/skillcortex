@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from skillcortex.cli import main
+from skillcortex.dataset_factory import REQUIRED_FASTAPI_FEATURES
 
 
 def test_skillcortex_cli_alias_supports_dry_run():
@@ -491,6 +492,202 @@ def test_product_train_skill_unknown_positional_skill_has_actionable_message(cap
     output = tmp_path / "fastapi_contract"
     assert main(["train-skill", "fastapi_contract", "--output", str(output)]) == 2
     assert "use --skill-id for arbitrary skills" in capsys.readouterr().err
+
+
+def test_product_train_skill_rejects_invalid_dataset_before_training(
+    monkeypatch, tmp_path, capsys
+):
+    import skillcortex.packaging as packaging
+
+    train_dataset = tmp_path / "train.jsonl"
+    eval_dataset = tmp_path / "eval.jsonl"
+    train_dataset.write_text(
+        json.dumps(
+            {
+                "id": "train-1",
+                "task_type": "python_generation",
+                "prompt": "Write a FastAPI route.",
+                "target": "!!!!!!!!!!!!!!!!!",
+            }
+        )
+        + "\n"
+    )
+    eval_dataset.write_text(
+        json.dumps(
+            {
+                "id": "eval-1",
+                "task_type": "python_generation",
+                "prompt": "Write another FastAPI route.",
+                "target": "def build_route():\n    return 42\n" + "x" * 120,
+            }
+        )
+        + "\n"
+    )
+
+    called = {"train": False}
+
+    def fake_train(**kwargs):
+        called["train"] = True
+        raise AssertionError("training should not start")
+
+    monkeypatch.setattr(packaging, "_train_generic_skill_to_run_directory", fake_train)
+
+    output = tmp_path / "fastapi_contract"
+    assert (
+        main(
+            [
+                "train-skill",
+                "--skill-id",
+                "fastapi_contract",
+                "--name",
+                "FastAPI Contract Skill",
+                "--train-dataset",
+                str(train_dataset),
+                "--eval-dataset",
+                str(eval_dataset),
+                "--output",
+                str(output),
+            ]
+        )
+        == 2
+    )
+    assert called["train"] is False
+    assert "dataset validation failed" in capsys.readouterr().err
+
+
+def test_generate_dataset_creates_deterministic_fastapi_files(tmp_path):
+    output = tmp_path / "datasets" / "fastapi_contract" / "train.jsonl"
+    eval_output = tmp_path / "datasets" / "fastapi_contract" / "eval.jsonl"
+
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--skill-id",
+                "fastapi_contract",
+                "--domain",
+                "fastapi",
+                "--task-type",
+                "python_generation",
+                "--num-examples",
+                "12",
+                "--output",
+                str(output),
+                "--eval-output",
+                str(eval_output),
+                "--seed",
+                "7",
+            ]
+        )
+        == 0
+    )
+
+    mirror_output = tmp_path / "mirror" / "train.jsonl"
+    mirror_eval_output = tmp_path / "mirror" / "eval.jsonl"
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--skill-id",
+                "fastapi_contract",
+                "--domain",
+                "fastapi",
+                "--task-type",
+                "python_generation",
+                "--num-examples",
+                "12",
+                "--output",
+                str(mirror_output),
+                "--eval-output",
+                str(mirror_eval_output),
+                "--seed",
+                "7",
+            ]
+        )
+        == 0
+    )
+
+    assert output.read_text() == mirror_output.read_text()
+    assert eval_output.read_text() == mirror_eval_output.read_text()
+
+    report = json.loads((output.parent / "dataset-report.json").read_text())
+    assert report["status"] == "ok"
+    assert report["train"]["counts"]["valid"] == 12
+    assert report["eval"]["counts"]["valid"] >= 1
+    assert report["coverage"]["missing_features"] == []
+    assert sorted(report["coverage"]["required_features"]) == sorted(REQUIRED_FASTAPI_FEATURES)
+
+
+def test_validate_dataset_detects_leakage_and_writes_report(tmp_path):
+    train_dataset = tmp_path / "train.jsonl"
+    eval_dataset = tmp_path / "eval.jsonl"
+    row = {
+        "id": "train-1",
+        "task_type": "python_generation",
+        "prompt": "Write FastAPI code for a GET endpoint that returns a response model.",
+        "target": "from fastapi import APIRouter\nfrom pydantic import BaseModel\n\nrouter = APIRouter()\n\nclass DemoResponse(BaseModel):\n    status: str\n\n@router.get('/demo', response_model=DemoResponse)\ndef get_demo() -> DemoResponse:\n    return DemoResponse(status='ok')\n",
+    }
+    train_dataset.write_text(json.dumps(row) + "\n")
+    leaked = dict(row)
+    leaked["id"] = "eval-1"
+    eval_dataset.write_text(json.dumps(leaked) + "\n")
+    report_output = tmp_path / "validation-report.json"
+
+    assert (
+        main(
+            [
+                "validate-dataset",
+                str(train_dataset),
+                "--eval-dataset",
+                str(eval_dataset),
+                "--report-output",
+                str(report_output),
+            ]
+        )
+        == 2
+    )
+    report = json.loads(report_output.read_text())
+    assert report["cross_split"]["leakage_count"] == 1
+    assert report["status"] == "invalid"
+
+
+def test_validate_dataset_accepts_generated_fastapi_dataset(tmp_path):
+    output = tmp_path / "datasets" / "fastapi_contract" / "train.jsonl"
+    eval_output = tmp_path / "datasets" / "fastapi_contract" / "eval.jsonl"
+
+    assert (
+        main(
+            [
+                "generate-dataset",
+                "--skill-id",
+                "fastapi_contract",
+                "--domain",
+                "fastapi_contract",
+                "--task-type",
+                "python_generation",
+                "--num-examples",
+                "10",
+                "--output",
+                str(output),
+                "--eval-output",
+                str(eval_output),
+                "--seed",
+                "3",
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "validate-dataset",
+                str(output),
+                "--eval-dataset",
+                str(eval_output),
+            ]
+        )
+        == 0
+    )
 
 
 def test_package_skill_can_record_custom_composition_metadata(tmp_path):

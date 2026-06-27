@@ -21,6 +21,7 @@ from skill_lattice_coder.train_skill import _metadata as research_metadata
 from skill_lattice_coder.train_skill import _saved_parameter_count, build_skill_command
 from skill_lattice_coder.utils import run_fixture
 
+from .datasets import ensure_datasets_are_trainable
 from .training import evaluate_product_skill_adapter, train_product_skill_to_run_directory
 
 
@@ -158,6 +159,10 @@ def train_skill_package(
     eval_dataset = eval_dataset.resolve()
     if examples is not None:
         examples = examples.resolve()
+    validation = ensure_datasets_are_trainable(
+        train_dataset,
+        eval_dataset=eval_dataset,
+    )
     run_directory = output.parent / f".{output.name}.run"
     protected_before = _snapshot_files(
         _protected_input_paths(train_dataset=train_dataset, eval_dataset=eval_dataset)
@@ -171,6 +176,10 @@ def train_skill_package(
             "output": str(output),
             "run_directory": str(run_directory),
             "protected_inputs": len(protected_before),
+            "dataset_validation": {
+                "status": validation["status"],
+                "warnings": validation["warnings"],
+            },
         }
 
     if output.exists() and any(output.iterdir()) and not force:

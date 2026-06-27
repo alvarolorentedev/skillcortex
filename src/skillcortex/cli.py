@@ -8,6 +8,8 @@ from skill_lattice_coder.cli import main as _main
 from skill_lattice_coder.schemas import SKILLS, TASK_TYPES
 
 from .composer import compose_skill_packages
+from .dataset_factory import DEFAULT_DATASET_SEED, generate_dataset_bundle
+from .datasets import DEFAULT_MIN_TARGET_LENGTH, validate_dataset_command
 from .packaging import package_skill, train_skill_package, validate_skill_package
 from .agent import WRITE_MODES, run_agent
 from .runtime import SkillRuntime, load_chat_request, serve_runtime, validate_runtime_bundle
@@ -153,6 +155,35 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     commands = root.add_subparsers(dest="command", required=True, title="product commands")
+
+    generate = commands.add_parser(
+        "generate-dataset",
+        **_parser_kwargs(
+            "Generate a deterministic train/eval JSONL dataset for product train-skill.",
+            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 100 --output datasets/fastapi_contract/train.jsonl --eval-output datasets/fastapi_contract/eval.jsonl",
+        ),
+    )
+    generate.add_argument("--skill-id", required=True)
+    generate.add_argument("--domain", required=True)
+    generate.add_argument("--task-type", required=True, choices=TASK_TYPES)
+    generate.add_argument("--num-examples", required=True, type=int)
+    generate.add_argument("--output", required=True)
+    generate.add_argument("--eval-output", required=True)
+    generate.add_argument("--eval-size", type=int)
+    generate.add_argument("--seed", type=int, default=DEFAULT_DATASET_SEED)
+    generate.add_argument("--report-output")
+
+    validate_dataset = commands.add_parser(
+        "validate-dataset",
+        **_parser_kwargs(
+            "Validate product training datasets and emit a machine-readable report.",
+            "skillcortex validate-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl",
+        ),
+    )
+    validate_dataset.add_argument("dataset")
+    validate_dataset.add_argument("--eval-dataset")
+    validate_dataset.add_argument("--min-target-length", type=int, default=DEFAULT_MIN_TARGET_LENGTH)
+    validate_dataset.add_argument("--report-output")
 
     train = commands.add_parser(
         "train-skill",
@@ -300,6 +331,8 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     product_commands = {
+        "generate-dataset",
+        "validate-dataset",
         "package-skill",
         "validate-skill-package",
         "validate-runtime",
@@ -324,7 +357,26 @@ def main(argv: list[str] | None = None) -> int:
 
     parsed = _parser().parse_args(arguments)
     try:
-        if parsed.command == "train-skill":
+        if parsed.command == "generate-dataset":
+            result = generate_dataset_bundle(
+                skill_id=parsed.skill_id,
+                domain=parsed.domain,
+                task_type=parsed.task_type,
+                num_examples=parsed.num_examples,
+                output=Path(parsed.output),
+                eval_output=Path(parsed.eval_output),
+                eval_size=parsed.eval_size,
+                seed=parsed.seed,
+                report_output=Path(parsed.report_output) if parsed.report_output else None,
+            )
+        elif parsed.command == "validate-dataset":
+            result = validate_dataset_command(
+                Path(parsed.dataset),
+                eval_dataset=Path(parsed.eval_dataset) if parsed.eval_dataset else None,
+                min_target_length=parsed.min_target_length,
+                report_output=Path(parsed.report_output) if parsed.report_output else None,
+            )
+        elif parsed.command == "train-skill":
             mode, skill_id, composition, defaults_applied = _resolve_train_skill(parsed)
             result = train_skill_package(
                 skill=skill_id,

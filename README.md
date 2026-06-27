@@ -170,6 +170,8 @@ Skill Cortex ships one public CLI with command-specific help and examples.
 
 | Command | Purpose |
 | --- | --- |
+| `skillcortex generate-dataset` | generate deterministic train/eval JSONL datasets for product `train-skill` |
+| `skillcortex validate-dataset` | validate product train/eval datasets and write a report JSON |
 | `skillcortex train-skill` | train a new LoRA skill from datasets and package it as a Skill Cortex artifact |
 | `skillcortex package-skill` | package an already-trained adapter into a self-describing skill artifact |
 | `skillcortex validate-skill-package` | verify package structure, fingerprints, and protected inputs |
@@ -183,18 +185,39 @@ Use `skillcortex <command> --help` for command-specific examples.
 
 ## Common Workflows
 
-### Train a new skill package
+### Generate, validate, and train a new skill package
 
-`train-skill` is the primary beginner path. The generic dataset contract is JSONL with one row per example using required fields `id`, `task_type`, `prompt`, and `target`. Optional fields such as `execution`, `group`, `metadata`, `skills`, and `semantic_family` are preserved when present.
+The beginner path starts with deterministic dataset generation, then validation, then training. The generic product dataset contract is JSONL with one row per example using required fields `id`, `task_type`, `prompt`, and `target`. Optional fields such as `execution`, `group`, `metadata`, `skills`, and `semantic_family` are preserved when present.
+
+`skillcortex generate-dataset` writes both train and eval datasets using that schema, then emits a dataset report JSON with counts, warnings, SHA-256 hashes, diversity stats, leakage results, and example previews.
+
+```bash
+skillcortex generate-dataset \
+  --skill-id fastapi_contract \
+  --domain fastapi \
+  --task-type python_generation \
+  --num-examples 100 \
+  --output datasets/fastapi_contract/train.jsonl \
+  --eval-output datasets/fastapi_contract/eval.jsonl
+```
+
+Validate both splits before training. `train-skill` also runs this same validation as a mandatory preflight and fails early on malformed, duplicate, leaky, or obviously degenerate datasets.
+
+```bash
+skillcortex validate-dataset datasets/fastapi_contract/train.jsonl \
+  --eval-dataset datasets/fastapi_contract/eval.jsonl
+```
 
 ```bash
 skillcortex train-skill \
   --skill-id fastapi_contract \
   --name "FastAPI Contract Skill" \
-  --train-dataset examples/fastapi_contract_tiny/train.jsonl \
-  --eval-dataset examples/fastapi_contract_tiny/eval.jsonl \
+  --train-dataset datasets/fastapi_contract/train.jsonl \
+  --eval-dataset datasets/fastapi_contract/eval.jsonl \
   --output skills/fastapi_contract
 ```
+
+Initial built-in dataset generation support is template-based and local-only for the `fastapi_contract` domain. It covers GET endpoints, POST endpoints, path params, query params, request bodies, response models, error handling, dependency injection, status codes, and Pydantic validation without requiring any external LLM API.
 
 When omitted for arbitrary `--skill-id`, composition metadata defaults to `allowed_task_types=["python_generation"]` and `activation.scope="task"`. Pass explicit routing flags when you want something narrower or semantic-family scoped.
 
