@@ -162,6 +162,7 @@ def compose_from_route(
     by_skill_id = {skill.skill_id: skill for skill in catalog.skills}
     selected = list(routing_decision["selected_skills"])
     warnings = list(routing_decision["warnings"])
+    errors = list(routing_decision["errors"])
     if not selected:
         if not allow_base:
             raise ValueError("no skill selected; pass --allow-base or improve routing metadata")
@@ -174,7 +175,7 @@ def compose_from_route(
             "composition_status": "skipped",
             "validation_status": "not_run",
             "warnings": warnings,
-            "errors": [],
+            "errors": errors,
         }
 
     selected_paths = []
@@ -192,26 +193,28 @@ def compose_from_route(
             output=runtime_out,
             force=overwrite,
         )
-    except (FileNotFoundError, FileExistsError, ValueError) as error:
+    except FileExistsError:
+        raise
+    except (FileNotFoundError, ValueError, RuntimeError) as error:
         context = ", ".join(
             f"{item['skill_id']}={path}" for item, path in zip(selected, selected_paths, strict=True)
         )
-        raise type(error)(f"selected skill package is not composable ({context}): {error}") from error
+        raise ValueError(f"selected skill package is not composable ({context}): {error}") from error
 
     validation = validate_runtime_bundle(runtime_out)
-    if validation.get("status") != "valid":
-        raise ValueError(f"runtime validation failed: {validation.get('status')}")
+    validation_status = validation.get("status")
+    if validation_status not in {"valid", "passed"}:
+        raise ValueError(f"runtime validation failed: {validation_status}")
     return {
         "routing_decision": routing_decision,
-        "selected_skills": selected,
+        "selected_skills": [str(path) for path in selected_paths],
         "runtime_out": str(runtime_out.resolve()),
         "composition_strategy": "routed",
         "composition_status": "written",
-        "validation_status": "passed" if validation.get("status") == "valid" else validation.get("status"),
+        "validation_status": "passed",
         "warnings": warnings,
-        "errors": [],
+        "errors": errors,
     }
-
 
 def scan_repo_context(repo: Path) -> dict[str, Any]:
     language_signals: set[str] = set()

@@ -3,6 +3,7 @@ import json
 import yaml
 
 from skillcortex.cli import main
+from skillcortex.packaging.artifacts import package_checksums
 
 
 def write_fastapi_skill(skills_dir):
@@ -14,7 +15,7 @@ def write_fastapi_skill(skills_dir):
                 "skill_id": "fastapi_contract",
                 "name": "FastAPI Contract Skill",
                 "description": "FastAPI endpoints with Pydantic validation.",
-                "capabilities": ["fastapi", "pydantic", "api endpoint creation"],
+                "capabilities": ["fastapi", "pydantic"],
                 "activation_cues": ["FastAPI", "Pydantic"],
             },
             sort_keys=False,
@@ -75,6 +76,9 @@ def package_fastapi_skill(tmp_path):
         )
         + "\n"
     )
+    metadata = json.loads((package / "metadata.json").read_text())
+    metadata["checksums"] = package_checksums(package)
+    (package / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
     return skills_dir
 
 
@@ -158,7 +162,7 @@ def test_compose_from_route_writes_and_validates_runtime(tmp_path, capsys):
     result = json.loads(capsys.readouterr().out)
     assert (runtime / "composition.yaml").exists()
     assert result["routing_decision"]["routing_mode"] == "capability"
-    assert result["selected_skills"][0]["skill_id"] == "fastapi_contract"
+    assert result["selected_skills"] == [str(skills_dir / "fastapi_contract")]
     assert result["runtime_out"] == str(runtime.resolve())
     assert result["composition_strategy"] == "routed"
     assert result["composition_status"] == "written"

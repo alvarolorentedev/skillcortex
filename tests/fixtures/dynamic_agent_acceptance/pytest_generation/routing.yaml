@@ -1,0 +1,14 @@
+skill_id: pytest_generation_skill
+name: Pytest Generation Skill
+description: Test generation for Python modules using pytest.
+capabilities:
+  - pytest
+  - test generation
+  - unit tests
+activation_cues:
+  - pytest
+  - tests
+  - assert
+avoid_when:
+  - FastAPI endpoint creation
+task_type_hint: test_generation

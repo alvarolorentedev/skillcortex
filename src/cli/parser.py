@@ -19,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
                 """
                 skillcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/python_skill
                 skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --strategy routed --output /tmp/skillcortex-demo/runtime
+                skillcortex compose-from-route --skills-dir skills --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/skillcortex-demo/runtime
                 skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime
                 skillcortex infer --runtime /tmp/skillcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run
                 skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run

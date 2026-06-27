@@ -1,0 +1,15 @@
+{
+  "summary": "Route small code cleanup and refactor tasks.",
+  "positive_examples": [
+    "Refactor the Python module to simplify duplicated code and improve readability."
+  ],
+  "negative_examples": [
+    "generate pytest tests"
+  ],
+  "observed_success_contexts": [
+    {
+      "repo_file": "repo/src/reporting.py",
+      "signal": "refactor"
+    }
+  ]
+}

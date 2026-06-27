@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 
 from skillcortex.cli import main
+from skillcortex.packaging.artifacts import package_checksums
 
 
 def write_fastapi_skill(skills_dir):
@@ -75,6 +76,9 @@ def package_fastapi_skill(tmp_path):
         )
         + "\n"
     )
+    metadata = json.loads((package / "metadata.json").read_text())
+    metadata["checksums"] = package_checksums(package)
+    (package / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
     return skills_dir
 
 
@@ -109,7 +113,7 @@ def test_agent_run_skills_dir_dry_run_executes_dynamic_agent_without_writes(tmp_
     assert result["mode"] == "dynamic_agent"
     assert result["agent_execution_status"] == "dry_run_completed"
     assert result["write_mode"] == "dry_run"
-    assert result["selected_skills"][0]["skill_id"] == "fastapi_contract"
+    assert result["selected_skills"] == [str(skills_dir / "fastapi_contract")]
     assert result["agent_result"]["status"] == "dry-run"
     assert app.read_text() == "from fastapi import FastAPI\n"
 

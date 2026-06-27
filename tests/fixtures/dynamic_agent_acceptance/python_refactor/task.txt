@@ -1,0 +1,1 @@
+Refactor the Python module to simplify duplicated code and improve readability.

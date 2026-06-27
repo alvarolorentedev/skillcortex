@@ -1,0 +1,15 @@
+skill_id: debugging_fix_skill
+name: Debugging Fix Skill
+description: Debugging and bugfix work for failing Python code.
+capabilities:
+  - debugging
+  - bugfix
+  - traceback
+activation_cues:
+  - traceback
+  - failing
+  - bug
+  - fix
+avoid_when:
+  - pytest generation
+task_type_hint: debugging

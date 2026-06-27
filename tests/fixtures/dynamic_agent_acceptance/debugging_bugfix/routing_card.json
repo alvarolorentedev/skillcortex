@@ -1,0 +1,15 @@
+{
+  "summary": "Route debugging tasks that mention a traceback or a failing test.",
+  "positive_examples": [
+    "Fix the bug causing the traceback in cache.py and resolve the failing test."
+  ],
+  "negative_examples": [
+    "generate pytest tests"
+  ],
+  "observed_success_contexts": [
+    {
+      "repo_file": "repo/src/cache.py",
+      "signal": "traceback"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+skill_id: fastapi_contract_skill
+name: FastAPI Contract Skill
+description: FastAPI endpoints with Pydantic validation.
+capabilities:
+  - fastapi
+  - pydantic
+  - api endpoint creation
+activation_cues:
+  - FastAPI
+  - Pydantic
+  - endpoint
+  - response model
+avoid_when:
+  - pytest only
+task_type_hint: python_generation

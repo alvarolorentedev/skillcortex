@@ -139,9 +139,9 @@ def execute_command(
         if parsed.skills_dir:
             tasks = collect_agent_tasks(parsed.task)
             if not tasks:
-                raise ValueError("agent run --skills-dir requires --task")
+                raise ValueError("agent run --skills-dir --dry-run requires --task")
             if len(tasks) != 1:
-                raise ValueError("agent run --skills-dir accepts one --task")
+                raise ValueError("agent run --skills-dir --dry-run accepts one --task")
             if parsed.writes == "on" or (not parsed.dry_run and parsed.writes != "confirm"):
                 raise ValueError(
                     "dynamic skills-dir execution only supports --dry-run or --write-mode confirm"
@@ -152,7 +152,9 @@ def execute_command(
                 task=tasks[0],
                 runtime_out=Path(parsed.compose_runtime_out)
                 if parsed.compose_runtime_out
-                else _default_dynamic_runtime_path(Path(parsed.repo), Path(parsed.skills_dir), tasks[0]),
+                else _default_dynamic_runtime_path(
+                    Path(parsed.repo), Path(parsed.skills_dir), tasks[0]
+                ),
                 writes=parsed.writes,
                 test_command=parsed.test_command,
                 trace_out=Path(parsed.trace_out) if parsed.trace_out else None,

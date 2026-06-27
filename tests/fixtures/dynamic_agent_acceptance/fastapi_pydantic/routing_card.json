@@ -1,0 +1,15 @@
+{
+  "summary": "Route FastAPI endpoint requests that validate payloads with Pydantic models.",
+  "positive_examples": [
+    "Create a FastAPI endpoint with Pydantic validation for incoming payloads."
+  ],
+  "negative_examples": [
+    "generate pytest tests"
+  ],
+  "observed_success_contexts": [
+    {
+      "repo_file": "repo/app.py",
+      "signal": "fastapi"
+    }
+  ]
+}

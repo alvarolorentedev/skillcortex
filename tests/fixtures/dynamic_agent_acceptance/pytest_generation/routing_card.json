@@ -1,0 +1,15 @@
+{
+  "summary": "Generate deterministic pytest coverage for Python modules.",
+  "positive_examples": [
+    "Generate pytest tests for the math_tools module, including edge cases."
+  ],
+  "negative_examples": [
+    "refactor the module"
+  ],
+  "observed_success_contexts": [
+    {
+      "repo_file": "repo/pyproject.toml",
+      "signal": "pytest"
+    }
+  ]
+}
