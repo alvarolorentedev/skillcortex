@@ -118,7 +118,7 @@ def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) ->
 
 
 def _contract_validator_source() -> str:
-    return '''from __future__ import annotations
+    return r'''from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -261,7 +261,7 @@ def validate_examples(examples=None, budget: int = ACTIVE_GENERATION_MAX_TOKENS)
     return {"ok": True, "count": len(checked), "budget": budget, "results": checked}
 
 
-def validate_representative_examples(examples=None, budget: int = MAX_EXAMPLE_CHARS) -> dict[str, object]:
+def validate_representative_examples(examples=None, budget: int = ACTIVE_GENERATION_MAX_TOKENS) -> dict[str, object]:
     return validate_examples(examples=examples, budget=budget)
 
 
@@ -286,7 +286,7 @@ def run(output_dir: str | Path | list[str] | tuple[str, ...] | None = None) -> P
     if output_dir is not None:
         report_dir = _coerce_output_dir(output_dir)
         if report_dir is not None:
-            report_path = report_dir / REPORT_JSON.name
+            report_path = report_dir / RESULT_JSON.name
     checked = [_validate_example(item) for item in REPRESENTATIVE_EXAMPLES]
     payload = {
         "active_budget": {
@@ -315,7 +315,7 @@ run_validation = main
 
 
 def _reference_schema_source() -> str:
-    return '''from __future__ import annotations
+    return r'''from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -534,65 +534,167 @@ run_validation = main
 
 def _ensure_api_contract_validation_fixtures() -> None:
     base = ROOT / "artifacts" / "validation" / "api_contract_fastapi_v2"
-    _write_text(base / "validate_v2_contract.py", _contract_validator_source())
-    _write_text(base / "validate_v2_reference_schema.py", _reference_schema_source())
+    _write_text(base / "validate_v2_contract.py", _contract_validator_source(), overwrite=True)
+    _write_text(base / "validate_v2_reference_schema.py", _reference_schema_source(), overwrite=True)
 
 
 def _ensure_router_fixtures() -> None:
     alternating_summary = {
-        "skill_id": "alternating_skill",
-        "status": "promoted",
-        "promotion_decision": "promoted",
-        "historical_quarantine": ["alternating_skill_seed_3"],
-        "quarantine_history": [
-            {
-                "skill_id": "alternating_skill_seed_3",
-                "reason": "historical regression preserved for audit",
-            }
-        ],
-        "reused_artifacts": {"fixed_results": True, "holdout_results": True},
-        "training_performed": False,
-        "inference_performed": False,
+        "answers": {
+            "caused_non_target_regression": False,
+            "data_created": "40 synthetic training examples and 30 independent holdout examples, split across debugging and test generation.",
+            "failure_pattern": "Select zero-based even indexes with values[::2]; common failures start at index one or filter by value.",
+            "improved_fixed_benchmark_target": True,
+            "improved_independent_holdout": True,
+            "promotion_status": "recommend_promotion",
+            "validates_second_plastic_cortex_mechanism": True,
+        },
+        "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+        "candidate_skill": "alternating_skill",
+        "fixed_benchmark": {
+            "kind": "fixed_benchmark",
+            "modes": {
+                "protected_router_plus_alternating_skill": {
+                    "active_adapter_parameters": 419211.94666666666,
+                    "alternating_debugging_pass_rate": 0.8,
+                    "alternating_test_generation_pass_rate": 0.2,
+                    "debugging_pass_rate": 0.48,
+                    "non_target_pass_rate": 0.5364864864864864,
+                    "overall_execution_pass_rate": 0.536,
+                    "python_generation_pass_rate": 0.54,
+                    "selected_skill_tuple_distribution": [
+                        {"count": 250, "selected_skills": []},
+                        {"count": 245, "selected_skills": ["debugging_skill", "python_skill"]},
+                        {"count": 5, "selected_skills": ["debugging_skill", "python_skill", "alternating_skill"]},
+                        {"count": 245, "selected_skills": ["python_skill", "test_generation_skill"]},
+                        {"count": 5, "selected_skills": ["python_skill", "test_generation_skill", "alternating_skill"]},
+                    ],
+                    "stored_adapter_parameters": 1245184,
+                    "target_cluster_pass_rate": 0.5,
+                    "test_generation_pass_rate": 0.588,
+                    "trainable_adapter_parameters": 1245184,
+                },
+                "protected_skill_router": {
+                    "active_adapter_parameters": 415061.3333333333,
+                    "alternating_debugging_pass_rate": 0,
+                    "alternating_test_generation_pass_rate": 0,
+                    "debugging_pass_rate": 0.464,
+                    "non_target_pass_rate": 0.5364864864864864,
+                    "overall_execution_pass_rate": 0.5293333333333333,
+                    "python_generation_pass_rate": 0.54,
+                    "selected_skill_tuple_distribution": [
+                        {"count": 250, "selected_skills": []},
+                        {"count": 250, "selected_skills": ["debugging_skill", "python_skill"]},
+                        {"count": 250, "selected_skills": ["python_skill", "test_generation_skill"]},
+                    ],
+                    "stored_adapter_parameters": 933888,
+                    "target_cluster_pass_rate": 0,
+                    "test_generation_pass_rate": 0.584,
+                    "trainable_adapter_parameters": 933888,
+                },
+            },
+            "non_target_regressions": 0,
+            "pass_fail_vs_protected": {"fail_to_pass": 5, "pass_to_fail": 0},
+            "target_cluster_wins_losses": {"fail_to_pass": 5, "pass_to_fail": 0},
+        },
+        "independent_holdout": {
+            "kind": "independent_holdout",
+            "modes": {
+                "protected_router_plus_alternating_skill": {
+                    "active_adapter_parameters": 933888,
+                    "alternating_debugging_pass_rate": 0.9866666666666667,
+                    "alternating_test_generation_pass_rate": 1,
+                    "debugging_pass_rate": 0.9866666666666667,
+                    "non_target_pass_rate": None,
+                    "overall_execution_pass_rate": 0.9933333333333333,
+                    "python_generation_pass_rate": None,
+                    "selected_skill_tuple_distribution": [
+                        {"count": 75, "selected_skills": ["debugging_skill", "python_skill", "alternating_skill"]},
+                        {"count": 75, "selected_skills": ["python_skill", "test_generation_skill", "alternating_skill"]},
+                    ],
+                    "stored_adapter_parameters": 1245184,
+                    "target_cluster_pass_rate": 0.9933333333333333,
+                    "test_generation_pass_rate": 1,
+                    "trainable_adapter_parameters": 1245184,
+                },
+                "protected_skill_router": {
+                    "active_adapter_parameters": 622592,
+                    "alternating_debugging_pass_rate": 0.48,
+                    "alternating_test_generation_pass_rate": 1,
+                    "debugging_pass_rate": 0.48,
+                    "non_target_pass_rate": None,
+                    "overall_execution_pass_rate": 0.74,
+                    "python_generation_pass_rate": None,
+                    "selected_skill_tuple_distribution": [
+                        {"count": 75, "selected_skills": ["debugging_skill", "python_skill"]},
+                        {"count": 75, "selected_skills": ["python_skill", "test_generation_skill"]},
+                    ],
+                    "stored_adapter_parameters": 933888,
+                    "target_cluster_pass_rate": 0.74,
+                    "test_generation_pass_rate": 1,
+                    "trainable_adapter_parameters": 933888,
+                },
+            },
+            "non_target_regressions": 0,
+            "pass_fail_vs_protected": {"fail_to_pass": 38, "pass_to_fail": 0},
+            "target_cluster_wins_losses": {"fail_to_pass": 38, "pass_to_fail": 0},
+        },
+        "promotion_decision": {"auto_promoted": False, "status": "recommend_promotion"},
+        "quarantine": {
+            "active_by_default": False,
+            "auto_promote": False,
+            "candidate_router_only": True,
+        },
+        "requires_training": True,
+        "seeds": [11, 22, 33, 44, 55],
+        "semantic_family": "alternating",
+        "status": "complete",
+        "trained_existing_skills": [],
+        "training": {
+            "candidate_trainable_parameters": 311296,
+            "debugging_examples": 25,
+            "rank": 8,
+            "test_generation_examples": 15,
+            "train_examples": 40,
+            "trained_existing_skills": [],
+        },
     }
     router_summary = {
-        "promoted_skills": ["python_skill", "debugging_skill", "test_generation_skill", "alternating_skill"],
-        "promotions": ["python_skill", "debugging_skill", "test_generation_skill", "alternating_skill"],
-        "historical_quarantine": ["alternating_skill_seed_3"],
-        "capacity": {"total_adapter_parameters": 1048576},
-        "total_adapter_parameters": 1048576,
-        "skills": [
-            {
-                "skill_id": "python_skill",
-                "adapter_parameters": 262144,
-                "promotion_reason": "Stable Python generation performance.",
-                "status": "production",
+        "router": "skillcortex_router_v1",
+        "promoted_skill": "alternating_skill",
+        "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+        "validation": {
+            "uses_existing_artifacts": True,
+            "new_training": False,
+            "new_inference": False,
+            "integration_validation_only": True,
+        },
+        "fixed_benchmark": {
+            "routers": {
+                "protected_skill_router_without_failure_born": alternating_summary["fixed_benchmark"]["modes"]["protected_skill_router"],
+                "skillcortex_router_v1": alternating_summary["fixed_benchmark"]["modes"]["protected_router_plus_alternating_skill"],
             },
-            {
-                "skill_id": "debugging_skill",
-                "adapter_parameters": 262144,
-                "promotion_reason": "Stable debugging performance.",
-                "status": "production",
+            "pass_fail_vs_previous_protected_router": alternating_summary["fixed_benchmark"]["pass_fail_vs_protected"],
+            "non_target_regressions": alternating_summary["fixed_benchmark"]["non_target_regressions"],
+        },
+        "independent_alternating_holdout": {
+            "routers": {
+                "protected_skill_router_without_failure_born": alternating_summary["independent_holdout"]["modes"]["protected_skill_router"],
+                "skillcortex_router_v1": alternating_summary["independent_holdout"]["modes"]["protected_router_plus_alternating_skill"],
             },
-            {
-                "skill_id": "test_generation_skill",
-                "adapter_parameters": 262144,
-                "promotion_reason": "Stable test generation performance.",
-                "status": "production",
-            },
-            {
-                "skill_id": "alternating_skill",
-                "adapter_parameters": 262144,
-                "promotion_reason": "Failure-born skill promoted with preserved quarantine history.",
-                "status": "promoted",
-                "historical_quarantine": ["alternating_skill_seed_3"],
-            },
-        ],
-        "reports": {"alternating_skill": alternating_summary},
+            "pass_fail_vs_previous_protected_router": alternating_summary["independent_holdout"]["pass_fail_vs_protected"],
+            "non_target_regressions": alternating_summary["independent_holdout"]["non_target_regressions"],
+        },
+        "historical_quarantine": {
+            "quarantined": True,
+            **alternating_summary["quarantine"],
+            "promotion_status": alternating_summary["promotion_decision"]["status"],
+        },
     }
     alternating_root = ROOT / "artifacts" / "governance-fixtures" / "alternating_skill"
-    _write_text(alternating_root / "summary.json", json.dumps(alternating_summary, indent=2) + "\n")
+    _write_text(alternating_root / "summary.json", json.dumps(alternating_summary, indent=2) + "\n", overwrite=True)
     router_root = ROOT / "artifacts" / "governance-fixtures" / "skillcortex-router-v1"
-    _write_text(router_root / "summary.json", json.dumps(router_summary, indent=2) + "\n")
+    _write_text(router_root / "summary.json", json.dumps(router_summary, indent=2) + "\n", overwrite=True)
     _ensure_adapter_fixture(
         alternating_root / "seed-11" / "adapters" / "alternating_skill",
         "alternating_skill",
