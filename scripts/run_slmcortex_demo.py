@@ -8,11 +8,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-FIXTURES = ROOT / "tests" / "fixtures" / "skillcortex_demo"
+FIXTURES = ROOT / "tests" / "fixtures" / "slmcortex_demo"
 
 
 def _command(*args: str) -> list[str]:
-    return [sys.executable, "-m", "skillcortex", *args]
+    return [sys.executable, "-m", "slmcortex", *args]
 
 
 def _run(name: str, args: list[str]) -> dict:
@@ -24,7 +24,7 @@ def _run(name: str, args: list[str]) -> dict:
     )
     record = {
         "name": name,
-        "command": ["python", "-m", "skillcortex", *args],
+        "command": ["python", "-m", "slmcortex", *args],
         "returncode": completed.returncode,
         "stdout": completed.stdout,
         "stderr": completed.stderr,
@@ -88,7 +88,7 @@ def _stage_demo_adapter(skill_id: str, destination: Path) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Run the no-model Skill Cortex v0.1 demo flow.",
+        description="Run the no-model SLM Cortex v0.1 demo flow.",
     )
     parser.add_argument(
         "--output-root",
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     output_root = (
         Path(parsed.output_root).resolve()
         if parsed.output_root
-        else Path(tempfile.mkdtemp(prefix="skillcortex-demo-"))
+        else Path(tempfile.mkdtemp(prefix="slmcortex-demo-"))
     )
     output_root.mkdir(parents=True, exist_ok=True)
 

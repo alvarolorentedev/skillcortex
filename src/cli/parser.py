@@ -12,17 +12,17 @@ from .common import COMPOSITION_SCOPES, parser_kwargs
 
 def build_parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
-        prog="skillcortex",
+        prog="slmcortex",
         **parser_kwargs(
-            "Package, compose, validate, and run Skill Cortex runtime bundles.",
+            "Package, compose, validate, and run Slm Cortex runtime bundles.",
             dedent(
                 """
-                skillcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/python_skill
-                skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --strategy routed --output /tmp/skillcortex-demo/runtime
-                skillcortex compose-from-route --skills-dir skills --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/skillcortex-demo/runtime
-                skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime
-                skillcortex infer --runtime /tmp/skillcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run
-                skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run
+                slmcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_skill
+                slmcortex compose-skills --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill --strategy routed --output /tmp/slmcortex-demo/runtime
+                slmcortex compose-from-route --skills-dir skills --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/slmcortex-demo/runtime
+                slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime
+                slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run
+                slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run
                 """
             ).strip(),
         ),
@@ -50,7 +50,7 @@ def _add_generate_dataset_parser(commands) -> None:
         "generate-dataset",
         **parser_kwargs(
             "Generate a deterministic train/eval JSONL dataset for product train-skill.",
-            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi\n"
+            "slmcortex generate-dataset --skill-id fastapi_contract --domain fastapi\n"
             "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
         ),
     )
@@ -70,7 +70,7 @@ def _add_validate_dataset_parser(commands) -> None:
         "validate-dataset",
         **parser_kwargs(
             "Validate product training datasets and emit a machine-readable report.",
-            "skillcortex validate-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl",
+            "slmcortex validate-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl",
         ),
     )
     validate_dataset.add_argument("dataset")
@@ -84,8 +84,8 @@ def _add_train_skill_parser(commands) -> None:
         "train-skill",
         **parser_kwargs(
             "Train a LoRA skill from datasets and package it as a Skill Cortex artifact.",
-            "skillcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract\n"
-            "skillcortex train-skill python_skill --output skills/python_skill_run --force",
+            "slmcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract\n"
+            "slmcortex train-skill python_skill --output skills/python_skill_run --force",
         ),
     )
     train.add_argument("skill", nargs="?")
@@ -112,7 +112,7 @@ def _add_train_plasticity_lora_parser(commands) -> None:
         "train-plasticity-lora",
         **parser_kwargs(
             "Train an explicit on-demand LoRA from a JSONL prompt/target dataset.",
-            "skillcortex train-plasticity-lora --skill-id local_fix --name \"Local Fix\" --prompt-file data/train.jsonl --output skills/local_fix --dry-run",
+            "slmcortex train-plasticity-lora --skill-id local_fix --name \"Local Fix\" --prompt-file data/train.jsonl --output skills/local_fix --dry-run",
         ),
     )
     train.add_argument("--skill-id", required=True)
@@ -133,7 +133,7 @@ def _add_import_lora_parser(commands) -> None:
         "import-lora",
         **parser_kwargs(
             "Import a public Hugging Face LoRA into a local SkillCortex package.",
-            "skillcortex import-lora --source hf://owner/repo --skill-id fastapi_skill --name \"FastAPI Skill\" --output skills/fastapi_skill --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
+            "slmcortex import-lora --source hf://owner/repo --skill-id fastapi_skill --name \"FastAPI Skill\" --output skills/fastapi_skill --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
         ),
     )
     import_lora.add_argument("--source", required=True)
@@ -154,8 +154,8 @@ def _add_package_skill_parser(commands) -> None:
         "package-skill",
         **parser_kwargs(
             "Package an existing LoRA adapter into a self-describing skill artifact.",
-            "skillcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/python_skill\n"
-            "skillcortex package-skill --skill-id debugging_skill --name \"Debugging Skill\" --adapter-dir artifacts/adapters/debugging_skill --train-dataset tests/fixtures/skillcortex_demo/train.jsonl --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json --output /tmp/skillcortex-demo/debugging_skill",
+            "slmcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_skill\n"
+            "slmcortex package-skill --skill-id debugging_skill --name \"Debugging Skill\" --adapter-dir artifacts/adapters/debugging_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/debugging_skill",
         ),
     )
     package.add_argument("--skill-id", required=True)
@@ -182,7 +182,7 @@ def _add_validate_skill_package_parser(commands) -> None:
         "validate-skill-package",
         **parser_kwargs(
             "Validate a packaged skill artifact and its recorded fingerprints.",
-            "skillcortex validate-skill-package --path /tmp/skillcortex-demo/python_skill",
+            "slmcortex validate-skill-package --path /tmp/slmcortex-demo/python_skill",
         ),
     )
     validate.add_argument("--path", required=True)
@@ -193,7 +193,7 @@ def _add_validate_runtime_parser(commands) -> None:
         "validate-runtime",
         **parser_kwargs(
             "Validate a composed runtime bundle before inference or serving.",
-            "skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime",
+            "slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime",
         ),
     )
     validate_runtime.add_argument("--runtime", required=True)
@@ -204,7 +204,7 @@ def _add_compose_skills_parser(commands) -> None:
         "compose-skills",
         **parser_kwargs(
             "Compose validated skill packages into a deterministic runtime bundle.",
-            "skillcortex compose-skills --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill --output /tmp/skillcortex-demo/runtime",
+            "slmcortex compose-skills --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill --output /tmp/slmcortex-demo/runtime",
         ),
     )
     compose.add_argument("--skills", required=True)
@@ -220,7 +220,7 @@ def _add_route_parser(commands) -> None:
         "route",
         **parser_kwargs(
             "Route a task against discovered skill packages without loading adapters.",
-            "skillcortex route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --explain",
+            "slmcortex route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --explain",
         ),
     )
     route.add_argument("--skills-dir", required=True)
@@ -235,7 +235,7 @@ def _add_compose_from_route_parser(commands) -> None:
         "compose-from-route",
         **parser_kwargs(
             "Route a task and compose selected skill packages into a runtime bundle.",
-            "skillcortex compose-from-route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
+            "slmcortex compose-from-route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
         ),
     )
     compose.add_argument("--skills-dir", required=True)
@@ -252,8 +252,8 @@ def _add_infer_parser(commands) -> None:
         "infer",
         **parser_kwargs(
             "Run local inference against a Skill Cortex runtime bundle.",
-            "skillcortex infer --runtime /tmp/skillcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run\n"
-            "skillcortex infer --runtime /tmp/skillcortex-demo/runtime --request-file tests/fixtures/skillcortex_demo/request.json --dry-run",
+            "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run\n"
+            "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --request-file tests/fixtures/slmcortex_demo/request.json --dry-run",
         ),
     )
     infer.add_argument("--runtime")
@@ -276,8 +276,8 @@ def _add_serve_parser(commands) -> None:
         "serve",
         **parser_kwargs(
             "Start the minimal OpenAI-compatible server for a runtime bundle.",
-            "skillcortex serve --runtime /tmp/skillcortex-demo/runtime --host 127.0.0.1 --port 8000\n"
-            "skillcortex serve --runtime /tmp/skillcortex-demo/runtime --dry-run",
+            "slmcortex serve --runtime /tmp/slmcortex-demo/runtime --host 127.0.0.1 --port 8000\n"
+            "slmcortex serve --runtime /tmp/slmcortex-demo/runtime --dry-run",
         ),
     )
     serve.add_argument("--runtime", required=True)
@@ -291,8 +291,8 @@ def _add_agent_parser(commands) -> None:
         "agent",
         **parser_kwargs(
             "Run the bounded local agent on top of a runtime bundle.",
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode on --test-command \"pytest -q\"",
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode on --test-command \"pytest -q\"",
         ),
     )
     agent_commands = agent.add_subparsers(dest="agent_command", required=True)
@@ -300,8 +300,8 @@ def _add_agent_parser(commands) -> None:
         "run",
         **parser_kwargs(
             "Inspect a local repository, propose a change, and optionally validate it.",
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
-            "skillcortex agent run --runtime /tmp/skillcortex-demo/runtime --repo /tmp/skillcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode confirm --trace-out /tmp/skillcortex-demo/agent-trace.json",
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode confirm --trace-out /tmp/slmcortex-demo/agent-trace.json",
         ),
     )
     agent_run.add_argument("--runtime")

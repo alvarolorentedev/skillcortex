@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "skillcortex"
+name = "slmcortex"
 version = "0.1.0"
 description = "Package-first runtime for composable AI coding skills"
 readme = "README.md"
@@ -41,10 +41,10 @@ test = [
 ]
 
 [project.scripts]
-skillcortex = "skillcortex:main"
+slmcortex = "slmcortex:main"
 
 [tool.setuptools]
-py-modules = ["skillcortex", "contracts"]
+py-modules = ["slmcortex", "contracts"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

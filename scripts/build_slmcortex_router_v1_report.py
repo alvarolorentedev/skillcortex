@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 BASELINE = "protected_skill_router_without_failure_born"
-ROUTER = "skillcortex_router_v1"
+ROUTER = "slmcortex_router_v1"
 
 
 def build_summary(source: dict) -> dict:
@@ -49,7 +49,7 @@ def _pct(value):
 
 def markdown(summary: dict) -> str:
     lines = [
-        "# SkillCortex Router V1 Promotion Integration",
+        "# SlmCortex Router V1 Promotion Integration",
         "",
         "- Uses existing artifacts: **true**",
         "- New training: **false**",
@@ -72,8 +72,7 @@ def markdown(summary: dict) -> str:
                 f"non-target {_pct(values['non_target_pass_rate'])}; "
                 f"active {values['active_adapter_parameters']:.0f}; "
                 f"stored {values['stored_adapter_parameters']}; "
-                f"trainable {values['trainable_adapter_parameters']}."
-            )
+                f"trainable {values['trainable_adapter_parameters']}.")
             lines.append(
                 f"  Selected skill tuples: `{json.dumps(values['selected_skill_tuple_distribution'], separators=(',', ':'))}`"
             )
@@ -94,7 +93,7 @@ def main(argv=None):
         default="artifacts/governance-fixtures/alternating_skill/summary.json",
     )
     parser.add_argument(
-        "--output", default="artifacts/governance/skillcortex-router-v1"
+        "--output", default="artifacts/governance/slmcortex-router-v1"
     )
     args = parser.parse_args(argv)
     summary = build_summary(json.loads(Path(args.source).read_text()))

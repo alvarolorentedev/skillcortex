@@ -13,7 +13,7 @@ ROUTER_POLICIES = (
     "python_only_for_test_generation",
     "protected_skill_router",
     "protected_skill_router_without_failure_born",
-    "skillcortex_router_v1",
+    "slmcortex_router_v1",
     "legacy_rule_router",
     "weighted_task_composition",
     "reverse_weighted_task_composition",

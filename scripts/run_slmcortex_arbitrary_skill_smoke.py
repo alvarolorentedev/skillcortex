@@ -8,12 +8,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-FIXTURES = ROOT / "tests" / "fixtures" / "skillcortex_demo"
+FIXTURES = ROOT / "tests" / "fixtures" / "slmcortex_demo"
 EXAMPLE_ROOT = ROOT / "examples" / "fastapi_contract_tiny"
 
 
 def _command(*args: str) -> list[str]:
-    return [sys.executable, "-m", "skillcortex", *args]
+    return [sys.executable, "-m", "slmcortex", *args]
 
 
 def _run(name: str, args: list[str]) -> dict:
@@ -25,7 +25,7 @@ def _run(name: str, args: list[str]) -> dict:
     )
     record = {
         "name": name,
-        "command": ["python", "-m", "skillcortex", *args],
+        "command": ["python", "-m", "slmcortex", *args],
         "returncode": completed.returncode,
         "stdout": completed.stdout,
         "stderr": completed.stderr,
@@ -110,7 +110,7 @@ def _write_demo_eval_summary(path: Path) -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Run the arbitrary-skill Skill Cortex smoke flow. Default mode is a no-model, "
+            "Run the arbitrary-skill SLM Cortex smoke flow. Default mode is a no-model, "
             "package-first demo. Pass --real-training to run real local LoRA training."
         ),
     )
@@ -131,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     output_root = (
         Path(parsed.output_root).resolve()
         if parsed.output_root
-        else Path(tempfile.mkdtemp(prefix="skillcortex-fastapi-contract-"))
+        else Path(tempfile.mkdtemp(prefix="slmcortex-fastapi-contract-"))
     )
     output_root.mkdir(parents=True, exist_ok=True)
 

@@ -1,11 +1,11 @@
-# Skill Cortex
+# Slm Cortex
 
 [![Pytest](https://github.com/alvarolorentedev/crazy-coding-llm/actions/workflows/pytest.yml/badge.svg)](https://github.com/alvarolorentedev/crazy-coding-llm/actions/workflows/pytest.yml)
 [![Demo Validation](https://github.com/alvarolorentedev/crazy-coding-llm/actions/workflows/demo.yml/badge.svg)](https://github.com/alvarolorentedev/crazy-coding-llm/actions/workflows/demo.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-Skill Cortex is a package manager and runtime for AI coding capabilities.
+Slm Cortex is a package manager and runtime for AI coding capabilities.
 
 Instead of shipping one larger fine-tune, Skill Cortex packages specialized LoRA
 skills as self-describing artifacts, composes those artifacts into deterministic
@@ -19,7 +19,7 @@ The runtime is the unit of execution.
 ## Why Skill Cortex?
 
 Most coding-agent stacks treat model adaptation, deployment, and agent behavior
-as one opaque system. Skill Cortex separates those concerns:
+as one opaque system. Slm Cortex separates those concerns:
 
 - package a capability once as a reusable skill artifact
 - compose multiple skills into one runtime bundle without mutating source assets
@@ -28,7 +28,7 @@ as one opaque system. Skill Cortex separates those concerns:
 
 ## Product Overview
 
-Skill Cortex v0.1 ships one narrow but complete path from checked-in adapters to
+Slm Cortex v0.1 ships one narrow but complete path from checked-in adapters to
 an executable local agent workflow:
 
 ```mermaid
@@ -91,7 +91,7 @@ pip install -e '.[gguf]'  # Linux, Windows, macOS Intel, or explicit GGUF use
 Check the canonical public CLI:
 
 ```bash
-python -m skillcortex --help
+python -m slmcortex --help
 ```
 
 ### Platform guidance
@@ -110,8 +110,8 @@ A first-time developer should start here. This flow uses checked-in fixtures,
 checked-in adapter artifacts, and dry-run runtime/agent steps.
 
 ```bash
-DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skillcortex-demo.XXXXXX")"
-python scripts/run_skillcortex_demo.py --output-root "$DEMO_ROOT"
+DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-demo.XXXXXX")"
+python scripts/run_slmcortex_demo.py --output-root "$DEMO_ROOT"
 ```
 
 What the demo validates:
@@ -140,8 +140,8 @@ Keep the no-model demo above as the default quickstart. Use this separate flow o
 Default no-model arbitrary-skill smoke:
 
 ```bash
-SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skillcortex-fastapi-contract.XXXXXX")"
-python scripts/run_skillcortex_arbitrary_skill_smoke.py --output-root "$SMOKE_ROOT"
+SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-fastapi-contract.XXXXXX")"
+python scripts/run_slmcortex_arbitrary_skill_smoke.py --output-root "$SMOKE_ROOT"
 ```
 
 What the default smoke validates:
@@ -155,8 +155,8 @@ What the default smoke validates:
 Opt-in real local training smoke:
 
 ```bash
-SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skillcortex-fastapi-contract-real.XXXXXX")"
-python scripts/run_skillcortex_arbitrary_skill_smoke.py --output-root "$SMOKE_ROOT" --real-training
+SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-fastapi-contract-real.XXXXXX")"
+python scripts/run_slmcortex_arbitrary_skill_smoke.py --output-root "$SMOKE_ROOT" --real-training
 ```
 
 What the opt-in path additionally validates:
@@ -178,7 +178,7 @@ Local assumptions and expected runtime:
 Dynamic adaptive prototype smoke:
 
 ```bash
-SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skillcortex-dynamic.XXXXXX")"
+SMOKE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-dynamic.XXXXXX")"
 python scripts/run_dynamic_adaptive_smoke.py --output-root "$SMOKE_ROOT"
 python scripts/benchmark_dynamic_router.py --skills-dir skills
 ```
@@ -186,7 +186,7 @@ python scripts/benchmark_dynamic_router.py --skills-dir skills
 Manual real path, which may download models/LoRAs and run local training:
 
 ```bash
-SKILLCORTEX_BASE_CONFIG=configs/prototype.yaml \
+SLMCORTEX_BASE_CONFIG=configs/prototype.yaml \
 python scripts/run_dynamic_adaptive_smoke.py --real --output-root "$SMOKE_ROOT"
 ```
 
@@ -196,17 +196,17 @@ Skill Cortex ships one public CLI with command-specific help and examples.
 
 | Command | Purpose |
 | --- | --- |
-| `skillcortex generate-dataset` | generate deterministic train/eval JSONL datasets for product `train-skill` |
-| `skillcortex validate-dataset` | validate product train/eval datasets and write a report JSON |
-| `skillcortex train-skill` | train a new LoRA skill from datasets and package it as a Skill Cortex artifact |
-| `skillcortex package-skill` | package an already-trained adapter into a self-describing skill artifact |
-| `skillcortex validate-skill-package` | verify package structure, fingerprints, and protected inputs |
-| `skillcortex compose-skills` | compose validated skill packages into a deterministic runtime bundle |
-| `skillcortex route` | route a task against discovered skill packages without loading adapters |
-| `skillcortex validate-runtime` | verify a runtime bundle before inference or serving |
-| `skillcortex infer` | run local inference or dry-run routing against a runtime bundle |
-| `skillcortex serve` | expose the minimal OpenAI-compatible compatibility server |
-| `skillcortex agent run` | run the bounded local agent workflow against a local repository |
+| `slmcortex generate-dataset` | generate deterministic train/eval JSONL datasets for product `train-skill` |
+| `slmcortex validate-dataset` | validate product train/eval datasets and write a report JSON |
+| `slmcortex train-skill` | train a new LoRA skill from datasets and package it as a Slm Cortex artifact |
+| `slmcortex package-skill` | package an already-trained adapter into a self-describing skill artifact |
+| `slmcortex validate-skill-package` | verify package structure, fingerprints, and protected inputs |
+| `slmcortex compose-skills` | compose validated skill packages into a deterministic runtime bundle |
+| `slmcortex route` | route a task against discovered skill packages without loading adapters |
+| `slmcortex validate-runtime` | verify a runtime bundle before inference or serving |
+| `slmcortex infer` | run local inference or dry-run routing against a runtime bundle |
+| `slmcortex serve` | expose the minimal OpenAI-compatible compatibility server |
+| `slmcortex agent run` | run the bounded local agent workflow against a local repository |
 
 Use `skillcortex <command> --help` for command-specific examples.
 

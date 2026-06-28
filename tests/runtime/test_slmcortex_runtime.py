@@ -3,9 +3,9 @@ import json
 from contextlib import contextmanager
 from pathlib import Path
 
-from skillcortex.cli import main
-from skillcortex.runtime import OpenAICompatApp, SkillRuntime
-from skillcortex.runtime.models import RuntimeBundle, RuntimeRouteDecision, RuntimeSkill
+from slmcortex.cli import main
+from slmcortex.runtime import OpenAICompatApp, SkillRuntime
+from slmcortex.runtime.models import RuntimeBundle, RuntimeRouteDecision, RuntimeSkill
 
 
 def _compose_runtime(tmp_path):
@@ -173,9 +173,9 @@ def test_runtime_non_dry_run_calls_backend_seams(tmp_path, monkeypatch):
         }
         return "runtime answer", 11, 7
 
-    monkeypatch.setattr("skillcortex.runtime.temporary_composed_adapter", fake_temporary_composed_adapter)
-    monkeypatch.setattr("skillcortex.runtime.load_model", fake_load_model)
-    monkeypatch.setattr("skillcortex.runtime.generate_text", fake_generate_text)
+    monkeypatch.setattr("slmcortex.runtime.temporary_composed_adapter", fake_temporary_composed_adapter)
+    monkeypatch.setattr("slmcortex.runtime.load_model", fake_load_model)
+    monkeypatch.setattr("slmcortex.runtime.generate_text", fake_generate_text)
 
     result = runtime.infer(
         prompt="Fix this Python traceback and failing test",
@@ -257,8 +257,8 @@ def test_runtime_gguf_multi_adapter_falls_back_to_first_skill(tmp_path, monkeypa
         calls["model_name"] = model_name
         return "gguf-model", None
 
-    monkeypatch.setattr("skillcortex.runtime.load_model", fake_load_model)
-    monkeypatch.setattr("skillcortex.runtime.generate_text", lambda *args, **kwargs: ("answer", 0, 0))
+    monkeypatch.setattr("slmcortex.runtime.load_model", fake_load_model)
+    monkeypatch.setattr("slmcortex.runtime.generate_text", lambda *args, **kwargs: ("answer", 0, 0))
 
     result = runtime.infer(prompt="Fix a traceback")
 

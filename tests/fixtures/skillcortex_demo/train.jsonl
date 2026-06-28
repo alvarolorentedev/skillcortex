@@ -1,1 +1,0 @@
-{"id":"demo-train-1","task_type":"python_generation","prompt":"Write a function that returns 42.","target":"def answer():\n    return 42\n","semantic_family":"demo"}
