@@ -164,6 +164,7 @@ def package_slm(
         adapter_metadata.setdefault("backend", "gguf")
     else:
         adapter_metadata.setdefault("format", "mlx-lora")
+        adapter_metadata.setdefault("backend", "mlx")
     adapter_config = adapter_dir / "adapter_config.json"
     eval_payload = _read_json(eval_summary)
     resolved_description = description or f"LoRA coding slm package for {name}."
