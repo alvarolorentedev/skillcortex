@@ -41,6 +41,6 @@ def test_dynamic_agent_acceptance_harness_runs_end_to_end(tmp_path):
     assert all(scenario["agent_execution_status"] == "dry_run_completed" for scenario in summary["scenarios"])
     assert all(scenario["validation_status"] == "passed" for scenario in summary["scenarios"])
     assert all(scenario["repo_unchanged"] for scenario in summary["scenarios"])
-    assert output_root.joinpath("skills").exists()
+    assert output_root.joinpath("slms").exists()
     assert all(Path(scenario["runtime_out"]).exists() for scenario in summary["scenarios"])
     assert all(Path(scenario["trace_out"]).exists() for scenario in summary["scenarios"])

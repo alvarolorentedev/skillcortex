@@ -39,26 +39,26 @@ def build_compatibility_report(loaded: list[dict], enrichment: dict) -> dict:
             validate_adapter_configs([item["adapter_config"] for item in loaded])
         except ValueError as error:
             errors.append(str(error))
-    selected = {item["skill_id"] for item in loaded}
+    selected = {item["slm_id"] for item in loaded}
     for item in loaded:
-        incompatible = set(((item["composition"].get("compatibility") or {}).get("incompatible_skills") or []))
+        incompatible = set(((item["composition"].get("compatibility") or {}).get("incompatible_slms") or []))
         overlap = sorted(selected & incompatible)
         if overlap:
-            errors.append(f"skill {item['skill_id']} is incompatible with selected skill {overlap[0]}")
-    for entry in enrichment.get("matched_skills", []):
+            errors.append(f"slm {item['slm_id']} is incompatible with selected slm {overlap[0]}")
+    for entry in enrichment.get("matched_slms", []):
         package_tasks = set(entry["package_allowed_task_types"])
         registry_tasks = set(entry["registry_allowed_task_types"])
         if registry_tasks and package_tasks != registry_tasks:
             warnings.append(
-                f"registry enrichment differs from package metadata for {entry['skill_id']} allowed_task_types"
+                f"registry enrichment differs from package metadata for {entry['slm_id']} allowed_task_types"
             )
     return {
         "schema_version": "1",
         "status": "valid" if not errors else "invalid",
-        "skills": [item["skill_id"] for item in loaded],
+        "slms": [item["slm_id"] for item in loaded],
         "errors": errors,
         "warnings": warnings,
-        "optional_enrichment_used": enrichment["enabled"] and bool(enrichment["matched_skills"]),
+        "optional_enrichment_used": enrichment["enabled"] and bool(enrichment["matched_slms"]),
         "registry_enrichment": enrichment,
     }
 
@@ -68,37 +68,37 @@ def load_registry_enrichment(registry: Path | None, loaded: list[dict]) -> dict:
         return {
             "enabled": False,
             "path": None,
-            "matched_skills": [],
+            "matched_slms": [],
             "source_of_truth": "package",
             "override_applied": False,
         }
     payload = read_json(registry.resolve())
-    skills = payload.get("skills") or []
+    slms = payload.get("slms") or []
     by_name = {
-        item.get("skill_name"): item
-        for item in skills
-        if isinstance(item, dict) and item.get("skill_name")
+        item.get("slm_name"): item
+        for item in slms
+        if isinstance(item, dict) and item.get("slm_name")
     }
     matched = []
     for item in loaded:
-        registry_skill = by_name.get(item["skill_id"])
-        if registry_skill is None:
+        registry_slm = by_name.get(item["slm_id"])
+        if registry_slm is None:
             continue
         matched.append(
             {
-                "skill_id": item["skill_id"],
-                "registry_status": registry_skill.get("status"),
-                "registry_origin": registry_skill.get("origin"),
-                "registry_router": registry_skill.get("router"),
-                "registry_activation_scope": registry_skill.get("activation_scope"),
-                "registry_allowed_task_types": registry_skill.get("allowed_task_types") or [],
+                "slm_id": item["slm_id"],
+                "registry_status": registry_slm.get("status"),
+                "registry_origin": registry_slm.get("origin"),
+                "registry_router": registry_slm.get("router"),
+                "registry_activation_scope": registry_slm.get("activation_scope"),
+                "registry_allowed_task_types": registry_slm.get("allowed_task_types") or [],
                 "package_allowed_task_types": item["composition"]["capabilities"].get("allowed_task_types") or [],
             }
         )
     return {
         "enabled": True,
         "path": str(registry.resolve()),
-        "matched_skills": matched,
+        "matched_slms": matched,
         "source_of_truth": "package",
         "override_applied": False,
     }

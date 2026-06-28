@@ -1,0 +1,9 @@
+slms:
+  python_slm:
+    description: General Python generation and idioms
+  debugging_slm:
+    description: Fixing bugs from errors, tracebacks, and failing tests
+  test_generation_slm:
+    description: Generating pytest-style tests
+  alternating_slm:
+    description: Even-index selection slm; promoted behind the SlmCortex V1 semantic gate

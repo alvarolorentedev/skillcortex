@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
-from ..contracts import KNOWN_SKILLS, TASK_TYPES
+from ..contracts import KNOWN_SLMS, TASK_TYPES
 from .types import ExecutionFixture
 
 
@@ -17,7 +17,7 @@ class ProductTrainingExample:
     group: str | None = None
     metadata: dict | None = None
     semantic_family: str | None = None
-    skills: list[str] | None = None
+    slms: list[str] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.id, str) or not self.id.strip():
@@ -34,9 +34,9 @@ class ProductTrainingExample:
             raise ValueError("metadata must be a mapping")
         if self.semantic_family is not None and not isinstance(self.semantic_family, str):
             raise ValueError("semantic_family must be a string")
-        if self.skills is not None:
-            if not isinstance(self.skills, list) or any(not isinstance(item, str) or not item.strip() for item in self.skills):
-                raise ValueError("skills must be a list of non-empty strings")
+        if self.slms is not None:
+            if not isinstance(self.slms, list) or any(not isinstance(item, str) or not item.strip() for item in self.slms):
+                raise ValueError("slms must be a list of non-empty strings")
 
     @classmethod
     def from_dict(cls, value: dict) -> "ProductTrainingExample":
@@ -71,12 +71,12 @@ def load_jsonl(path: str | Path) -> list[ProductTrainingExample]:
     return load_product_jsonl(path)
 
 
-def select_for_skill(
-    examples: Iterable[ProductTrainingExample], skill: str
+def select_for_slm(
+    examples: Iterable[ProductTrainingExample], slm: str
 ) -> list[ProductTrainingExample]:
-    if skill not in KNOWN_SKILLS:
-        raise ValueError(f"unknown skill: {skill}")
-    return [example for example in examples if skill in (example.skills or [])]
+    if slm not in KNOWN_SLMS:
+        raise ValueError(f"unknown slm: {slm}")
+    return [example for example in examples if slm in (example.slms or [])]
 
 
 def dataset_hash(examples: Iterable[ProductTrainingExample]) -> str:

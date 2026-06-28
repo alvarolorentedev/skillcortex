@@ -10,13 +10,13 @@ from typing import Callable
 
 from ..agent import run_agent
 from ..catalog import compose_from_route, route_task
-from ..composer import compose_skill_packages
+from ..composer import compose_slm_packages
 from ..dataset_factory import generate_dataset_bundle
 from ..datasets import validate_dataset_command
-from ..packaging import package_skill, train_skill_package, validate_skill_package
+from ..packaging import package_slm, train_slm_package, validate_slm_package
 from ..packaging.importers import import_lora
-from ..runtime import DynamicRuntime, SkillRuntime, serve_runtime, validate_runtime_bundle
-from .common import csv_paths, default_dataset_outputs, infer_payload, package_composition, resolve_train_skill
+from ..runtime import DynamicRuntime, SlmRuntime, serve_runtime, validate_runtime_bundle
+from .common import csv_paths, default_dataset_outputs, infer_payload, package_composition, resolve_train_slm
 
 
 TaskProviderFactory = Callable[[], object]
@@ -29,9 +29,9 @@ def execute_command(
     stream_agent_tasks: TaskProviderFactory,
 ) -> dict:
     if parsed.command == "generate-dataset":
-        default_output, default_eval_output = default_dataset_outputs(parsed.skill_id)
+        default_output, default_eval_output = default_dataset_outputs(parsed.slm_id)
         return generate_dataset_bundle(
-            skill_id=parsed.skill_id,
+            slm_id=parsed.slm_id,
             domain=parsed.domain,
             task_type=parsed.task_type,
             num_examples=parsed.num_examples,
@@ -48,10 +48,10 @@ def execute_command(
             min_target_length=parsed.min_target_length,
             report_output=Path(parsed.report_output) if parsed.report_output else None,
         )
-    if parsed.command == "train-skill":
-        mode, skill_id, composition, defaults_applied = resolve_train_skill(parsed)
-        result = train_skill_package(
-            skill=skill_id,
+    if parsed.command == "train-slm":
+        mode, slm_id, composition, defaults_applied = resolve_train_slm(parsed)
+        result = train_slm_package(
+            slm=slm_id,
             mode=mode,
             output=Path(parsed.output),
             train_dataset=Path(parsed.train_dataset),
@@ -68,7 +68,7 @@ def execute_command(
         if defaults_applied:
             result["defaults_applied"] = defaults_applied
             result["warnings"] = [
-                "default composition metadata applied for arbitrary train-skill"
+                "default composition metadata applied for arbitrary train-slm"
             ]
         return result
     if parsed.command == "train-plasticity-lora":
@@ -76,14 +76,14 @@ def execute_command(
         if parsed.dry_run:
             return {
                 "status": "dry-run",
-                "skill": parsed.skill_id,
+                "slm": parsed.slm_id,
                 "output": str(output.resolve()),
                 "publish_dir": str(output.parent.resolve()),
             }
-        with tempfile.TemporaryDirectory(prefix=f"slmcortex-{parsed.skill_id}-publish-") as directory:
-            staging = Path(directory) / parsed.skill_id
-            result = train_skill_package(
-                skill=parsed.skill_id,
+        with tempfile.TemporaryDirectory(prefix=f"slmcortex-{parsed.slm_id}-publish-") as directory:
+            staging = Path(directory) / parsed.slm_id
+            result = train_slm_package(
+                slm=parsed.slm_id,
                 mode="generic",
                 output=staging,
                 train_dataset=Path(parsed.prompt_file),
@@ -98,14 +98,14 @@ def execute_command(
                         "scope": "task",
                         "semantic_families": [],
                     },
-                    "compatibility": {"compatible_skills": [], "incompatible_skills": []},
+                    "compatibility": {"compatible_slms": [], "incompatible_slms": []},
                     "routing": {"tasks": {}},
                 },
                 seed=parsed.seed,
                 force=True,
                 dry_run=False,
             )
-            validate_skill_package(staging)
+            validate_slm_package(staging)
             if output.exists():
                 if not parsed.force:
                     raise FileExistsError(f"{output} exists; pass --force to replace it")
@@ -123,7 +123,7 @@ def execute_command(
     if parsed.command == "import-lora":
         return import_lora(
             source=parsed.source,
-            skill_id=parsed.skill_id,
+            slm_id=parsed.slm_id,
             name=parsed.name,
             output=Path(parsed.output),
             train_dataset=Path(parsed.train_dataset),
@@ -134,9 +134,9 @@ def execute_command(
             max_download_bytes=parsed.max_download_bytes,
             force=parsed.force,
         )
-    if parsed.command == "package-skill":
-        return package_skill(
-            skill_id=parsed.skill_id,
+    if parsed.command == "package-slm":
+        return package_slm(
+            slm_id=parsed.slm_id,
             name=parsed.name,
             adapter_dir=Path(parsed.adapter_dir),
             output=Path(parsed.output),
@@ -150,9 +150,9 @@ def execute_command(
             force=parsed.force,
             dry_run=parsed.dry_run,
         )
-    if parsed.command == "compose-skills":
-        return compose_skill_packages(
-            skills=csv_paths(parsed.skills),
+    if parsed.command == "compose-slms":
+        return compose_slm_packages(
+            slms=csv_paths(parsed.slms),
             strategy=parsed.strategy,
             output=Path(parsed.output),
             registry=Path(parsed.registry) if parsed.registry else None,
@@ -161,7 +161,7 @@ def execute_command(
         )
     if parsed.command == "route":
         return route_task(
-            skills_dir=Path(parsed.skills_dir),
+            slms_dir=Path(parsed.slms_dir),
             repo=Path(parsed.repo),
             task=parsed.task,
             explain=parsed.explain,
@@ -169,7 +169,7 @@ def execute_command(
         )
     if parsed.command == "compose-from-route":
         return compose_from_route(
-            skills_dir=Path(parsed.skills_dir),
+            slms_dir=Path(parsed.slms_dir),
             repo=Path(parsed.repo),
             task=parsed.task,
             runtime_out=Path(parsed.runtime_out),
@@ -180,12 +180,12 @@ def execute_command(
     if parsed.command == "validate-runtime":
         return validate_runtime_bundle(Path(parsed.runtime))
     if parsed.command == "infer":
-        if bool(parsed.runtime) == bool(parsed.skills_dir):
-            raise ValueError("infer requires exactly one of --runtime or --skills-dir")
+        if bool(parsed.runtime) == bool(parsed.slms_dir):
+            raise ValueError("infer requires exactly one of --runtime or --slms-dir")
         payload = infer_payload(parsed)
-        if parsed.skills_dir:
+        if parsed.slms_dir:
             return DynamicRuntime.load(
-                Path(parsed.skills_dir),
+                Path(parsed.slms_dir),
                 allow_remote_loras=parsed.allow_remote_loras,
                 cache_dir=Path(parsed.lora_cache_dir) if parsed.lora_cache_dir else None,
             ).infer(
@@ -194,11 +194,11 @@ def execute_command(
                 temperature=payload.get("temperature"),
                 dry_run=parsed.dry_run,
             )
-        return SkillRuntime.load(Path(parsed.runtime)).infer(
+        return SlmRuntime.load(Path(parsed.runtime)).infer(
             messages=payload["messages"],
             task_type=payload.get("task_type"),
             semantic_family=payload.get("semantic_family"),
-            skill_override=payload.get("skill_override"),
+            slm_override=payload.get("slm_override"),
             max_tokens=payload.get("max_tokens"),
             temperature=payload.get("temperature"),
             dry_run=parsed.dry_run,
@@ -213,26 +213,26 @@ def execute_command(
     if parsed.command == "agent":
         if parsed.agent_command != "run":
             raise ValueError(f"unknown agent command: {parsed.agent_command}")
-        if bool(parsed.runtime) == bool(parsed.skills_dir):
-            raise ValueError("agent run requires exactly one of --runtime or --skills-dir")
-        if parsed.skills_dir:
+        if bool(parsed.runtime) == bool(parsed.slms_dir):
+            raise ValueError("agent run requires exactly one of --runtime or --slms-dir")
+        if parsed.slms_dir:
             tasks = collect_agent_tasks(parsed.task)
             if not tasks:
-                raise ValueError("agent run --skills-dir --dry-run requires --task")
+                raise ValueError("agent run --slms-dir --dry-run requires --task")
             if len(tasks) != 1:
-                raise ValueError("agent run --skills-dir --dry-run accepts one --task")
+                raise ValueError("agent run --slms-dir --dry-run accepts one --task")
             if parsed.writes == "on" or (not parsed.dry_run and parsed.writes != "confirm"):
                 raise ValueError(
-                    "dynamic skills-dir execution only supports --dry-run or --write-mode confirm"
+                    "dynamic slms-dir execution only supports --dry-run or --write-mode confirm"
                 )
             return _run_dynamic_agent(
-                skills_dir=Path(parsed.skills_dir),
+                slms_dir=Path(parsed.slms_dir),
                 repo=Path(parsed.repo),
                 task=tasks[0],
                 runtime_out=Path(parsed.compose_runtime_out)
                 if parsed.compose_runtime_out
                 else _default_dynamic_runtime_path(
-                    Path(parsed.repo), Path(parsed.skills_dir), tasks[0]
+                    Path(parsed.repo), Path(parsed.slms_dir), tasks[0]
                 ),
                 writes=parsed.writes,
                 test_command=parsed.test_command,
@@ -252,7 +252,7 @@ def execute_command(
             dry_run=parsed.dry_run,
             task_provider=task_provider,
         )
-    return validate_skill_package(Path(parsed.path))
+    return validate_slm_package(Path(parsed.path))
 
 
 def _plasticity_output(parsed: argparse.Namespace) -> Path:
@@ -260,19 +260,19 @@ def _plasticity_output(parsed: argparse.Namespace) -> Path:
         raise ValueError("train-plasticity-lora requires exactly one of --output or --publish-dir")
     if parsed.output:
         return Path(parsed.output)
-    return Path(parsed.publish_dir) / parsed.skill_id
+    return Path(parsed.publish_dir) / parsed.slm_id
 
 
-def _default_dynamic_runtime_path(repo: Path, skills_dir: Path, task: str) -> Path:
+def _default_dynamic_runtime_path(repo: Path, slms_dir: Path, task: str) -> Path:
     repo_root = repo.resolve()
-    key = f"{skills_dir.resolve()}|{repo_root}|{task}"
+    key = f"{slms_dir.resolve()}|{repo_root}|{task}"
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     return repo_root / ".slmcortex" / "runtimes" / digest
 
 
 def _run_dynamic_agent(
     *,
-    skills_dir: Path,
+    slms_dir: Path,
     repo: Path,
     task: str,
     runtime_out: Path,
@@ -283,7 +283,7 @@ def _run_dynamic_agent(
     overwrite: bool,
 ) -> dict:
     composition = compose_from_route(
-        skills_dir=skills_dir,
+        slms_dir=slms_dir,
         repo=repo,
         task=task,
         runtime_out=runtime_out,
@@ -311,7 +311,7 @@ def _run_dynamic_agent(
     result = {
         "mode": "dynamic_agent",
         "routing_decision": composition["routing_decision"],
-        "selected_skills": composition["selected_skills"],
+        "selected_slms": composition["selected_slms"],
         "runtime_out": composition["runtime_out"],
         "composition_strategy": composition["composition_strategy"],
         "composition_status": composition["composition_status"],

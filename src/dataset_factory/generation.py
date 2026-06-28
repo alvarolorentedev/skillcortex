@@ -10,7 +10,7 @@ from .reports import coverage_report, template_distribution
 
 def generate_dataset_bundle(
     *,
-    skill_id: str,
+    slm_id: str,
     domain: str,
     task_type: str,
     num_examples: int,
@@ -27,16 +27,16 @@ def generate_dataset_bundle(
         raise ValueError("fastapi_contract generation currently supports only python_generation")
     resolved_eval_size = eval_size if eval_size is not None else max(1, round(num_examples * DEFAULT_EVAL_RATIO))
     total_examples = num_examples + resolved_eval_size
-    rows = build_examples(skill_id=skill_id, task_type=task_type, total_examples=total_examples, seed=seed)
-    train_rows = assign_split(rows[:num_examples], split="train", seed=seed, skill_id=skill_id)
-    eval_rows = assign_split(rows[num_examples:], split="eval", seed=seed, skill_id=skill_id)
+    rows = build_examples(slm_id=slm_id, task_type=task_type, total_examples=total_examples, seed=seed)
+    train_rows = assign_split(rows[:num_examples], split="train", seed=seed, slm_id=slm_id)
+    eval_rows = assign_split(rows[num_examples:], split="eval", seed=seed, slm_id=slm_id)
     output_path = Path(output)
     eval_output_path = Path(eval_output)
     write_jsonl(output_path, train_rows)
     write_jsonl(eval_output_path, eval_rows)
     report = validate_training_datasets(output_path, eval_dataset=eval_output_path)
     report["generation"] = {
-        "skill_id": skill_id,
+        "slm_id": slm_id,
         "domain": resolved_domain,
         "task_type": task_type,
         "seed": seed,
@@ -51,7 +51,7 @@ def generate_dataset_bundle(
         raise RuntimeError(f"generated dataset failed validation; report written to {resolved_report}")
     return {
         "status": report["status"],
-        "skill_id": skill_id,
+        "slm_id": slm_id,
         "domain": resolved_domain,
         "task_type": task_type,
         "seed": seed,
@@ -73,7 +73,7 @@ def resolve_domain(domain: str) -> str:
     return resolved
 
 
-def build_examples(*, skill_id: str, task_type: str, total_examples: int, seed: int) -> list[dict]:
+def build_examples(*, slm_id: str, task_type: str, total_examples: int, seed: int) -> list[dict]:
     rng = random.Random(seed)
     entity_indices = list(range(len(ENTITY_VARIANTS)))
     blueprint_indices = list(range(len(BLUEPRINTS)))
@@ -85,17 +85,17 @@ def build_examples(*, skill_id: str, task_type: str, total_examples: int, seed: 
         blueprint_round = offset // len(blueprint_indices)
         entity = ENTITY_VARIANTS[entity_indices[(offset + entity_round) % len(entity_indices)]]
         blueprint = BLUEPRINTS[blueprint_indices[(offset + blueprint_round) % len(blueprint_indices)]]
-        rows.append(render_example(entity=entity, blueprint=blueprint, task_type=task_type, skill_id=skill_id, variant_number=offset + 1))
+        rows.append(render_example(entity=entity, blueprint=blueprint, task_type=task_type, slm_id=slm_id, variant_number=offset + 1))
     return rows
 
 
-def assign_split(rows: list[dict], *, split: str, seed: int, skill_id: str) -> list[dict]:
+def assign_split(rows: list[dict], *, split: str, seed: int, slm_id: str) -> list[dict]:
     assigned: list[dict] = []
     for index, row in enumerate(rows, 1):
         payload = dict(row)
-        payload["id"] = f"{skill_id.replace('_', '-')}-{split}-{index:04d}"
+        payload["id"] = f"{slm_id.replace('_', '-')}-{split}-{index:04d}"
         payload["semantic_family"] = "fastapi_contract"
-        payload["skills"] = [skill_id]
+        payload["slms"] = [slm_id]
         metadata = dict(payload.get("metadata") or {})
         metadata.update({"split": split, "seed": seed, "domain": "fastapi_contract"})
         payload["metadata"] = metadata

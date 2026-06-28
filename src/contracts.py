@@ -4,18 +4,18 @@ TASK_TYPES = (
     "test_generation",
 )
 
-SKILLS = ("python_skill", "debugging_skill", "test_generation_skill")
-PROMOTED_SKILLS = ("alternating_skill",)
-QUARANTINED_SKILLS = ()
-KNOWN_SKILLS = (*SKILLS, *PROMOTED_SKILLS, *QUARANTINED_SKILLS)
-MODES = ("base", "generic", "single-skill", "lattice", "oracle-lattice")
+PRESET_SLMS = ("python_slm", "debugging_slm", "test_generation_slm")
+PROMOTED_SLMS = ("alternating_slm",)
+QUARANTINED_SLMS = ()
+KNOWN_SLMS = (*PRESET_SLMS, *PROMOTED_SLMS, *QUARANTINED_SLMS)
+MODES = ("base", "generic", "single-slm", "lattice", "oracle-lattice")
 ROUTER_POLICIES = (
     "python_only_for_test_generation",
-    "protected_skill_router",
-    "protected_skill_router_without_failure_born",
+    "protected_slm_router",
+    "protected_slm_router_without_failure_born",
     "slmcortex_router_v1",
     "legacy_rule_router",
     "weighted_task_composition",
     "reverse_weighted_task_composition",
-    "protected_router_plus_alternating_skill",
+    "protected_router_plus_alternating_slm",
 )

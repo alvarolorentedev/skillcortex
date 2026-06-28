@@ -1,14 +1,14 @@
 {
   "hypothesis": "not_applicable",
   "modes": {
-    "single-skill": {
+    "single-slm": {
       "count": 1,
       "fuzzy_score": 1.0
     }
   },
   "tasks": {
     "debugging": {
-      "single-skill": {
+      "single-slm": {
         "count": 1,
         "fuzzy_score": 1.0
       }

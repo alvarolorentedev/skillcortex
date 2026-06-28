@@ -38,7 +38,7 @@
     "status_code_correctness": "comments"
   },
   "evaluation_only": true,
-  "existing_benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+  "existing_benchmark_sha256": "3a83b9874437e33285f234fec80d90b7f7d48c5f50cbf7d66f7897e25e093118",
   "schema_version": 1,
   "seed": 0,
   "task_counts": {

@@ -44,26 +44,26 @@ If you want the command-by-command version, use the same sequence the demo scrip
 ```bash
 DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-demo.XXXXXX")"
 
-slmcortex package-skill \
-  --skill-id python_skill \
-  --name "Python Skill" \
-  --adapter-dir artifacts/adapters/python_skill \
+slmcortex package-slm \
+  --slm-id python_slm \
+  --name "Python Slm" \
+  --adapter-dir artifacts/adapters/python_slm \
   --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
   --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
   --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
-  --output "$DEMO_ROOT/python_skill"
+  --output "$DEMO_ROOT/python_slm"
 
-slmcortex package-skill \
-  --skill-id debugging_skill \
-  --name "Debugging Skill" \
-  --adapter-dir artifacts/adapters/debugging_skill \
+slmcortex package-slm \
+  --slm-id debugging_slm \
+  --name "Debugging Slm" \
+  --adapter-dir artifacts/adapters/debugging_slm \
   --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
   --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
   --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
-  --output "$DEMO_ROOT/debugging_skill"
+  --output "$DEMO_ROOT/debugging_slm"
 
-slmcortex compose-skills \
-  --skills "$DEMO_ROOT/python_skill,$DEMO_ROOT/debugging_skill" \
+slmcortex compose-slms \
+  --slms "$DEMO_ROOT/python_slm,$DEMO_ROOT/debugging_slm" \
   --output "$DEMO_ROOT/runtime"
 
 slmcortex validate-runtime --runtime "$DEMO_ROOT/runtime"
@@ -82,16 +82,16 @@ slmcortex agent run \
 
 ## 4. Try the built-in smoke checks
 
-The default arbitrary-skill smoke stays no-model:
+The default arbitrary-slm smoke stays no-model:
 
 ```bash
-python scripts/run_slmcortex_arbitrary_skill_smoke.py
+python scripts/run_slmcortex_arbitrary_slm_smoke.py
 ```
 
 If you explicitly want the slower local training path:
 
 ```bash
-python scripts/run_slmcortex_arbitrary_skill_smoke.py --real-training
+python scripts/run_slmcortex_arbitrary_slm_smoke.py --real-training
 ```
 
 For GGUF training/import conversion, set `gguf_converter` in the selected base

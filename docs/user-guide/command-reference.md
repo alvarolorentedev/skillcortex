@@ -8,14 +8,14 @@ follow-up to the [quickstart](quickstart.md).
 - Use `slmcortex` or `python -m slmcortex`.
 - Prefer `--dry-run` when you only want to inspect routing, composition, or
   agent behavior.
-- `generate-dataset`, `train-skill`, `package-skill`, and `compose-skills`
+- `generate-dataset`, `train-slm`, `package-slm`, and `compose-slms`
   are the packaging pipeline.
 - `route`, `compose-from-route`, `infer`, `serve`, and `agent run` are the
   runtime pipeline.
-- `train-skill` accepts either a preset positional skill name or an explicit
-  `--skill-id`.
-- `infer` requires exactly one of `--runtime` or `--skills-dir`.
-- `agent run` requires exactly one of `--runtime` or `--skills-dir`.
+- `train-slm` accepts either a preset positional slm name or an explicit
+  `--slm-id`.
+- `infer` requires exactly one of `--runtime` or `--slms-dir`.
+- `agent run` requires exactly one of `--runtime` or `--slms-dir`.
 - `train-plasticity-lora` requires exactly one of `--output` or
   `--publish-dir`.
 - Backend selection comes from base config: `backend: auto | mlx | gguf`.
@@ -27,20 +27,20 @@ follow-up to the [quickstart](quickstart.md).
 
 | Command | Reads | Writes | Best For |
 | --- | --- | --- | --- |
-| `generate-dataset` | skill id, domain | train/eval JSONL, report | bootstrapping training data |
+| `generate-dataset` | slm id, domain | train/eval JSONL, report | bootstrapping training data |
 | `validate-dataset` | dataset paths | validation report | checking schema and leakage |
-| `train-skill` | datasets, adapter config | skill package | turning datasets into a packaged skill |
-| `train-plasticity-lora` | prompt/target JSONL | skill package | on-demand local adapter training |
-| `import-lora` | Hugging Face source, datasets | skill package | wrapping an external LoRA |
-| `package-skill` | existing adapter, datasets, eval summary | skill package | converting a trained adapter into a package |
-| `validate-skill-package` | packaged skill path | validation result only | verifying package integrity |
-| `compose-skills` | skill package paths | runtime bundle | building a deterministic runtime |
-| `route` | skills dir, repo, task | routing result only | understanding which skills match a task |
-| `compose-from-route` | skills dir, repo, task | runtime bundle | one-shot routing plus composition |
+| `train-slm` | datasets, adapter config | slm package | turning datasets into a packaged slm |
+| `train-plasticity-lora` | prompt/target JSONL | slm package | on-demand local adapter training |
+| `import-lora` | Hugging Face source, datasets | slm package | wrapping an external LoRA |
+| `package-slm` | existing adapter, datasets, eval summary | slm package | converting a trained adapter into a package |
+| `validate-slm-package` | packaged slm path | validation result only | verifying package integrity |
+| `compose-slms` | slm package paths | runtime bundle | building a deterministic runtime |
+| `route` | slms dir, repo, task | routing result only | understanding which slms match a task |
+| `compose-from-route` | slms dir, repo, task | runtime bundle | one-shot routing plus composition |
 | `validate-runtime` | runtime bundle | validation result only | checking a bundle before use |
-| `infer` | runtime or skills dir, prompt or request file | inference result or dry-run route | running model-backed or dry-run inference |
+| `infer` | runtime or slms dir, prompt or request file | inference result or dry-run route | running model-backed or dry-run inference |
 | `serve` | runtime bundle | server process | exposing the OpenAI-compatible API |
-| `agent run` | runtime or skills dir, repo, task | trace, diffs, optional writes | bounded repo work on a local checkout |
+| `agent run` | runtime or slms dir, repo, task | trace, diffs, optional writes | bounded repo work on a local checkout |
 
 ## `generate-dataset`
 
@@ -48,7 +48,7 @@ Generate deterministic train and eval JSONL datasets.
 
 Required flags:
 
-- `--skill-id`
+- `--slm-id`
 - `--domain`
 
 Important flags:
@@ -57,7 +57,7 @@ Important flags:
 - `--num-examples` defaults to `100`
 - `--seed` defaults to the built-in dataset seed
 - `--output` and `--eval-output` override the default
-  `datasets/<skill_id>/...` paths
+  `datasets/<slm_id>/...` paths
 - `--eval-size` controls the eval split size
 - `--report-output` writes a machine-readable report
 
@@ -71,12 +71,12 @@ Example:
 
 ```bash
 slmcortex generate-dataset \
-  --skill-id fastapi_contract \
+  --slm-id fastapi_contract \
   --domain fastapi \
   --report-output /tmp/fastapi_contract-report.json
 ```
 
-Use this when you want a reproducible dataset bundle for `train-skill`.
+Use this when you want a reproducible dataset bundle for `train-slm`.
 
 ## `validate-dataset`
 
@@ -106,14 +106,14 @@ slmcortex validate-dataset datasets/fastapi_contract/train.jsonl \
 
 Use this before training when you want an explicit quality gate.
 
-## `train-skill`
+## `train-slm`
 
-Train a LoRA skill from datasets and package it as a Slm Cortex artifact.
+Train a LoRA slm from datasets and package it as a Slm Cortex artifact.
 
 You can call it in two ways:
 
-- preset mode: `slmcortex train-skill python_skill --output ...`
-- generic mode: `slmcortex train-skill --skill-id fastapi_contract ...`
+- preset mode: `slmcortex train-slm python_slm --output ...`
+- generic mode: `slmcortex train-slm --slm-id fastapi_contract ...`
 
 Behavior:
 
@@ -137,26 +137,26 @@ Common flags:
 - `--allowed-task-types`
 - `--activation-scope`
 - `--semantic-families`
-- `--compatible-skills`
-- `--incompatible-skills`
+- `--compatible-slms`
+- `--incompatible-slms`
 - `--seed`
 - `--force`
 - `--dry-run`
 
 Writes:
 
-- a packaged skill directory
+- a packaged slm directory
 - package metadata, fingerprints, and training artifacts
 
 Example:
 
 ```bash
-slmcortex train-skill \
-  --skill-id fastapi_contract \
-  --name "FastAPI Contract Skill" \
+slmcortex train-slm \
+  --slm-id fastapi_contract \
+  --name "FastAPI Contract Slm" \
   --train-dataset datasets/fastapi_contract/train.jsonl \
   --eval-dataset datasets/fastapi_contract/eval.jsonl \
-  --output skills/fastapi_contract
+  --output slms/fastapi_contract
 ```
 
 Notes:
@@ -174,7 +174,7 @@ Train an on-demand LoRA from a prompt/target dataset.
 
 Required flags:
 
-- `--skill-id`
+- `--slm-id`
 - `--name`
 - `--prompt-file`
 
@@ -194,17 +194,17 @@ Optional flags:
 
 Writes:
 
-- a packaged skill directory at `--output`
-- or a package under `--publish-dir/<skill-id>`
+- a packaged slm directory at `--output`
+- or a package under `--publish-dir/<slm-id>`
 
 Example:
 
 ```bash
 slmcortex train-plasticity-lora \
-  --skill-id local_fix \
+  --slm-id local_fix \
   --name "Local Fix" \
   --prompt-file data/train.jsonl \
-  --publish-dir skills
+  --publish-dir slms
 ```
 
 Use this when you want the shortest path from prompt/target data to a reusable
@@ -217,7 +217,7 @@ Import a public Hugging Face LoRA into a local Slm Cortex package.
 Required flags:
 
 - `--source`
-- `--skill-id`
+- `--slm-id`
 - `--name`
 - `--output`
 - `--train-dataset`
@@ -233,7 +233,7 @@ Optional flags:
 
 Writes:
 
-- a packaged skill directory
+- a packaged slm directory
 - cached remote downloads when `--cache-dir` is set
 
 Example:
@@ -241,9 +241,9 @@ Example:
 ```bash
 slmcortex import-lora \
   --source hf://owner/repo \
-  --skill-id fastapi_skill \
-  --name "FastAPI Skill" \
-  --output skills/fastapi_skill \
+  --slm-id fastapi_slm \
+  --name "FastAPI Slm" \
+  --output slms/fastapi_slm \
   --train-dataset data/train.jsonl \
   --eval-dataset data/eval.jsonl
 ```
@@ -254,13 +254,13 @@ local package contract.
 When the resolved backend is GGUF, import converts the downloaded PEFT LoRA to
 `adapter/adapter.gguf`; set `gguf_converter` in the selected base config.
 
-## `package-skill`
+## `package-slm`
 
-Package an existing adapter into a self-describing skill artifact.
+Package an existing adapter into a self-describing slm artifact.
 
 Required flags:
 
-- `--skill-id`
+- `--slm-id`
 - `--name`
 - `--adapter-dir`
 - `--output`
@@ -279,34 +279,34 @@ Optional flags:
 - `--allowed-task-types`
 - `--activation-scope`
 - `--semantic-families`
-- `--compatible-skills`
-- `--incompatible-skills`
+- `--compatible-slms`
+- `--incompatible-slms`
 - `--force`
 - `--dry-run`
 
 Writes:
 
-- a self-describing skill package directory
+- a self-describing slm package directory
 - package fingerprints and provenance metadata
 
 Example:
 
 ```bash
-slmcortex package-skill \
-  --skill-id python_skill \
-  --name "Python Skill" \
-  --adapter-dir artifacts/adapters/python_skill \
+slmcortex package-slm \
+  --slm-id python_slm \
+  --name "Python Slm" \
+  --adapter-dir artifacts/adapters/python_slm \
   --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
   --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
   --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
-  --output /tmp/slmcortex-demo/python_skill
+  --output /tmp/slmcortex-demo/python_slm
 ```
 
 Use this when the adapter already exists and you only need a package wrapper.
 
-## `validate-skill-package`
+## `validate-slm-package`
 
-Validate a packaged skill artifact and its recorded fingerprints.
+Validate a packaged slm artifact and its recorded fingerprints.
 
 Required flags:
 
@@ -320,18 +320,18 @@ Writes:
 Example:
 
 ```bash
-slmcortex validate-skill-package --path /tmp/slmcortex-demo/python_skill
+slmcortex validate-slm-package --path /tmp/slmcortex-demo/python_slm
 ```
 
 Use this after packaging and before composition.
 
-## `compose-skills`
+## `compose-slms`
 
-Compose validated skill packages into a deterministic runtime bundle.
+Compose validated slm packages into a deterministic runtime bundle.
 
 Required flags:
 
-- `--skills`
+- `--slms`
 - `--output`
 
 Important flags:
@@ -344,26 +344,26 @@ Important flags:
 Writes:
 
 - a runtime bundle directory
-- bundle manifest and routed skill metadata
+- bundle manifest and routed slm metadata
 
 Example:
 
 ```bash
-slmcortex compose-skills \
-  --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill \
+slmcortex compose-slms \
+  --slms /tmp/slmcortex-demo/python_slm,/tmp/slmcortex-demo/debugging_slm \
   --output /tmp/slmcortex-demo/runtime
 ```
 
 Use this when you want a runtime that is stable and repeatable from a fixed set
-of packaged skills.
+of packaged slms.
 
 ## `route`
 
-Route a task against discovered skill packages without loading adapters.
+Route a task against discovered slm packages without loading adapters.
 
 Required flags:
 
-- `--skills-dir`
+- `--slms-dir`
 - `--repo`
 - `--task`
 
@@ -381,7 +381,7 @@ Example:
 
 ```bash
 slmcortex route \
-  --skills-dir skills \
+  --slms-dir slms \
   --repo . \
   --task "Create a FastAPI endpoint" \
   --explain
@@ -392,11 +392,11 @@ runtime.
 
 ## `compose-from-route`
 
-Route a task and compose the selected skill packages into a runtime bundle.
+Route a task and compose the selected slm packages into a runtime bundle.
 
 Required flags:
 
-- `--skills-dir`
+- `--slms-dir`
 - `--repo`
 - `--task`
 - `--runtime-out`
@@ -410,19 +410,19 @@ Optional flags:
 Writes:
 
 - a runtime bundle at `--runtime-out`
-- routing metadata for the selected skills
+- routing metadata for the selected slms
 
 Example:
 
 ```bash
 slmcortex compose-from-route \
-  --skills-dir skills \
+  --slms-dir slms \
   --repo . \
   --task "Create a FastAPI endpoint" \
   --runtime-out runtime/generated
 ```
 
-Use this when you want one command to select skills and materialize a runtime.
+Use this when you want one command to select slms and materialize a runtime.
 
 ## `validate-runtime`
 
@@ -451,13 +451,13 @@ Run inference or a dry-run route decision against a runtime bundle.
 
 Required input:
 
-- exactly one of `--runtime` or `--skills-dir`
+- exactly one of `--runtime` or `--slms-dir`
 - exactly one of `--prompt` or `--request-file`
 
 Behavior:
 
 - runtime mode loads the composed bundle
-- skills-dir mode resolves skills directly and can fetch remote LoRAs if
+- slms-dir mode resolves slms directly and can fetch remote LoRAs if
   allowed
 - `--dry-run` returns routing metadata without generating text
 
@@ -468,7 +468,7 @@ Optional flags:
 - `--system`
 - `--task-type`
 - `--semantic-family`
-- `--skill-override`
+- `--slm-override`
 - `--max-tokens`
 - `--temperature`
 - `--dry-run`
@@ -488,7 +488,7 @@ slmcortex infer \
 ```
 
 Use `--request-file` when you already have a chat payload on disk.
-Use `--skills-dir` when you want routing against discovered skill packages
+Use `--slms-dir` when you want routing against discovered slm packages
 without building a runtime first.
 
 ## `serve`
@@ -535,13 +535,13 @@ Run the bounded local agent on top of a runtime bundle.
 
 Required input:
 
-- exactly one of `--runtime` or `--skills-dir`
+- exactly one of `--runtime` or `--slms-dir`
 - `--repo`
 
 Behavior:
 
 - runtime mode runs the agent against an already composed bundle
-- skills-dir mode routes and composes first, then runs the agent
+- slms-dir mode routes and composes first, then runs the agent
 - `--task` can be repeated to preload multiple tasks
 - `--dry-run` plans the work without applying changes
 
@@ -573,7 +573,7 @@ slmcortex agent run \
 
 Notes:
 
-- `--skills-dir` mode only supports `--dry-run` or `--write-mode confirm`.
+- `--slms-dir` mode only supports `--dry-run` or `--write-mode confirm`.
 - If you omit `--task`, the command reads tasks from stdin or prompts
   interactively.
 - `--trace-out` writes the run trace JSON to disk.

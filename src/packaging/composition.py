@@ -4,7 +4,7 @@ import json
 
 
 DEFAULT_COMPOSITION = {
-    "python_skill": {
+    "python_slm": {
         "capabilities": {
             "allowed_task_types": ["debugging", "test_generation"],
         },
@@ -14,23 +14,23 @@ DEFAULT_COMPOSITION = {
             "semantic_families": [],
         },
         "compatibility": {
-            "compatible_skills": [],
-            "incompatible_skills": [],
+            "compatible_slms": [],
+            "incompatible_slms": [],
         },
         "routing": {
             "tasks": {
                 "debugging": {
                     "order": 20,
-                    "requires_any_of": ["debugging_skill"],
+                    "requires_any_of": ["debugging_slm"],
                 },
                 "test_generation": {
                     "order": 10,
-                    "requires_any_of": ["test_generation_skill"],
+                    "requires_any_of": ["test_generation_slm"],
                 },
             }
         },
     },
-    "debugging_skill": {
+    "debugging_slm": {
         "capabilities": {
             "allowed_task_types": ["debugging"],
         },
@@ -40,19 +40,19 @@ DEFAULT_COMPOSITION = {
             "semantic_families": [],
         },
         "compatibility": {
-            "compatible_skills": [],
-            "incompatible_skills": [],
+            "compatible_slms": [],
+            "incompatible_slms": [],
         },
         "routing": {
             "tasks": {
                 "debugging": {
                     "order": 10,
-                    "requires_all_of": ["python_skill"],
+                    "requires_all_of": ["python_slm"],
                 }
             }
         },
     },
-    "test_generation_skill": {
+    "test_generation_slm": {
         "capabilities": {
             "allowed_task_types": ["test_generation"],
         },
@@ -62,19 +62,19 @@ DEFAULT_COMPOSITION = {
             "semantic_families": [],
         },
         "compatibility": {
-            "compatible_skills": [],
-            "incompatible_skills": [],
+            "compatible_slms": [],
+            "incompatible_slms": [],
         },
         "routing": {
             "tasks": {
                 "test_generation": {
                     "order": 20,
-                    "requires_all_of": ["python_skill"],
+                    "requires_all_of": ["python_slm"],
                 }
             }
         },
     },
-    "alternating_skill": {
+    "alternating_slm": {
         "capabilities": {
             "allowed_task_types": ["debugging", "test_generation"],
         },
@@ -84,18 +84,18 @@ DEFAULT_COMPOSITION = {
             "semantic_families": ["alternating"],
         },
         "compatibility": {
-            "compatible_skills": [],
-            "incompatible_skills": [],
+            "compatible_slms": [],
+            "incompatible_slms": [],
         },
         "routing": {
             "tasks": {
                 "debugging": {
                     "order": 30,
-                    "requires_all_of": ["debugging_skill", "python_skill"],
+                    "requires_all_of": ["debugging_slm", "python_slm"],
                 },
                 "test_generation": {
                     "order": 30,
-                    "requires_all_of": ["python_skill", "test_generation_skill"],
+                    "requires_all_of": ["python_slm", "test_generation_slm"],
                 },
             }
         },
@@ -107,16 +107,16 @@ COMPOSITION_ROUTE_TYPES = {"adapter", "base_fallback"}
 KNOWN_TASK_TYPES = {"python_generation", "debugging", "test_generation"}
 
 
-def normalized_skill_id(skill_id: str) -> str:
-    nonempty("skill_id", skill_id)
-    normalized = skill_id.strip().lower().replace("-", "_")
+def normalized_slm_id(slm_id: str) -> str:
+    nonempty("slm_id", slm_id)
+    normalized = slm_id.strip().lower().replace("-", "_")
     if not all(char.isalnum() or char == "_" for char in normalized):
-        raise ValueError("skill_id must contain only letters, numbers, dashes, or underscores")
+        raise ValueError("slm_id must contain only letters, numbers, dashes, or underscores")
     return normalized
 
 
-def default_composition(skill_id: str) -> dict | None:
-    composition = DEFAULT_COMPOSITION.get(skill_id)
+def default_composition(slm_id: str) -> dict | None:
+    composition = DEFAULT_COMPOSITION.get(slm_id)
     if composition is None:
         return None
     return json.loads(json.dumps(composition, sort_keys=True))
@@ -148,7 +148,7 @@ def validate_composition_metadata(composition: dict) -> None:
         raise ValueError(
             "composition.activation.semantic_families must be non-empty for semantic_family scope"
         )
-    for key in ("compatible_skills", "incompatible_skills"):
+    for key in ("compatible_slms", "incompatible_slms"):
         value = compatibility.get(key) or []
         if len(value) != len(set(value)):
             raise ValueError(f"composition.compatibility.{key} must not contain duplicates")

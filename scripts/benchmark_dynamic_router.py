@@ -22,14 +22,14 @@ CASES = [
 ]
 
 
-def run_benchmark(skills_dir: Path) -> dict:
+def run_benchmark(slms_dir: Path) -> dict:
     previous = os.environ.get("SLMCORTEX_BASE_CONFIG")
     os.environ["SLMCORTEX_BASE_CONFIG"] = str(Path("configs/prototype.yaml").resolve())
     rows = []
     try:
         with tempfile.TemporaryDirectory(prefix="slmcortex-router-bench-") as directory:
-            benchmark_skills = skills_dir if any(skills_dir.glob("*/skill.yaml")) else _demo_skills(Path(directory))
-            runtime = DynamicRuntime.load(benchmark_skills, allow_remote_loras=False)
+            benchmark_slms = slms_dir if any(slms_dir.glob("*/slm.yaml")) else _demo_slms(Path(directory))
+            runtime = DynamicRuntime.load(benchmark_slms, allow_remote_loras=False)
             for prompt, expected in CASES:
                 decision = _decision(runtime, prompt)
                 actual = runtime._route_branch(decision)
@@ -51,16 +51,16 @@ def run_benchmark(skills_dir: Path) -> dict:
     }
 
 
-def _demo_skills(root: Path) -> Path:
-    from slmcortex.packaging import package_skill
+def _demo_slms(root: Path) -> Path:
+    from slmcortex.packaging import package_slm
 
     eval_summary = root / "eval.json"
     eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
-    package_skill(
-        skill_id="fastapi_skill",
-        name="FastAPI Skill",
-        adapter_dir=Path("artifacts/adapters/python_skill"),
-        output=root / "skills" / "fastapi_skill",
+    package_slm(
+        slm_id="fastapi_slm",
+        name="FastAPI Slm",
+        adapter_dir=Path("artifacts/adapters/python_slm"),
+        output=root / "slms" / "fastapi_slm",
         train_dataset=Path("data/train.jsonl"),
         eval_dataset=Path("data/eval.jsonl"),
         eval_summary=eval_summary,
@@ -73,33 +73,33 @@ def _demo_skills(root: Path) -> Path:
                 "scope": "task",
                 "semantic_families": ["fastapi"],
             },
-            "compatibility": {"compatible_skills": [], "incompatible_skills": []},
+            "compatibility": {"compatible_slms": [], "incompatible_slms": []},
             "routing": {"tasks": {}},
         },
         force=True,
     )
-    return root / "skills"
+    return root / "slms"
 
 
 def _decision(runtime: DynamicRuntime, prompt: str) -> DynamicRouteDecision:
     if "train" in prompt.lower():
         return DynamicRouteDecision(
             base_model="benchmark",
-            selected_skills=[],
+            selected_slms=[],
             remote_loras=[],
             task_type="python_generation",
             semantic_family=None,
             train_new_lora=True,
             reason="benchmark training branch",
         )
-    return runtime._rule_router([{"role": "user", "content": prompt}], list(runtime.skills.values()))
+    return runtime._rule_router([{"role": "user", "content": prompt}], list(runtime.slms.values()))
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Benchmark dynamic router branch choices without downloads or training.")
-    parser.add_argument("--skills-dir", default="skills")
+    parser.add_argument("--slms-dir", default="slms")
     parsed = parser.parse_args(argv)
-    print(json.dumps(run_benchmark(Path(parsed.skills_dir)), indent=2, sort_keys=True))
+    print(json.dumps(run_benchmark(Path(parsed.slms_dir)), indent=2, sort_keys=True))
     return 0
 
 

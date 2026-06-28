@@ -72,7 +72,7 @@ def resolve_hf_lora_cache(
 def import_lora(
     *,
     source: str,
-    skill_id: str,
+    slm_id: str,
     name: str,
     output: Path,
     train_dataset: Path,
@@ -83,7 +83,7 @@ def import_lora(
     max_download_bytes: int | None = None,
     force: bool = False,
 ) -> dict:
-    from . import package_skill
+    from . import package_slm
 
     cache_root = cache_dir or Path(base_config().get("lora_cache_dir") or ".slmcortex/lora-cache")
     cached = resolve_hf_lora_cache(
@@ -92,7 +92,7 @@ def import_lora(
         force=force,
         max_download_bytes=max_download_bytes,
     )
-    with tempfile.TemporaryDirectory(prefix=f"slmcortex-import-{skill_id}-") as directory:
+    with tempfile.TemporaryDirectory(prefix=f"slmcortex-import-{slm_id}-") as directory:
         root = Path(directory)
         adapter = root / "adapter"
         adapter.mkdir()
@@ -116,7 +116,7 @@ def import_lora(
         (adapter / "metadata.json").write_text(
             json.dumps(
                 {
-                    "adapter": skill_id,
+                    "adapter": slm_id,
                     "source_model": config.get("source_model"),
                     "base_model": config.get("default_runtime_model") or config.get("model"),
                     "quantization": "unknown",
@@ -133,8 +133,8 @@ def import_lora(
         )
         eval_summary = root / "eval-summary.json"
         eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
-        result = package_skill(
-            skill_id=skill_id,
+        result = package_slm(
+            slm_id=slm_id,
             name=name,
             adapter_dir=adapter,
             output=output,

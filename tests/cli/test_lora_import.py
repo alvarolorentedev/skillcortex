@@ -24,12 +24,12 @@ def test_import_lora_from_huggingface_source_uses_cache_and_provenance(tmp_path,
                 "import-lora",
                 "--source",
                 "hf://owner/repo",
-                "--skill-id",
-                "fastapi_skill",
+                "--slm-id",
+                "fastapi_slm",
                 "--name",
-                "FastAPI Skill",
+                "FastAPI Slm",
                 "--output",
-                str(tmp_path / "fastapi_skill"),
+                str(tmp_path / "fastapi_slm"),
                 "--train-dataset",
                 "data/train.jsonl",
                 "--eval-dataset",
@@ -50,9 +50,9 @@ def test_import_lora_from_huggingface_source_uses_cache_and_provenance(tmp_path,
     assert source["source"] == "hf://owner/repo"
     assert source["revision"] == "main"
     assert source["files"]["adapters.safetensors"]["sha256"] == sha256(tmp_path / "cache" / "hf" / "owner" / "repo" / "main" / "adapters.safetensors")
-    assert (tmp_path / "fastapi_skill" / "skill.yaml").exists()
-    assert (tmp_path / "fastapi_skill" / "adapter" / "adapters.safetensors").exists()
-    metadata = json.loads((tmp_path / "fastapi_skill" / "metadata.json").read_text())
+    assert (tmp_path / "fastapi_slm" / "slm.yaml").exists()
+    assert (tmp_path / "fastapi_slm" / "adapter" / "adapters.safetensors").exists()
+    metadata = json.loads((tmp_path / "fastapi_slm" / "metadata.json").read_text())
     assert metadata["source_artifacts"]["source"] == "hf://owner/repo"
     assert metadata["source_artifacts"]["cache_path"].endswith("/cache/hf/owner/repo/main")
     assert metadata["datasets"]["train"]["role"] == "packaging_reference"
@@ -70,9 +70,9 @@ def test_import_lora_reuses_cache_without_force(tmp_path, monkeypatch, capsys):
     assert main([
         "import-lora",
         "--source", "hf://owner/repo",
-        "--skill-id", "fastapi_skill",
-        "--name", "FastAPI Skill",
-        "--output", str(tmp_path / "fastapi_skill"),
+        "--slm-id", "fastapi_slm",
+        "--name", "FastAPI Slm",
+        "--output", str(tmp_path / "fastapi_slm"),
         "--train-dataset", "data/train.jsonl",
         "--eval-dataset", "data/eval.jsonl",
         "--cache-dir", str(tmp_path / "cache"),
@@ -87,9 +87,9 @@ def test_import_lora_rejects_disallowed_publisher(tmp_path, monkeypatch, capsys)
     assert main([
         "import-lora",
         "--source", "hf://owner/repo",
-        "--skill-id", "fastapi_skill",
-        "--name", "FastAPI Skill",
-        "--output", str(tmp_path / "fastapi_skill"),
+        "--slm-id", "fastapi_slm",
+        "--name", "FastAPI Slm",
+        "--output", str(tmp_path / "fastapi_slm"),
         "--train-dataset", "data/train.jsonl",
         "--eval-dataset", "data/eval.jsonl",
         "--cache-dir", str(tmp_path / "cache"),
@@ -110,9 +110,9 @@ def test_import_lora_rejects_oversized_adapter(tmp_path, monkeypatch, capsys):
     assert main([
         "import-lora",
         "--source", "hf://owner/repo",
-        "--skill-id", "fastapi_skill",
-        "--name", "FastAPI Skill",
-        "--output", str(tmp_path / "fastapi_skill"),
+        "--slm-id", "fastapi_slm",
+        "--name", "FastAPI Slm",
+        "--output", str(tmp_path / "fastapi_slm"),
         "--train-dataset", "data/train.jsonl",
         "--eval-dataset", "data/eval.jsonl",
         "--cache-dir", str(tmp_path / "cache"),

@@ -37,7 +37,7 @@ def run_single_task(
         {"steps": task_steps},
         {
             "step_type": "inspect_repo",
-            "selected_skills": [],
+            "selected_slms": [],
             "route_type": None,
             "route_reason": None,
             "tool_name": "list_files+read_file",
@@ -71,7 +71,7 @@ def run_single_task(
                 "Produce JSON-only coding actions for the next step. Return either a JSON array of action objects or an object with an 'actions' array. "
                 "Each action must use kind=file_replace, proposed_diff, or no_change. Prefer proposed_diff for edits to existing files and preserve unchanged code. "
                 "Use file_replace for new files or intentional full-file rewrites only, and never emit a partial file body for an existing file. "
-                "Do not rewrite runtime bundles, datasets, skill packages, or other generated artifacts unless the task explicitly asks for that. "
+                "Do not rewrite runtime bundles, datasets, slm packages, or other generated artifacts unless the task explicitly asks for that. "
                 f"Prefer editing {patch_target} only when no better path is clear, and create a new source file when the repo has no suitable code target."
             ),
             repo_files=repo_files,
@@ -103,7 +103,7 @@ def run_single_task(
         {"steps": task_steps},
         {
             "step_type": "run_validation",
-            "selected_skills": [],
+            "selected_slms": [],
             "route_type": None,
             "route_reason": None,
             "tool_name": "run_validation",
@@ -126,7 +126,7 @@ def run_single_task(
                     "Debug the failed validation and propose the next code change as JSON-only actions. Return either a JSON array of action objects or an object with an 'actions' array. "
                     "Each action must use kind=file_replace, proposed_diff, or no_change. Prefer proposed_diff for edits to existing files and preserve unchanged code. "
                     "Use file_replace for new files or intentional full-file rewrites only, and never emit a partial file body for an existing file. "
-                    "Do not rewrite runtime bundles, datasets, skill packages, or other generated artifacts unless the task explicitly asks for that."
+                    "Do not rewrite runtime bundles, datasets, slm packages, or other generated artifacts unless the task explicitly asks for that."
                 ),
                 repo_files=repo_files,
                 repo_context=repo_context,

@@ -8,24 +8,24 @@ from pathlib import Path
 
 from ..runtime.generation import infer
 from ..shared.config import training_config
-from ..training.commands import build_skill_command, saved_parameter_count, training_metadata
-from ..training.data import load_jsonl, select_for_skill, write_mlx_dataset
-from ..training.evaluation import evaluate_product_skill_adapter, train_product_skill_to_run_directory
+from ..training.commands import build_slm_command, saved_parameter_count, training_metadata
+from ..training.data import load_jsonl, select_for_slm, write_mlx_dataset
+from ..training.evaluation import evaluate_product_slm_adapter, train_product_slm_to_run_directory
 from ..training.metrics import aggregate_results, extract_code, fuzzy_match, python_syntax_valid
 from ..training.execution import run_fixture
 from ..training.types import EvaluationResult
 
 
-def train_generic_skill_to_run_directory(
+def train_generic_slm_to_run_directory(
     *,
-    skill_id: str,
+    slm_id: str,
     train_dataset: Path,
     run_directory: Path,
     seed: int | None,
     force: bool,
 ) -> tuple[Path, dict]:
-    return train_product_skill_to_run_directory(
-        skill_id=skill_id,
+    return train_product_slm_to_run_directory(
+        slm_id=slm_id,
         train_dataset=train_dataset,
         run_directory=run_directory,
         seed=seed,
@@ -33,43 +33,43 @@ def train_generic_skill_to_run_directory(
     )
 
 
-def evaluate_generic_skill_adapter(
+def evaluate_generic_slm_adapter(
     *,
-    skill_id: str,
+    slm_id: str,
     dataset: Path,
     output: Path,
     adapter_dir: Path,
 ) -> Path:
-    return evaluate_product_skill_adapter(
-        skill_id=skill_id,
+    return evaluate_product_slm_adapter(
+        slm_id=slm_id,
         dataset=dataset,
         output=output,
         adapter_dir=adapter_dir,
     )
 
 
-def train_skill_to_run_directory(
+def train_slm_to_run_directory(
     *,
-    skill: str,
+    slm: str,
     train_dataset: Path,
     run_directory: Path,
     seed: int | None,
     force: bool,
 ) -> tuple[Path, dict]:
     run_directory.mkdir(parents=True, exist_ok=True)
-    examples = select_for_skill(load_jsonl(train_dataset), skill)
+    examples = select_for_slm(load_jsonl(train_dataset), slm)
     training_directory = run_directory / "training-data"
-    adapter_directory = run_directory / "adapters" / skill
+    adapter_directory = run_directory / "adapters" / slm
     if adapter_directory.exists() and any(adapter_directory.iterdir()) and not force:
         raise FileExistsError(f"{adapter_directory} exists; pass --force to replace it")
     if adapter_directory.exists():
         shutil.rmtree(adapter_directory)
     dataset_directory = write_mlx_dataset(examples, training_directory)
-    command = build_skill_command(skill, dataset_directory, adapter_directory, seed=seed)
+    command = build_slm_command(slm, dataset_directory, adapter_directory, seed=seed)
     start = time.perf_counter()
     subprocess.run(command, check=True)
     metadata = training_metadata(
-        skill,
+        slm,
         examples,
         rank=8,
         elapsed=time.perf_counter() - start,
@@ -84,29 +84,29 @@ def train_skill_to_run_directory(
     return adapter_directory, metadata
 
 
-def evaluate_skill_adapter(
+def evaluate_slm_adapter(
     *,
-    skill: str,
+    slm: str,
     dataset: Path,
     output: Path,
     adapter_root: Path,
 ) -> Path:
-    examples = select_for_skill(load_jsonl(dataset), skill)
+    examples = select_for_slm(load_jsonl(dataset), slm)
     output.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
     model_cache: dict = {}
     raw_path = output / "results.jsonl"
     with raw_path.open("w") as handle:
         for example in examples:
-            for mode in ("base", "single-skill"):
+            for mode in ("base", "single-slm"):
                 try:
                     generation = (
                         infer("base", example.prompt, model_cache=model_cache)
                         if mode == "base"
                         else infer(
-                            "single-skill",
+                            "single-slm",
                             example.prompt,
-                            skill=skill,
+                            slm=slm,
                             adapter_root=adapter_root,
                             model_cache=model_cache,
                         )
@@ -126,7 +126,7 @@ def evaluate_skill_adapter(
                         syntax_valid=syntax,
                         execution_passed=execution,
                         latency_seconds=generation.latency_seconds,
-                        selected_skills=generation.selected_skills,
+                        selected_slms=generation.selected_slms,
                         active_adapter_count=generation.active_adapter_count,
                         active_adapter_parameters=generation.active_adapter_parameters,
                         prompt_tokens=generation.prompt_tokens,
@@ -145,7 +145,7 @@ def evaluate_skill_adapter(
                         syntax_valid=None,
                         execution_passed=None,
                         latency_seconds=0,
-                        selected_skills=[],
+                        selected_slms=[],
                         active_adapter_count=0,
                         active_adapter_parameters=0,
                         error=str(error),
@@ -158,18 +158,18 @@ def evaluate_skill_adapter(
     tasks = {task: aggregate_results([row for row in rows if row["task_type"] == task]) for task in sorted({row["task_type"] for row in rows})}
     payload = {"hypothesis": None, "modes": summary, "tasks": tasks}
     (output / "summary.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    (output / "report.md").write_text(evaluation_report(skill, summary, tasks))
+    (output / "report.md").write_text(evaluation_report(slm, summary, tasks))
     return output / "summary.json"
 
 
-def evaluation_report(skill: str, summary: dict, tasks: dict) -> str:
+def evaluation_report(slm: str, summary: dict, tasks: dict) -> str:
     lines = [
-        f"# SLMCortex Single Skill Evaluation: {skill}",
+        f"# SLMCortex Single Slm Evaluation: {slm}",
         "",
         "| Mode | Count | Fuzzy | Exact | Syntax | Execution | Active params |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
-    for mode in ("base", "single-skill"):
+    for mode in ("base", "single-slm"):
         if mode not in summary:
             continue
         value = summary[mode]

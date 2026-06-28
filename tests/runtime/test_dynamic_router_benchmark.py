@@ -2,17 +2,17 @@ import json
 from pathlib import Path
 
 from scripts.benchmark_dynamic_router import run_benchmark
-from slmcortex.packaging import package_skill
+from slmcortex.packaging import package_slm
 
 
-def _skill(tmp_path, skill_id, description, capabilities=()):
-    eval_summary = tmp_path / f"{skill_id}-eval.json"
+def _slm(tmp_path, slm_id, description, capabilities=()):
+    eval_summary = tmp_path / f"{slm_id}-eval.json"
     eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
-    package_skill(
-        skill_id=skill_id,
-        name=skill_id.replace("_", " ").title(),
-        adapter_dir=Path("artifacts/adapters/python_skill"),
-        output=tmp_path / "skills" / skill_id,
+    package_slm(
+        slm_id=slm_id,
+        name=slm_id.replace("_", " ").title(),
+        adapter_dir=Path("artifacts/adapters/python_slm"),
+        output=tmp_path / "slms" / slm_id,
         train_dataset=Path("data/train.jsonl"),
         eval_dataset=Path("data/eval.jsonl"),
         eval_summary=eval_summary,
@@ -25,7 +25,7 @@ def _skill(tmp_path, skill_id, description, capabilities=()):
                 "scope": "task",
                 "semantic_families": list(capabilities),
             },
-            "compatibility": {"compatible_skills": [], "incompatible_skills": []},
+            "compatibility": {"compatible_slms": [], "incompatible_slms": []},
             "routing": {"tasks": {}},
         },
         force=True,
@@ -33,7 +33,7 @@ def _skill(tmp_path, skill_id, description, capabilities=()):
 
 
 def test_dynamic_router_benchmark_counts_expected_branches(tmp_path, monkeypatch):
-    _skill(tmp_path, "fastapi_skill", "FastAPI endpoint validation", ["fastapi"])
+    _slm(tmp_path, "fastapi_slm", "FastAPI endpoint validation", ["fastapi"])
     monkeypatch.setattr(
         "slmcortex.runtime.dynamic.base_config",
         lambda: {
@@ -41,7 +41,7 @@ def test_dynamic_router_benchmark_counts_expected_branches(tmp_path, monkeypatch
             "default_runtime_model": "mlx-test-base",
             "remote_lora_catalog": [
                 {
-                    "skill_id": "code_remote",
+                    "slm_id": "code_remote",
                     "source": "hf://owner/code",
                     "description": "Code implementation and refactor",
                 }
@@ -49,7 +49,7 @@ def test_dynamic_router_benchmark_counts_expected_branches(tmp_path, monkeypatch
         },
     )
 
-    result = run_benchmark(tmp_path / "skills")
+    result = run_benchmark(tmp_path / "slms")
 
     assert result["total"] == 8
     assert result["accuracy"] >= 0.75

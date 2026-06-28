@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .agent.sandbox import SKIP_DIRS
-from .composer import compose_skill_packages
+from .composer import compose_slm_packages
 from .runtime import validate_runtime_bundle
 from .shared.io import read_json, read_yaml
 
@@ -51,8 +51,8 @@ class RoutingCard:
 
 
 @dataclass(slots=True)
-class SkillRecord:
-    skill_id: str
+class SlmRecord:
+    slm_id: str
     name: str
     path: Path
     description: str = ""
@@ -68,58 +68,58 @@ class SkillRecord:
 
 @dataclass(slots=True)
 class CatalogResult:
-    skills: list[SkillRecord]
+    slms: list[SlmRecord]
     errors: list[str]
     warnings: list[str]
 
 
-class SkillCatalog:
+class SlmCatalog:
     @staticmethod
-    def discover(skills_dir: Path) -> CatalogResult:
-        root = skills_dir.resolve()
+    def discover(slms_dir: Path) -> CatalogResult:
+        root = slms_dir.resolve()
         if not root.exists() or not root.is_dir():
-            raise FileNotFoundError(f"skills directory not found: {root}")
-        skills: list[SkillRecord] = []
+            raise FileNotFoundError(f"slms directory not found: {root}")
+        slms: list[SlmRecord] = []
         errors: list[str] = []
         warnings: list[str] = []
         for package in sorted(path for path in root.iterdir() if path.is_dir()):
-            manifest_path = package / "skill.yaml"
+            manifest_path = package / "slm.yaml"
             if not manifest_path.exists():
-                errors.append(f"{package.name}: missing skill.yaml")
+                errors.append(f"{package.name}: missing slm.yaml")
                 continue
             try:
                 manifest = read_yaml(manifest_path)
-                skills.append(_skill_from_manifest(package, manifest, warnings))
+                slms.append(_slm_from_manifest(package, manifest, warnings))
             except ValueError as error:
                 errors.append(f"{package.name}: {error}")
-        return CatalogResult(skills=skills, errors=errors, warnings=warnings)
+        return CatalogResult(slms=slms, errors=errors, warnings=warnings)
 
 
 def route_task(
     *,
-    skills_dir: Path,
+    slms_dir: Path,
     repo: Path,
     task: str,
     explain: bool = False,
     current_base_model: str | None = None,
 ) -> dict[str, Any]:
-    catalog = SkillCatalog.discover(skills_dir)
+    catalog = SlmCatalog.discover(slms_dir)
     repo_root = repo.resolve()
     if not repo_root.exists() or not repo_root.is_dir():
         raise FileNotFoundError(f"repo not found: {repo_root}")
     repo_context = scan_repo_context(repo_root)
     candidates = [
-        _candidate(skill, task, repo_context, current_base_model=current_base_model)
-        for skill in catalog.skills
+        _candidate(slm, task, repo_context, current_base_model=current_base_model)
+        for slm in catalog.slms
     ]
-    candidates.sort(key=lambda item: (-item["score"], item["skill_id"]))
+    candidates.sort(key=lambda item: (-item["score"], item["slm_id"]))
     selected = []
     for item in candidates:
         if item["compatible"] and item["score"] >= ROUTE_THRESHOLD:
             item["selected"] = True
             selected.append(
                 {
-                    "skill_id": item["skill_id"],
+                    "slm_id": item["slm_id"],
                     "score": item["score"],
                     "reason": "Strongest capability match.",
                 }
@@ -130,11 +130,11 @@ def route_task(
             item["score_breakdown"] = {}
     return {
         "routing_mode": "capability",
-        "skills_dir": str(skills_dir.resolve()),
+        "slms_dir": str(slms_dir.resolve()),
         "repo": str(repo_root),
         "task": task,
         "repo_context": repo_context,
-        "selected_skills": selected,
+        "selected_slms": selected,
         "candidates": candidates,
         "fallback": "base",
         "errors": catalog.errors,
@@ -144,7 +144,7 @@ def route_task(
 
 def compose_from_route(
     *,
-    skills_dir: Path,
+    slms_dir: Path,
     repo: Path,
     task: str,
     runtime_out: Path,
@@ -153,23 +153,23 @@ def compose_from_route(
     overwrite: bool = False,
 ) -> dict[str, Any]:
     routing_decision = route_task(
-        skills_dir=skills_dir,
+        slms_dir=slms_dir,
         repo=repo,
         task=task,
         explain=explain,
     )
-    catalog = SkillCatalog.discover(skills_dir)
-    by_skill_id = {skill.skill_id: skill for skill in catalog.skills}
-    selected = list(routing_decision["selected_skills"])
+    catalog = SlmCatalog.discover(slms_dir)
+    by_slm_id = {slm.slm_id: slm for slm in catalog.slms}
+    selected = list(routing_decision["selected_slms"])
     warnings = list(routing_decision["warnings"])
     errors = list(routing_decision["errors"])
     if not selected:
         if not allow_base:
-            raise ValueError("no skill selected; pass --allow-base or improve routing metadata")
+            raise ValueError("no slm selected; pass --allow-base or improve routing metadata")
         warnings.append("base fallback allowed; no runtime was composed")
         return {
             "routing_decision": routing_decision,
-            "selected_skills": [],
+            "selected_slms": [],
             "runtime_out": None,
             "composition_strategy": "routed",
             "composition_status": "skipped",
@@ -180,15 +180,15 @@ def compose_from_route(
 
     selected_paths = []
     for item in selected:
-        skill_id = item["skill_id"]
-        skill = by_skill_id.get(skill_id)
-        if skill is None:
-            raise ValueError(f"selected skill not found in catalog: {skill_id}")
-        selected_paths.append(skill.path)
+        slm_id = item["slm_id"]
+        slm = by_slm_id.get(slm_id)
+        if slm is None:
+            raise ValueError(f"selected slm not found in catalog: {slm_id}")
+        selected_paths.append(slm.path)
 
     try:
-        compose_skill_packages(
-            skills=selected_paths,
+        compose_slm_packages(
+            slms=selected_paths,
             strategy="routed",
             output=runtime_out,
             force=overwrite,
@@ -197,9 +197,9 @@ def compose_from_route(
         raise
     except (FileNotFoundError, ValueError, RuntimeError) as error:
         context = ", ".join(
-            f"{item['skill_id']}={path}" for item, path in zip(selected, selected_paths, strict=True)
+            f"{item['slm_id']}={path}" for item, path in zip(selected, selected_paths, strict=True)
         )
-        raise ValueError(f"selected skill package is not composable ({context}): {error}") from error
+        raise ValueError(f"selected slm package is not composable ({context}): {error}") from error
 
     validation = validate_runtime_bundle(runtime_out)
     validation_status = validation.get("status")
@@ -207,7 +207,7 @@ def compose_from_route(
         raise ValueError(f"runtime validation failed: {validation_status}")
     return {
         "routing_decision": routing_decision,
-        "selected_skills": [str(path) for path in selected_paths],
+        "selected_slms": [str(path) for path in selected_paths],
         "runtime_out": str(runtime_out.resolve()),
         "composition_strategy": "routed",
         "composition_status": "written",
@@ -257,8 +257,8 @@ def scan_repo_context(repo: Path) -> dict[str, Any]:
     }
 
 
-def _skill_from_manifest(package: Path, manifest: dict[str, Any], warnings: list[str]) -> SkillRecord:
-    skill_id = _required_text(manifest, "skill_id")
+def _slm_from_manifest(package: Path, manifest: dict[str, Any], warnings: list[str]) -> SlmRecord:
+    slm_id = _required_text(manifest, "slm_id")
     name = _required_text(manifest, "name")
     base = manifest.get("base") or {}
     adapter = manifest.get("adapter") or {}
@@ -269,14 +269,14 @@ def _skill_from_manifest(package: Path, manifest: dict[str, Any], warnings: list
         task_type_hint = allowed_task_types[0]
     routing_card = _load_routing_card(package / "routing_card.json", warnings)
     eval_summary = _load_optional_json(package / "eval_summary.json", warnings)
-    return SkillRecord(
-        skill_id=skill_id,
+    return SlmRecord(
+        slm_id=slm_id,
         name=name,
         path=package.resolve(),
         description=str(manifest.get("description") or ""),
-        capabilities=_text_list(manifest.get("capabilities"), f"{skill_id}: capabilities", warnings),
-        activation_cues=_text_list(manifest.get("activation_cues"), f"{skill_id}: activation_cues", warnings),
-        avoid_when=_text_list(manifest.get("avoid_when"), f"{skill_id}: avoid_when", warnings),
+        capabilities=_text_list(manifest.get("capabilities"), f"{slm_id}: capabilities", warnings),
+        activation_cues=_text_list(manifest.get("activation_cues"), f"{slm_id}: activation_cues", warnings),
+        avoid_when=_text_list(manifest.get("avoid_when"), f"{slm_id}: avoid_when", warnings),
         task_type_hint=str(task_type_hint) if task_type_hint else None,
         base_model=manifest.get("base_model") or base.get("runtime_model") or base.get("source_model"),
         adapter_path=package / (manifest.get("adapter_path") or adapter.get("path") or "adapter"),
@@ -286,7 +286,7 @@ def _skill_from_manifest(package: Path, manifest: dict[str, Any], warnings: list
 
 
 def _candidate(
-    skill: SkillRecord,
+    slm: SlmRecord,
     task: str,
     repo_context: dict[str, Any],
     *,
@@ -305,7 +305,7 @@ def _candidate(
         "task_type_hint": 0.0,
         "base_model": 0.0,
     }
-    positive_terms = [skill.description, *skill.capabilities, *skill.activation_cues]
+    positive_terms = [slm.description, *slm.capabilities, *slm.activation_cues]
     for term in positive_terms:
         signal = _matching_signal(term, task_text)
         if signal:
@@ -315,22 +315,22 @@ def _candidate(
         if repo_signal:
             matched.add(repo_signal)
             breakdown["repo"] += 0.08
-    for example in skill.routing_card.positive_examples:
+    for example in slm.routing_card.positive_examples:
         signal = _matching_signal(example, task_text)
         if signal:
             matched.add(signal)
             breakdown["positive_examples"] += 0.08
-    for term in [*skill.avoid_when, *skill.routing_card.negative_examples]:
+    for term in [*slm.avoid_when, *slm.routing_card.negative_examples]:
         signal = _matching_signal(term, task_text)
         if signal:
             negative.add(signal)
             breakdown["negative"] -= 0.18
-    if skill.task_type_hint and _matching_signal(skill.task_type_hint.replace("_", " "), task_text):
-        matched.add(skill.task_type_hint)
+    if slm.task_type_hint and _matching_signal(slm.task_type_hint.replace("_", " "), task_text):
+        matched.add(slm.task_type_hint)
         breakdown["task_type_hint"] = 0.04
-    breakdown["eval"] = _eval_bonus(skill.eval_summary)
+    breakdown["eval"] = _eval_bonus(slm.eval_summary)
     compatible = True
-    if current_base_model and skill.base_model and current_base_model != skill.base_model:
+    if current_base_model and slm.base_model and current_base_model != slm.base_model:
         compatible = False
         negative.add("base_model")
         breakdown["base_model"] = -1.0
@@ -339,7 +339,7 @@ def _candidate(
         score = 0.0
     reason = _reason(score, compatible, matched, negative)
     return {
-        "skill_id": skill.skill_id,
+        "slm_id": slm.slm_id,
         "score": round(score, 4),
         "selected": False,
         "compatible": compatible,
@@ -435,7 +435,7 @@ def _eval_bonus(summary: dict[str, Any]) -> float:
 
 def _reason(score: float, compatible: bool, matched: set[str], negative: set[str]) -> str:
     if not compatible:
-        return "Skill base model is incompatible with the current base model."
+        return "Slm base model is incompatible with the current base model."
     if score >= ROUTE_THRESHOLD and matched:
         return "Matched capability signals: " + ", ".join(sorted(matched)[:6]) + "."
     if negative:

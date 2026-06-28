@@ -1,11 +1,11 @@
-def evaluation_report(skill_id: str, summary: dict, tasks: dict) -> str:
+def evaluation_report(slm_id: str, summary: dict, tasks: dict) -> str:
     lines = [
-        f"# SLMCortex Single Skill Evaluation: {skill_id}",
+        f"# SLMCortex Single Slm Evaluation: {slm_id}",
         "",
         "| Mode | Count | Fuzzy | Exact | Syntax | Execution | Active params |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
-    for mode in ("base", "single-skill"):
+    for mode in ("base", "single-slm"):
         if mode not in summary:
             continue
         value = summary[mode]

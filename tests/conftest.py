@@ -27,14 +27,14 @@ def _write_bytes(path: Path, content: bytes, *, overwrite: bool = False) -> None
     path.write_bytes(content)
 
 
-def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) -> None:
-    weights = f"fixture:{skill_id}\n".encode("utf-8")
+def _ensure_adapter_fixture(base: Path, slm_id: str, task_types: list[str]) -> None:
+    weights = f"fixture:{slm_id}\n".encode("utf-8")
     checksum = hashlib.sha256(weights).hexdigest()
     target_modules = ["self_attn.q_proj", "self_attn.v_proj"]
     rank = 8
     metadata = {
-        "skill_id": skill_id,
-        "adapter": skill_id,
+        "slm_id": slm_id,
+        "adapter": slm_id,
         "base_model": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
         "source_model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
         "format": "mlx-lora",
@@ -49,14 +49,14 @@ def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) ->
         "allowed_task_types": task_types,
         "task_types": task_types,
         "activation_scope": "task",
-        "semantic_families": [skill_id],
+        "semantic_families": [slm_id],
         "weights_file": "adapters.safetensors",
         "weights_sha256": checksum,
         "checksums": {"adapters.safetensors": checksum},
         "composition": {
             "allowed_task_types": task_types,
             "activation_scope": "task",
-            "semantic_families": [skill_id],
+            "semantic_families": [slm_id],
         },
         "config": {
             "seed": 42,
@@ -64,11 +64,11 @@ def _ensure_adapter_fixture(base: Path, skill_id: str, task_types: list[str]) ->
             "iterations": 100,
             "learning_rate": 0.0001,
             "lora_layers": 8,
-            "skill_rank": rank,
+            "slm_rank": rank,
             "generic_rank": 24,
             "target_modules": target_modules,
         },
-        "description": f"Fixture adapter for {skill_id}.",
+        "description": f"Fixture adapter for {slm_id}.",
     }
     config = {
         "adapter_path": str(base),
@@ -549,12 +549,12 @@ def _ensure_router_fixtures() -> None:
             "promotion_status": "recommend_promotion",
             "validates_second_plastic_cortex_mechanism": True,
         },
-        "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
-        "candidate_skill": "alternating_skill",
+        "benchmark_sha256": "3a83b9874437e33285f234fec80d90b7f7d48c5f50cbf7d66f7897e25e093118",
+        "candidate_slm": "alternating_slm",
         "fixed_benchmark": {
             "kind": "fixed_benchmark",
             "modes": {
-                "protected_router_plus_alternating_skill": {
+                "protected_router_plus_alternating_slm": {
                     "active_adapter_parameters": 419211.94666666666,
                     "alternating_debugging_pass_rate": 0.8,
                     "alternating_test_generation_pass_rate": 0.2,
@@ -562,19 +562,19 @@ def _ensure_router_fixtures() -> None:
                     "non_target_pass_rate": 0.5364864864864864,
                     "overall_execution_pass_rate": 0.536,
                     "python_generation_pass_rate": 0.54,
-                    "selected_skill_tuple_distribution": [
-                        {"count": 250, "selected_skills": []},
-                        {"count": 245, "selected_skills": ["debugging_skill", "python_skill"]},
-                        {"count": 5, "selected_skills": ["debugging_skill", "python_skill", "alternating_skill"]},
-                        {"count": 245, "selected_skills": ["python_skill", "test_generation_skill"]},
-                        {"count": 5, "selected_skills": ["python_skill", "test_generation_skill", "alternating_skill"]},
+                    "selected_slm_tuple_distribution": [
+                        {"count": 250, "selected_slms": []},
+                        {"count": 245, "selected_slms": ["debugging_slm", "python_slm"]},
+                        {"count": 5, "selected_slms": ["debugging_slm", "python_slm", "alternating_slm"]},
+                        {"count": 245, "selected_slms": ["python_slm", "test_generation_slm"]},
+                        {"count": 5, "selected_slms": ["python_slm", "test_generation_slm", "alternating_slm"]},
                     ],
                     "stored_adapter_parameters": 1245184,
                     "target_cluster_pass_rate": 0.5,
                     "test_generation_pass_rate": 0.588,
                     "trainable_adapter_parameters": 1245184,
                 },
-                "protected_skill_router": {
+                "protected_slm_router": {
                     "active_adapter_parameters": 415061.3333333333,
                     "alternating_debugging_pass_rate": 0,
                     "alternating_test_generation_pass_rate": 0,
@@ -582,10 +582,10 @@ def _ensure_router_fixtures() -> None:
                     "non_target_pass_rate": 0.5364864864864864,
                     "overall_execution_pass_rate": 0.5293333333333333,
                     "python_generation_pass_rate": 0.54,
-                    "selected_skill_tuple_distribution": [
-                        {"count": 250, "selected_skills": []},
-                        {"count": 250, "selected_skills": ["debugging_skill", "python_skill"]},
-                        {"count": 250, "selected_skills": ["python_skill", "test_generation_skill"]},
+                    "selected_slm_tuple_distribution": [
+                        {"count": 250, "selected_slms": []},
+                        {"count": 250, "selected_slms": ["debugging_slm", "python_slm"]},
+                        {"count": 250, "selected_slms": ["python_slm", "test_generation_slm"]},
                     ],
                     "stored_adapter_parameters": 933888,
                     "target_cluster_pass_rate": 0,
@@ -600,7 +600,7 @@ def _ensure_router_fixtures() -> None:
         "independent_holdout": {
             "kind": "independent_holdout",
             "modes": {
-                "protected_router_plus_alternating_skill": {
+                "protected_router_plus_alternating_slm": {
                     "active_adapter_parameters": 933888,
                     "alternating_debugging_pass_rate": 0.9866666666666667,
                     "alternating_test_generation_pass_rate": 1,
@@ -608,16 +608,16 @@ def _ensure_router_fixtures() -> None:
                     "non_target_pass_rate": None,
                     "overall_execution_pass_rate": 0.9933333333333333,
                     "python_generation_pass_rate": None,
-                    "selected_skill_tuple_distribution": [
-                        {"count": 75, "selected_skills": ["debugging_skill", "python_skill", "alternating_skill"]},
-                        {"count": 75, "selected_skills": ["python_skill", "test_generation_skill", "alternating_skill"]},
+                    "selected_slm_tuple_distribution": [
+                        {"count": 75, "selected_slms": ["debugging_slm", "python_slm", "alternating_slm"]},
+                        {"count": 75, "selected_slms": ["python_slm", "test_generation_slm", "alternating_slm"]},
                     ],
                     "stored_adapter_parameters": 1245184,
                     "target_cluster_pass_rate": 0.9933333333333333,
                     "test_generation_pass_rate": 1,
                     "trainable_adapter_parameters": 1245184,
                 },
-                "protected_skill_router": {
+                "protected_slm_router": {
                     "active_adapter_parameters": 622592,
                     "alternating_debugging_pass_rate": 0.48,
                     "alternating_test_generation_pass_rate": 1,
@@ -625,9 +625,9 @@ def _ensure_router_fixtures() -> None:
                     "non_target_pass_rate": None,
                     "overall_execution_pass_rate": 0.74,
                     "python_generation_pass_rate": None,
-                    "selected_skill_tuple_distribution": [
-                        {"count": 75, "selected_skills": ["debugging_skill", "python_skill"]},
-                        {"count": 75, "selected_skills": ["python_skill", "test_generation_skill"]},
+                    "selected_slm_tuple_distribution": [
+                        {"count": 75, "selected_slms": ["debugging_slm", "python_slm"]},
+                        {"count": 75, "selected_slms": ["python_slm", "test_generation_slm"]},
                     ],
                     "stored_adapter_parameters": 933888,
                     "target_cluster_pass_rate": 0.74,
@@ -649,20 +649,20 @@ def _ensure_router_fixtures() -> None:
         "seeds": [11, 22, 33, 44, 55],
         "semantic_family": "alternating",
         "status": "complete",
-        "trained_existing_skills": [],
+        "trained_existing_slms": [],
         "training": {
             "candidate_trainable_parameters": 311296,
             "debugging_examples": 25,
             "rank": 8,
             "test_generation_examples": 15,
             "train_examples": 40,
-            "trained_existing_skills": [],
+            "trained_existing_slms": [],
         },
     }
     router_summary = {
         "router": "slmcortex_router_v1",
-        "promoted_skill": "alternating_skill",
-        "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+        "promoted_slm": "alternating_slm",
+        "benchmark_sha256": "3a83b9874437e33285f234fec80d90b7f7d48c5f50cbf7d66f7897e25e093118",
         "validation": {
             "uses_existing_artifacts": True,
             "new_training": False,
@@ -671,16 +671,16 @@ def _ensure_router_fixtures() -> None:
         },
         "fixed_benchmark": {
             "routers": {
-                "protected_skill_router_without_failure_born": alternating_summary["fixed_benchmark"]["modes"]["protected_skill_router"],
-                "slmcortex_router_v1": alternating_summary["fixed_benchmark"]["modes"]["protected_router_plus_alternating_skill"],
+                "protected_slm_router_without_failure_born": alternating_summary["fixed_benchmark"]["modes"]["protected_slm_router"],
+                "slmcortex_router_v1": alternating_summary["fixed_benchmark"]["modes"]["protected_router_plus_alternating_slm"],
             },
             "pass_fail_vs_previous_protected_router": alternating_summary["fixed_benchmark"]["pass_fail_vs_protected"],
             "non_target_regressions": alternating_summary["fixed_benchmark"]["non_target_regressions"],
         },
         "independent_alternating_holdout": {
             "routers": {
-                "protected_skill_router_without_failure_born": alternating_summary["independent_holdout"]["modes"]["protected_skill_router"],
-                "slmcortex_router_v1": alternating_summary["independent_holdout"]["modes"]["protected_router_plus_alternating_skill"],
+                "protected_slm_router_without_failure_born": alternating_summary["independent_holdout"]["modes"]["protected_slm_router"],
+                "slmcortex_router_v1": alternating_summary["independent_holdout"]["modes"]["protected_router_plus_alternating_slm"],
             },
             "pass_fail_vs_previous_protected_router": alternating_summary["independent_holdout"]["pass_fail_vs_protected"],
             "non_target_regressions": alternating_summary["independent_holdout"]["non_target_regressions"],
@@ -691,13 +691,13 @@ def _ensure_router_fixtures() -> None:
             "promotion_status": alternating_summary["promotion_decision"]["status"],
         },
     }
-    alternating_root = ROOT / "artifacts" / "governance-fixtures" / "alternating_skill"
+    alternating_root = ROOT / "artifacts" / "governance-fixtures" / "alternating_slm"
     _write_text(alternating_root / "summary.json", json.dumps(alternating_summary, indent=2) + "\n", overwrite=True)
     router_root = ROOT / "artifacts" / "governance-fixtures" / "slmcortex-router-v1"
     _write_text(router_root / "summary.json", json.dumps(router_summary, indent=2) + "\n", overwrite=True)
     _ensure_adapter_fixture(
-        alternating_root / "seed-11" / "adapters" / "alternating_skill",
-        "alternating_skill",
+        alternating_root / "seed-11" / "adapters" / "alternating_slm",
+        "alternating_slm",
         ["python_generation", "debugging"],
     )
 
@@ -737,11 +737,11 @@ def _cleanup_generated_egg_info() -> None:
 
 def pytest_sessionstart(session) -> None:
     _cleanup_generated_egg_info()
-    _ensure_adapter_fixture(ROOT / "artifacts" / "adapters" / "python_skill", "python_skill", ["python_generation"])
-    _ensure_adapter_fixture(ROOT / "artifacts" / "adapters" / "debugging_skill", "debugging_skill", ["debugging"])
+    _ensure_adapter_fixture(ROOT / "artifacts" / "adapters" / "python_slm", "python_slm", ["python_generation"])
+    _ensure_adapter_fixture(ROOT / "artifacts" / "adapters" / "debugging_slm", "debugging_slm", ["debugging"])
     _ensure_adapter_fixture(
-        ROOT / "artifacts" / "adapters" / "test_generation_skill",
-        "test_generation_skill",
+        ROOT / "artifacts" / "adapters" / "test_generation_slm",
+        "test_generation_slm",
         ["test_generation"],
     )
     _ensure_dataset_fixtures()

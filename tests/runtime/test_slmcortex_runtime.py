@@ -4,30 +4,30 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from slmcortex.cli import main
-from slmcortex.runtime import OpenAICompatApp, SkillRuntime
-from slmcortex.runtime.models import RuntimeBundle, RuntimeRouteDecision, RuntimeSkill
+from slmcortex.runtime import OpenAICompatApp, SlmRuntime
+from slmcortex.runtime.models import RuntimeBundle, RuntimeRouteDecision, RuntimeSlm
 
 
 def _compose_runtime(tmp_path):
     eval_summary = tmp_path / "eval-summary.json"
     eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")
     packages = {}
-    for skill_id, name in (
-        ("python_skill", "Python Skill"),
-        ("debugging_skill", "Debugging Skill"),
+    for slm_id, name in (
+        ("python_slm", "Python Slm"),
+        ("debugging_slm", "Debugging Slm"),
     ):
-        output = tmp_path / skill_id
-        packages[skill_id] = output
+        output = tmp_path / slm_id
+        packages[slm_id] = output
         assert (
             main(
                 [
-                    "package-skill",
-                    "--skill-id",
-                    skill_id,
+                    "package-slm",
+                    "--slm-id",
+                    slm_id,
                     "--name",
                     name,
                     "--adapter-dir",
-                    f"artifacts/adapters/{skill_id}",
+                    f"artifacts/adapters/{slm_id}",
                     "--output",
                     str(output),
                     "--train-dataset",
@@ -44,8 +44,8 @@ def _compose_runtime(tmp_path):
     assert (
         main(
             [
-                "compose-skills",
-                "--skills",
+                "compose-slms",
+                "--slms",
                 ",".join(str(path) for path in packages.values()),
                 "--strategy",
                 "routed",
@@ -104,13 +104,13 @@ def test_runtime_infer_dry_run_uses_bundle_route_selection(tmp_path, capsys):
         == 0
     )
     output = json.loads(capsys.readouterr().out)
-    assert output["selected_skills"] == ["debugging_skill", "python_skill"]
+    assert output["selected_slms"] == ["debugging_slm", "python_slm"]
     assert output["route_type"] == "adapter"
 
 
 def test_openai_compat_app_exposes_models_and_chat(tmp_path, monkeypatch):
     runtime_path = _compose_runtime(tmp_path)
-    runtime = SkillRuntime.load(runtime_path)
+    runtime = SlmRuntime.load(runtime_path)
 
     monkeypatch.setattr(
         runtime,
@@ -119,7 +119,7 @@ def test_openai_compat_app_exposes_models_and_chat(tmp_path, monkeypatch):
             "generation": "patched response",
             "prompt_tokens": 4,
             "generated_tokens": 2,
-            "selected_skills": ["debugging_skill", "python_skill"],
+            "selected_slms": ["debugging_slm", "python_slm"],
             "route_type": "adapter",
             "reason": "patched",
         },
@@ -146,7 +146,7 @@ def test_openai_compat_app_exposes_models_and_chat(tmp_path, monkeypatch):
 
 def test_runtime_non_dry_run_calls_backend_seams(tmp_path, monkeypatch):
     runtime_path = _compose_runtime(tmp_path)
-    runtime = SkillRuntime.load(runtime_path)
+    runtime = SlmRuntime.load(runtime_path)
     calls = {}
 
     @contextmanager
@@ -185,10 +185,10 @@ def test_runtime_non_dry_run_calls_backend_seams(tmp_path, monkeypatch):
     )
 
     assert result["status"] == "complete"
-    assert result["selected_skills"] == ["debugging_skill", "python_skill"]
+    assert result["selected_slms"] == ["debugging_slm", "python_slm"]
     assert calls["adapter_paths"] == [
-        str(runtime.bundle.skills["debugging_skill"].adapter_path),
-        str(runtime.bundle.skills["python_skill"].adapter_path),
+        str(runtime.bundle.slms["debugging_slm"].adapter_path),
+        str(runtime.bundle.slms["python_slm"].adapter_path),
     ]
     assert calls["load_model"]["model_name"] == runtime.bundle.runtime_model
     assert calls["generate_text"]["messages"] == [
@@ -198,8 +198,8 @@ def test_runtime_non_dry_run_calls_backend_seams(tmp_path, monkeypatch):
     assert calls["generate_text"]["temperature"] == 0.2
 
 
-def test_runtime_gguf_multi_adapter_falls_back_to_first_skill(tmp_path, monkeypatch):
-    runtime = SkillRuntime(
+def test_runtime_gguf_multi_adapter_falls_back_to_first_slm(tmp_path, monkeypatch):
+    runtime = SlmRuntime(
         RuntimeBundle(
             path=tmp_path,
             name="runtime",
@@ -209,25 +209,25 @@ def test_runtime_gguf_multi_adapter_falls_back_to_first_skill(tmp_path, monkeypa
             backend="gguf",
             strategy="routed",
             routes=[],
-            skills={
-                "debugging_skill": RuntimeSkill(
-                    skill_id="debugging_skill",
-                    name="Debugging Skill",
+            slms={
+                "debugging_slm": RuntimeSlm(
+                    slm_id="debugging_slm",
+                    name="Debugging Slm",
                     version="0.1.0",
-                    package_path=tmp_path / "debugging_skill",
-                    adapter_path=tmp_path / "debugging_skill" / "adapter.gguf",
+                    package_path=tmp_path / "debugging_slm",
+                    adapter_path=tmp_path / "debugging_slm" / "adapter.gguf",
                     fingerprint="debugging",
                     allowed_task_types=["debugging"],
                     activation={},
                     trainable_parameters=10,
                     adapter_format="gguf-lora",
                 ),
-                "python_skill": RuntimeSkill(
-                    skill_id="python_skill",
-                    name="Python Skill",
+                "python_slm": RuntimeSlm(
+                    slm_id="python_slm",
+                    name="Python Slm",
                     version="0.1.0",
-                    package_path=tmp_path / "python_skill",
-                    adapter_path=tmp_path / "python_skill" / "adapter.gguf",
+                    package_path=tmp_path / "python_slm",
+                    adapter_path=tmp_path / "python_slm" / "adapter.gguf",
                     fingerprint="python",
                     allowed_task_types=["python_generation"],
                     activation={},
@@ -244,7 +244,7 @@ def test_runtime_gguf_multi_adapter_falls_back_to_first_skill(tmp_path, monkeypa
         runtime,
         "route",
         lambda **kwargs: RuntimeRouteDecision(
-            selected_skills=["debugging_skill", "python_skill"],
+            selected_slms=["debugging_slm", "python_slm"],
             confidence=1.0,
             reason="task_type=debugging matched debugging and python",
             route_type="adapter",
@@ -262,9 +262,9 @@ def test_runtime_gguf_multi_adapter_falls_back_to_first_skill(tmp_path, monkeypa
 
     result = runtime.infer(prompt="Fix a traceback")
 
-    assert result["selected_skills"] == ["debugging_skill"]
-    assert "gguf single-adapter fallback selected debugging_skill" in result["reason"]
-    assert calls["adapter"] == runtime.bundle.skills["debugging_skill"].adapter_path
+    assert result["selected_slms"] == ["debugging_slm"]
+    assert "gguf single-adapter fallback selected debugging_slm" in result["reason"]
+    assert calls["adapter"] == runtime.bundle.slms["debugging_slm"].adapter_path
 
 
 def test_runtime_infer_supports_request_file(tmp_path, capsys):
@@ -297,7 +297,7 @@ def test_runtime_infer_supports_request_file(tmp_path, capsys):
         == 0
     )
     output = json.loads(capsys.readouterr().out)
-    assert output["selected_skills"] == ["debugging_skill", "python_skill"]
+    assert output["selected_slms"] == ["debugging_slm", "python_slm"]
 
 
 def test_runtime_infer_rejects_malformed_request_file(tmp_path, capsys):

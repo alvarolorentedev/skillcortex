@@ -12,20 +12,20 @@ from .artifacts import (
     protected_input_paths as _protected_input_paths,
     snapshot_files as _snapshot_files,
 )
-from .composition import validate_composition_metadata, normalized_skill_id as _normalized_skill_id
+from .composition import validate_composition_metadata, normalized_slm_id as _normalized_slm_id
 from .manifests import build_manifests as _build_manifests, write_package as _write_package
 from .ops import (
-    evaluate_generic_skill_adapter as _evaluate_generic_skill_adapter,
-    evaluate_skill_adapter as _evaluate_skill_adapter,
-    train_generic_skill_to_run_directory as _train_generic_skill_to_run_directory,
-    train_skill_to_run_directory as _train_skill_to_run_directory,
+    evaluate_generic_slm_adapter as _evaluate_generic_slm_adapter,
+    evaluate_slm_adapter as _evaluate_slm_adapter,
+    train_generic_slm_to_run_directory as _train_generic_slm_to_run_directory,
+    train_slm_to_run_directory as _train_slm_to_run_directory,
 )
-from .validation import validate_skill_package
+from .validation import validate_slm_package
 
 
-def train_skill_package(
+def train_slm_package(
     *,
-    skill: str,
+    slm: str,
     mode: str = "preset",
     output: Path,
     train_dataset: Path,
@@ -49,12 +49,12 @@ def train_skill_package(
     protected_before = _snapshot_files(
         _protected_input_paths(train_dataset=train_dataset, eval_dataset=eval_dataset)
     )
-    resolved_name = name or skill.replace("_", " ").title()
-    resolved_description = description or f"LoRA coding skill package for {resolved_name}."
+    resolved_name = name or slm.replace("_", " ").title()
+    resolved_description = description or f"LoRA coding slm package for {resolved_name}."
     if dry_run:
         return {
             "status": "dry-run",
-            "skill": skill,
+            "slm": slm,
             "output": str(output),
             "run_directory": str(run_directory),
             "protected_inputs": len(protected_before),
@@ -70,36 +70,36 @@ def train_skill_package(
     if output.exists() and force:
         shutil.rmtree(output)
     if mode == "generic":
-        adapter_dir, metadata = _train_generic_skill_to_run_directory(
-            skill_id=skill,
+        adapter_dir, metadata = _train_generic_slm_to_run_directory(
+            slm_id=slm,
             train_dataset=train_dataset,
             run_directory=run_directory,
             seed=seed,
             force=force,
         )
-        eval_summary = _evaluate_generic_skill_adapter(
-            skill_id=skill,
+        eval_summary = _evaluate_generic_slm_adapter(
+            slm_id=slm,
             dataset=eval_dataset,
             output=run_directory / "evaluation",
             adapter_dir=adapter_dir,
         )
     else:
-        adapter_dir, metadata = _train_skill_to_run_directory(
-            skill=skill,
+        adapter_dir, metadata = _train_slm_to_run_directory(
+            slm=slm,
             train_dataset=train_dataset,
             run_directory=run_directory,
             seed=seed,
             force=force,
         )
-        eval_summary = _evaluate_skill_adapter(
-            skill=skill,
+        eval_summary = _evaluate_slm_adapter(
+            slm=slm,
             dataset=eval_dataset,
             output=run_directory / "evaluation",
             adapter_root=run_directory / "adapters",
         )
     protected = _freeze_protected_inputs(protected_before)
-    package_result = package_skill(
-        skill_id=skill,
+    package_result = package_slm(
+        slm_id=slm,
         name=resolved_name,
         adapter_dir=adapter_dir,
         output=output,
@@ -126,9 +126,9 @@ def train_skill_package(
     return package_result
 
 
-def package_skill(
+def package_slm(
     *,
-    skill_id: str,
+    slm_id: str,
     name: str,
     adapter_dir: Path,
     output: Path,
@@ -145,7 +145,7 @@ def package_skill(
     source_artifacts: dict | None = None,
     training_details: dict | None = None,
 ) -> dict:
-    skill_id = _normalized_skill_id(skill_id)
+    slm_id = _normalized_slm_id(slm_id)
     from .composition import nonempty
 
     nonempty("name", name)
@@ -166,7 +166,7 @@ def package_skill(
         adapter_metadata.setdefault("format", "mlx-lora")
     adapter_config = adapter_dir / "adapter_config.json"
     eval_payload = _read_json(eval_summary)
-    resolved_description = description or f"LoRA coding skill package for {name}."
+    resolved_description = description or f"LoRA coding slm package for {name}."
     output_exists = output.exists()
     if output_exists and any(output.iterdir()) and not force:
         raise FileExistsError(f"{output} exists; pass --force to replace it")
@@ -174,7 +174,7 @@ def package_skill(
         _protected_input_paths(train_dataset=train_dataset, eval_dataset=eval_dataset)
     )
     manifests = _build_manifests(
-        skill_id=skill_id,
+        slm_id=slm_id,
         name=name,
         version=version,
         description=resolved_description,
@@ -191,11 +191,11 @@ def package_skill(
         training_details=training_details,
     )
     if dry_run:
-        return {"status": "dry-run", "output": str(output), "skill_id": skill_id, "files": sorted(manifests)}
+        return {"status": "dry-run", "output": str(output), "slm_id": slm_id, "files": sorted(manifests)}
     if output_exists:
         shutil.rmtree(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f"slmcortex-{skill_id}-") as directory:
+    with tempfile.TemporaryDirectory(prefix=f"slmcortex-{slm_id}-") as directory:
         staging = Path(directory) / output.name
         _write_package(
             staging=staging,
@@ -208,6 +208,6 @@ def package_skill(
         metadata["protected_inputs"] = protected_inputs or _freeze_protected_inputs(protected_before)
         metadata["checksums"] = _package_checksums(staging)
         (staging / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-        validate_skill_package(staging)
+        validate_slm_package(staging)
         shutil.move(str(staging), str(output))
-    return {"status": "complete", "output": str(output), "skill_id": skill_id, "version": version}
+    return {"status": "complete", "output": str(output), "slm_id": slm_id, "version": version}

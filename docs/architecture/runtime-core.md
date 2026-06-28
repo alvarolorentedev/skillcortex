@@ -19,7 +19,7 @@ decision.
 - one runtime bundle
 - prompt or OpenAI-style request payload
 - optional runtime overrides such as `task_type`, `semantic_family`, and
-  `skill_override`
+  `slm_override`
 
 ## Outputs
 

@@ -6,7 +6,7 @@ def render_example(
     entity: dict,
     blueprint: dict,
     task_type: str,
-    skill_id: str,
+    slm_id: str,
     variant_number: int,
 ) -> dict:
     function_name = function_name_for(entity, blueprint, variant_number)
@@ -14,7 +14,7 @@ def render_example(
     prompt = render_prompt(entity, blueprint, function_name, route_path)
     target = render_target(entity, blueprint, function_name, route_path, variant_number)
     return {
-        "id": f"{skill_id}-{blueprint['template_id']}-{variant_number}",
+        "id": f"{slm_id}-{blueprint['template_id']}-{variant_number}",
         "task_type": task_type,
         "prompt": prompt,
         "target": target,

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 
-BASELINE = "protected_skill_router_without_failure_born"
+BASELINE = "protected_slm_router_without_failure_born"
 ROUTER = "slmcortex_router_v1"
 
 
@@ -14,8 +14,8 @@ def build_summary(source: dict) -> dict:
         data = source[name]
         return {
             "routers": {
-                BASELINE: data["modes"]["protected_skill_router"],
-                ROUTER: data["modes"]["protected_router_plus_alternating_skill"],
+                BASELINE: data["modes"]["protected_slm_router"],
+                ROUTER: data["modes"]["protected_router_plus_alternating_slm"],
             },
             "pass_fail_vs_previous_protected_router": data[
                 "pass_fail_vs_protected"
@@ -25,7 +25,7 @@ def build_summary(source: dict) -> dict:
 
     return {
         "router": ROUTER,
-        "promoted_skill": "alternating_skill",
+        "promoted_slm": "alternating_slm",
         "benchmark_sha256": source["benchmark_sha256"],
         "validation": {
             "uses_existing_artifacts": True,
@@ -74,7 +74,7 @@ def markdown(summary: dict) -> str:
                 f"stored {values['stored_adapter_parameters']}; "
                 f"trainable {values['trainable_adapter_parameters']}.")
             lines.append(
-                f"  Selected skill tuples: `{json.dumps(values['selected_skill_tuple_distribution'], separators=(',', ':'))}`"
+                f"  Selected slm tuples: `{json.dumps(values['selected_slm_tuple_distribution'], separators=(',', ':'))}`"
             )
         changes = summary[key]["pass_fail_vs_previous_protected_router"]
         lines.append(
@@ -90,7 +90,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--source",
-        default="artifacts/governance-fixtures/alternating_skill/summary.json",
+        default="artifacts/governance-fixtures/alternating_slm/summary.json",
     )
     parser.add_argument(
         "--output", default="artifacts/governance/slmcortex-router-v1"

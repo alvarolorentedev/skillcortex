@@ -1,9 +1,0 @@
-skills:
-  python_skill:
-    description: General Python generation and idioms
-  debugging_skill:
-    description: Fixing bugs from errors, tracebacks, and failing tests
-  test_generation_skill:
-    description: Generating pytest-style tests
-  alternating_skill:
-    description: Even-index selection skill; promoted behind the SLMCortex V1 semantic gate

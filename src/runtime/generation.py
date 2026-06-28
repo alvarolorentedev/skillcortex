@@ -7,12 +7,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..contracts import KNOWN_SKILLS, MODES, ROUTER_POLICIES, SKILLS
+from ..contracts import KNOWN_SLMS, MODES, ROUTER_POLICIES, PRESET_SLMS
 from ..shared.config import ARTIFACT_DIR, base_config
 from ..shared.config import resolve_backend, validate_runtime_model
 from .router_rules import (
-    ProtectedRouterPlusAlternatingSkill,
-    ProtectedSkillRouter,
+    ProtectedRouterPlusAlternatingSlm,
+    ProtectedSlmRouter,
     RouteDecision,
     RuleRouter,
     SLMCortexRouterV1,
@@ -20,7 +20,7 @@ from .router_rules import (
 
 
 def adapter_path(name: str, root: str | Path | None = None) -> Path:
-    if name != "generic" and name not in KNOWN_SKILLS:
+    if name != "generic" and name not in KNOWN_SLMS:
         raise ValueError(f"unknown adapter: {name}")
     return Path(root) / name if root else ARTIFACT_DIR / "adapters" / name
 
@@ -102,7 +102,7 @@ def generate_text(
 class GenerationResult:
     mode: str
     generation: str
-    selected_skills: list[str] = field(default_factory=list)
+    selected_slms: list[str] = field(default_factory=list)
     route: RouteDecision | None = None
     latency_seconds: float = 0.0
     prompt_tokens: int | None = None
@@ -115,9 +115,9 @@ class GenerationResult:
     def __post_init__(self) -> None:
         if self.mode not in MODES:
             raise ValueError(f"unknown mode: {self.mode}")
-        unknown = set(self.selected_skills) - set(KNOWN_SKILLS)
+        unknown = set(self.selected_slms) - set(KNOWN_SLMS)
         if unknown:
-            raise ValueError(f"unknown skill: {sorted(unknown)[0]}")
+            raise ValueError(f"unknown slm: {sorted(unknown)[0]}")
         if self.active_adapter_count < 0 or self.active_adapter_parameters < 0:
             raise ValueError("adapter statistics must be non-negative")
 
@@ -129,8 +129,8 @@ def infer(
     mode: str,
     prompt: str,
     *,
-    skill: str | None = None,
-    skills: list[str] | None = None,
+    slm: str | None = None,
+    slms: list[str] | None = None,
     task_type: str | None = None,
     semantic_family: str | None = None,
     router_policy: str | None = None,
@@ -145,35 +145,35 @@ def infer(
     route = None
     if mode == "generic":
         adapter_names = ["generic"]
-    elif mode == "single-skill":
-        if skill not in SKILLS:
-            raise ValueError("--skill is required for single-skill mode")
-        selected, adapter_names = [skill], [skill]
+    elif mode == "single-slm":
+        if slm not in PRESET_SLMS:
+            raise ValueError("--slm is required for single-slm mode")
+        selected, adapter_names = [slm], [slm]
     elif mode == "lattice":
         if router_policy == "legacy_rule_router":
             route = RuleRouter().route(prompt)
         elif router_policy in (None, "slmcortex_router_v1"):
             route = SLMCortexRouterV1().route(task_type, semantic_family)
-        elif router_policy == "protected_router_plus_alternating_skill":
-            route = ProtectedRouterPlusAlternatingSkill().route(task_type, semantic_family)
+        elif router_policy == "protected_router_plus_alternating_slm":
+            route = ProtectedRouterPlusAlternatingSlm().route(task_type, semantic_family)
         elif router_policy in (
             "python_only_for_test_generation",
-            "protected_skill_router",
-            "protected_skill_router_without_failure_born",
+            "protected_slm_router",
+            "protected_slm_router_without_failure_born",
             "weighted_task_composition",
             "reverse_weighted_task_composition",
         ):
-            route = ProtectedSkillRouter().route(task_type)
+            route = ProtectedSlmRouter().route(task_type)
         else:
             raise ValueError(
                 f"unknown router_policy: {router_policy}; expected {ROUTER_POLICIES}"
             )
-        selected = route.selected_skills
+        selected = route.selected_slms
         adapter_names = selected
     elif mode == "oracle-lattice":
-        selected = list(dict.fromkeys(skills or []))[:2]
-        if not selected or any(name not in SKILLS for name in selected):
-            raise ValueError("oracle-lattice requires known skills")
+        selected = list(dict.fromkeys(slms or []))[:2]
+        if not selected or any(name not in PRESET_SLMS for name in selected):
+            raise ValueError("oracle-lattice requires known slms")
         adapter_names = selected
     else:
         adapter_names = []
@@ -181,9 +181,9 @@ def infer(
     if len(adapter_names) == 3 and router_policy not in (
         None,
         "slmcortex_router_v1",
-        "protected_router_plus_alternating_skill",
+        "protected_router_plus_alternating_slm",
     ):
-        raise ValueError("three-adapter composition is quarantined to alternating_skill")
+        raise ValueError("three-adapter composition is quarantined to alternating_slm")
     parameters = sum(
         int(adapter_metadata(name, adapter_root).get("trainable_parameters") or 0)
         for name in adapter_names
@@ -192,7 +192,7 @@ def infer(
         return GenerationResult(
             mode=mode,
             generation="[dry-run generation]",
-            selected_skills=selected,
+            selected_slms=selected,
             route=route,
             active_adapter_count=len(adapter_names),
             active_adapter_parameters=parameters,
@@ -236,7 +236,7 @@ def infer(
     return GenerationResult(
         mode=mode,
         generation=generation,
-        selected_skills=selected,
+        selected_slms=selected,
         route=route,
         latency_seconds=latency,
         prompt_tokens=prompt_tokens,

@@ -58,7 +58,7 @@ def inference_step(
 ) -> dict[str, Any]:
     return {
         "step_type": step_type,
-        "selected_skills": result.get("selected_skills") or [],
+        "selected_slms": result.get("selected_slms") or [],
         "route_type": result.get("route_type"),
         "route_reason": result.get("reason"),
         "tool_name": tool_name,

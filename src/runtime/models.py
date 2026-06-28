@@ -8,7 +8,7 @@ from typing import Any
 REQUIRED_RUNTIME_FILES = (
     "composition.yaml",
     "router_config.json",
-    "active_skills.json",
+    "active_slms.json",
     "compatibility_report.json",
     "budget_report.json",
     "checksums.json",
@@ -16,8 +16,8 @@ REQUIRED_RUNTIME_FILES = (
 
 
 @dataclass(slots=True)
-class RuntimeSkill:
-    skill_id: str
+class RuntimeSlm:
+    slm_id: str
     name: str
     version: str
     package_path: Path
@@ -39,7 +39,7 @@ class RuntimeBundle:
     backend: str
     strategy: str
     routes: list[dict[str, Any]]
-    skills: dict[str, RuntimeSkill]
+    slms: dict[str, RuntimeSlm]
     compatibility_report: dict[str, Any]
     budget_report: dict[str, Any]
     checksums: dict[str, Any]
@@ -47,14 +47,14 @@ class RuntimeBundle:
 
 @dataclass(slots=True)
 class RuntimeRouteDecision:
-    selected_skills: list[str]
+    selected_slms: list[str]
     confidence: float
     reason: str
     route_type: str = "adapter"
 
     def __post_init__(self) -> None:
-        if any(not isinstance(skill_id, str) or not skill_id.strip() for skill_id in self.selected_skills):
-            raise ValueError("selected_skills must contain non-empty skill ids")
+        if any(not isinstance(slm_id, str) or not slm_id.strip() for slm_id in self.selected_slms):
+            raise ValueError("selected_slms must contain non-empty slm ids")
         if not 0 <= self.confidence <= 1:
             raise ValueError("confidence must be between 0 and 1")
         if not isinstance(self.reason, str) or not self.reason.strip():

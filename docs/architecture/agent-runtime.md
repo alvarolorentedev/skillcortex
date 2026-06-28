@@ -9,7 +9,7 @@ developer-supplied validation command.
 
 - inspect a local repository with a small safe tool surface
 - request step-wise routing decisions from Runtime Core
-- capture traces of selected skills, proposed changes, and validation results
+- capture traces of selected slms, proposed changes, and validation results
 - keep writes scoped to the repository root and controlled by `--writes`
 
 ## Inputs

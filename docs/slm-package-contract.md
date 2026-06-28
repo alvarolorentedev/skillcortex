@@ -1,6 +1,6 @@
-# Skill Package Contract
+# Slm Package Contract
 
-`slmcortex` packages a trained LoRA adapter as a reusable skill artifact
+`slmcortex` packages a trained LoRA adapter as a reusable slm artifact
 without changing router semantics, registry semantics, accepted datasets, or
 checked-in benchmark artifacts.
 
@@ -9,33 +9,33 @@ checked-in benchmark artifacts.
 Package an existing adapter:
 
 ```bash
-slmcortex package-skill \
-  --skill-id python_skill \
-  --name "Python Skill" \
-  --adapter-dir artifacts/adapters/python_skill \
+slmcortex package-slm \
+  --slm-id python_slm \
+  --name "Python Slm" \
+  --adapter-dir artifacts/adapters/python_slm \
   --train-dataset data/train.jsonl \
   --eval-dataset data/eval.jsonl \
   --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
-  --output skills/python_skill
+  --output slms/python_slm
 ```
 
-Train and package one of the built-in skills:
+Train and package one of the built-in slms:
 
 ```bash
-slmcortex train-skill python_skill --output skills/python_skill_run --force
+slmcortex train-slm python_slm --output slms/python_slm_run --force
 ```
 
 Validate a package:
 
 ```bash
-slmcortex validate-skill-package --path skills/python_skill
+slmcortex validate-slm-package --path slms/python_slm
 ```
 
 Compose validated packages into a deterministic runtime bundle:
 
 ```bash
-slmcortex compose-skills \
-  --skills skills/python_skill,skills/debugging_skill \
+slmcortex compose-slms \
+  --slms slms/python_slm,slms/debugging_slm \
   --strategy routed \
   --output runtime/debugging_bundle
 ```
@@ -44,7 +44,7 @@ Route discovered packages without composing or loading adapters:
 
 ```bash
 slmcortex route \
-  --skills-dir skills \
+  --slms-dir slms \
   --repo . \
   --task "Create a FastAPI endpoint with Pydantic validation" \
   --explain
@@ -53,12 +53,12 @@ slmcortex route \
 ## Expected Output
 
 ```text
-skills/python_skill/
+slms/python_slm/
 ├── adapter/
 │   ├── adapters.safetensors   # MLX packages
 │   ├── adapter.gguf           # GGUF packages
 │   └── adapter_config.json
-├── skill.yaml
+├── slm.yaml
 ├── README.md
 ├── eval.json
 ├── training_config.json
@@ -70,26 +70,26 @@ skills/python_skill/
 one adapter weight file: MLX packages use `adapter/adapters.safetensors`; GGUF
 packages use `adapter/adapter.gguf`.
 
-`skill.yaml` and `metadata.json` may also include a `composition` section.
+`slm.yaml` and `metadata.json` may also include a `composition` section.
 When present, it makes the package self-describing for package-first
 composition.
 
-Product `train-skill` also creates an isolated sibling run directory named
+Product `train-slm` also creates an isolated sibling run directory named
 `.PACKAGE_NAME.run` containing the temporary training data, adapter output, and
 evaluation summary used to build the final package.
 
 ## Capability Routing Metadata
 
-`slmcortex route` discovers direct child folders under `--skills-dir`. A
-discoverable package only needs `skill.yaml`; `routing_card.json`,
+`slmcortex route` discovers direct child folders under `--slms-dir`. A
+discoverable package only needs `slm.yaml`; `routing_card.json`,
 `eval_summary.json`, `examples.jsonl`, and `adapter/` are optional. Discovery
 does not load adapter weights.
 
-Capability routing reads these optional `skill.yaml` fields:
+Capability routing reads these optional `slm.yaml` fields:
 
 ```yaml
-skill_id: fastapi_contract
-name: FastAPI Contract Skill
+slm_id: fastapi_contract
+name: FastAPI Contract Slm
 description: FastAPI endpoints with Pydantic validation.
 capabilities:
   - fastapi
@@ -122,8 +122,8 @@ composition:
     default_route_type: adapter
     scope: task
   compatibility:
-    compatible_skills: []
-    incompatible_skills: []
+    compatible_slms: []
+    incompatible_slms: []
   routing:
     tasks: {}
 ```
@@ -137,35 +137,35 @@ Required fields:
 Optional fields:
 
 - `composition.activation.semantic_families`
-- `composition.compatibility.compatible_skills`
-- `composition.compatibility.incompatible_skills`
+- `composition.compatibility.compatible_slms`
+- `composition.compatibility.incompatible_slms`
 - `composition.routing.tasks`
 
-`composition.routing.tasks` is optional, but official/internal skills use it to
+`composition.routing.tasks` is optional, but official/internal slms use it to
 encode routing order and companion requirements so Composer can mirror the
 validated router behavior without consulting the registry.
 
 Task routing entries currently support:
 
 - `order`: lower values are selected earlier in a route
-- `requires_all_of`: all listed skills must be present in the composition
-- `requires_any_of`: at least one listed skill must be present in the composition
+- `requires_all_of`: all listed slms must be present in the composition
+- `requires_any_of`: at least one listed slm must be present in the composition
 
 Self-describing external packages work without any registry input. Older
-packages that do not carry `composition` metadata remain valid Phase 1 skill
+packages that do not carry `composition` metadata remain valid Phase 1 slm
 packages, but they are not composable by Phase 2 Composer unless future
 non-authoritative enrichment support is used to fill missing declarations.
 
 ## Validation Rules
 
-- `skill.yaml`, `metadata.json`, `training_config.json`, `eval.json`, and the
+- `slm.yaml`, `metadata.json`, `training_config.json`, `eval.json`, and the
   adapter weights must exist.
 - `metadata.json` must record deterministic per-file checksums for the package.
 - `metadata.json` must record protected input snapshots and confirm they stayed
   unchanged.
-- If `composition` metadata is present, `skill.yaml` and `metadata.json` must
+- If `composition` metadata is present, `slm.yaml` and `metadata.json` must
   record the same value.
-- If `composition` metadata is present, `validate-skill-package` validates its
+- If `composition` metadata is present, `validate-slm-package` validates its
   schema and task declarations.
 - Validation rechecks package file checksums.
 - Validation rechecks the current hashes of protected inputs when those source
@@ -179,8 +179,8 @@ Packaging and product training snapshot these inputs before and after work:
 - the requested eval dataset
 - `configs/base.yaml`
 - `configs/training.yaml`
-- `configs/skill_registry.json`
-- `configs/skills.yaml`
+- `configs/slm_registry.json`
+- `configs/slms.yaml`
 - files under `artifacts/adapters/`
 - files under `data/benchmarks/`
 
@@ -193,18 +193,18 @@ If any protected input changes during packaging, the command fails.
 - package metadata records the resolved base model, runtime model, rank,
   target modules, dataset hashes, and training command when available
 - package metadata records the run directory and source artifact locations
-- package composition metadata, when present, is written to both `skill.yaml`
+- package composition metadata, when present, is written to both `slm.yaml`
   and `metadata.json`
 
-## Compose-Skills Runtime Bundle
+## Compose-Slms Runtime Bundle
 
-`compose-skills` writes a deterministic runtime bundle:
+`compose-slms` writes a deterministic runtime bundle:
 
 ```text
 runtime/debugging_bundle/
 ├── composition.yaml
 ├── router_config.json
-├── active_skills.json
+├── active_slms.json
 ├── compatibility_report.json
 ├── budget_report.json
 ├── checksums.json
@@ -213,10 +213,10 @@ runtime/debugging_bundle/
 
 Bundle files:
 
-- `composition.yaml`: source-of-truth composition manifest with skills, routes,
+- `composition.yaml`: source-of-truth composition manifest with slms, routes,
   runtime base model, and provenance
 - `router_config.json`: projected route table for runtime consumption
-- `active_skills.json`: flat view of active packaged skills and route membership
+- `active_slms.json`: flat view of active packaged slms and route membership
 - `compatibility_report.json`: compatibility checks plus optional enrichment
   provenance
 - `budget_report.json`: stored and active adapter parameter and file-size budget
@@ -224,7 +224,7 @@ Bundle files:
   package fingerprints
 - `README.md`: human-readable summary
 
-`compose-skills` never mutates source packages, adapters, datasets, registries,
+`compose-slms` never mutates source packages, adapters, datasets, registries,
 or benchmark artifacts.
 
 Optional registry enrichment:
@@ -311,8 +311,8 @@ Current Phase 3A limits:
 
 ## Current Scope
 
-Product `train-skill` reuses the existing research training internals and is
-currently limited to the existing research skills exposed by the repository.
+Product `train-slm` reuses the existing research training internals and is
+currently limited to the existing research slms exposed by the repository.
 MLX uses `mlx-lm`; GGUF uses PEFT plus llama.cpp LoRA conversion. It does not
-promote skills, update the registry, change router behavior, or rewrite
+promote slms, update the registry, change router behavior, or rewrite
 accepted datasets or benchmark artifacts.

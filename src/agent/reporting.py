@@ -22,19 +22,19 @@ def multi_task_summary(task_results: list[dict[str, Any]], *, writes: str, dry_r
     selected: list[tuple[Any, ...]] = []
     for result in task_results:
         for step in result["steps"]:
-            skills = tuple(step.get("selected_skills") or [])
-            if skills not in selected:
-                selected.append(skills)
+            slms = tuple(step.get("selected_slms") or [])
+            if slms not in selected:
+                selected.append(slms)
     if dry_run:
         return (
             f"Executed {len(task_results)} tasks and {sum(len(result['steps']) for result in task_results)} steps in route/plan only dry-run mode. "
-            f"Observed {len(selected)} distinct skill selections. "
+            f"Observed {len(selected)} distinct slm selections. "
             "Generation, writes, and validation were skipped."
         )
     validations = [result["validation"]["status"] for result in task_results]
     return (
         f"Executed {len(task_results)} tasks and {sum(len(result['steps']) for result in task_results)} steps with writes mode '{writes}'. "
-        f"Observed {len(selected)} distinct skill selections. "
+        f"Observed {len(selected)} distinct slm selections. "
         f"Validation statuses: {', '.join(validations)}."
     )
 
@@ -68,17 +68,17 @@ def task_result_payload(task_result: dict[str, Any]) -> dict[str, Any]:
 
 
 def final_summary(steps: list[dict[str, Any]], validation: dict[str, Any], writes: str, *, dry_run: bool) -> str:
-    selected = [tuple(step.get("selected_skills") or []) for step in steps if step.get("selected_skills") is not None]
+    selected = [tuple(step.get("selected_slms") or []) for step in steps if step.get("selected_slms") is not None]
     unique = [list(item) for index, item in enumerate(selected) if item not in selected[:index]]
     if dry_run:
         return (
             f"Executed {len(steps)} steps in route/plan only dry-run mode. "
-            f"Observed {len(unique)} distinct skill selections. "
+            f"Observed {len(unique)} distinct slm selections. "
             "Generation, writes, and validation were skipped."
         )
     return (
         f"Executed {len(steps)} steps with writes mode '{writes}'. "
-        f"Observed {len(unique)} distinct skill selections. "
+        f"Observed {len(unique)} distinct slm selections. "
         f"Validation status: {validation['status']}."
     )
 

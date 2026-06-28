@@ -12,13 +12,13 @@ class FakeRuntime:
     def validate(self):
         return {"status": "valid"}
 
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -26,14 +26,14 @@ class FakeRuntime:
         if dry_run:
             return {
                 "status": "dry-run",
-                "selected_skills": ["debugging_skill", "python_skill"] if task_type == "debugging" else [],
+                "selected_slms": ["debugging_slm", "python_slm"] if task_type == "debugging" else [],
                 "route_type": "adapter" if task_type == "debugging" else "base_fallback",
                 "reason": f"runtime bundle route {task_type or 'python_generation'}.default selected task_type={task_type or 'python_generation'}",
             }
         if task_type == "debugging":
             return {
                 "status": "complete",
-                "selected_skills": ["debugging_skill", "python_skill"],
+                "selected_slms": ["debugging_slm", "python_slm"],
                 "route_type": "adapter",
                 "reason": "runtime bundle route debugging.default selected task_type=debugging",
                 "generation": json.dumps(
@@ -57,7 +57,7 @@ class FakeRuntime:
             )
         return {
             "status": "complete",
-            "selected_skills": [],
+            "selected_slms": [],
             "route_type": "base_fallback",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": generation,
@@ -65,13 +65,13 @@ class FakeRuntime:
 
 
 class FakeDiffRuntime(FakeRuntime):
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -79,21 +79,21 @@ class FakeDiffRuntime(FakeRuntime):
         if dry_run:
             return {
                 "status": "dry-run",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route {task_type or 'python_generation'}.default selected task_type={task_type or 'python_generation'}",
             }
         if "Create a short execution plan" in prompt:
             return {
                 "status": "complete",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": "1. Inspect files\n2. Propose a patch\n3. Run validation",
             }
         return {
             "status": "complete",
-            "selected_skills": ["python_skill"],
+            "selected_slms": ["python_slm"],
             "route_type": "adapter",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": json.dumps(
@@ -107,13 +107,13 @@ class FakeDiffRuntime(FakeRuntime):
 
 
 class FakeRawCodeRuntime(FakeRuntime):
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -121,21 +121,21 @@ class FakeRawCodeRuntime(FakeRuntime):
         if dry_run:
             return {
                 "status": "dry-run",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route {task_type or 'python_generation'}.default selected task_type={task_type or 'python_generation'}",
             }
         if "Create a short execution plan" in prompt:
             return {
                 "status": "complete",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": "1. Inspect files\n2. Update app.py\n3. Run validation",
             }
         return {
             "status": "complete",
-            "selected_skills": ["python_skill"],
+            "selected_slms": ["python_slm"],
             "route_type": "adapter",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": "def answer():\n    return 42\n",
@@ -143,13 +143,13 @@ class FakeRawCodeRuntime(FakeRuntime):
 
 
 class FakeMultiActionRuntime(FakeRuntime):
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -157,21 +157,21 @@ class FakeMultiActionRuntime(FakeRuntime):
         if dry_run:
             return {
                 "status": "dry-run",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route {task_type or 'python_generation'}.default selected task_type={task_type or 'python_generation'}",
             }
         if "Create a short execution plan" in prompt:
             return {
                 "status": "complete",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": "1. Add endpoint\n2. Add schema\n3. Run validation",
             }
         return {
             "status": "complete",
-            "selected_skills": ["python_skill", "debugging_skill"],
+            "selected_slms": ["python_slm", "debugging_slm"],
             "route_type": "adapter",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": json.dumps(
@@ -196,13 +196,13 @@ class FakeMultiActionRuntime(FakeRuntime):
 
 
 class FakeTruncatingIterationRuntime(FakeRuntime):
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -210,7 +210,7 @@ class FakeTruncatingIterationRuntime(FakeRuntime):
         if "Create a short execution plan" in prompt:
             return {
                 "status": "complete",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": "1. Inspect files\n2. Propose a patch\n3. Run validation",
@@ -218,7 +218,7 @@ class FakeTruncatingIterationRuntime(FakeRuntime):
         if len(self.calls) <= 2:
             return {
                 "status": "complete",
-                "selected_skills": ["python_skill"],
+                "selected_slms": ["python_slm"],
                 "route_type": "adapter",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": json.dumps(
@@ -232,7 +232,7 @@ class FakeTruncatingIterationRuntime(FakeRuntime):
             }
         return {
             "status": "complete",
-            "selected_skills": ["python_skill"],
+            "selected_slms": ["python_slm"],
             "route_type": "adapter",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": json.dumps(
@@ -247,13 +247,13 @@ class FakeTruncatingIterationRuntime(FakeRuntime):
 
 
 class FakeFollowupContextRuntime(FakeRuntime):
-    def infer(self, *, messages, task_type=None, semantic_family=None, skill_override=None, max_tokens=None, temperature=None, dry_run=False):
+    def infer(self, *, messages, task_type=None, semantic_family=None, slm_override=None, max_tokens=None, temperature=None, dry_run=False):
         prompt = messages[0]["content"]
         self.calls.append(
             {
                 "task_type": task_type,
                 "semantic_family": semantic_family,
-                "skill_override": skill_override,
+                "slm_override": slm_override,
                 "dry_run": dry_run,
                 "prompt": prompt,
             }
@@ -261,7 +261,7 @@ class FakeFollowupContextRuntime(FakeRuntime):
         if "Create a short execution plan" in prompt:
             return {
                 "status": "complete",
-                "selected_skills": [],
+                "selected_slms": [],
                 "route_type": "base_fallback",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": "1. Inspect files\n2. Propose a patch\n3. Run validation",
@@ -269,7 +269,7 @@ class FakeFollowupContextRuntime(FakeRuntime):
         if len([call for call in self.calls if call["task_type"] == "python_generation"]) == 2:
             return {
                 "status": "complete",
-                "selected_skills": ["python_skill"],
+                "selected_slms": ["python_slm"],
                 "route_type": "adapter",
                 "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
                 "generation": json.dumps(
@@ -283,7 +283,7 @@ class FakeFollowupContextRuntime(FakeRuntime):
             }
         return {
             "status": "complete",
-            "selected_skills": ["python_skill"],
+            "selected_slms": ["python_slm"],
             "route_type": "adapter",
             "reason": f"runtime bundle route python_generation.default selected task_type={task_type}",
             "generation": json.dumps({"kind": "no_change", "summary": "Follow-up task inspected current file."}),
@@ -304,19 +304,19 @@ def _artifact_only_repo(tmp_path):
     repo = tmp_path / "artifact-repo"
     (repo / "datasets" / "fastapi_contract").mkdir(parents=True)
     (repo / "runtime" / "fastapi_contract_runtime").mkdir(parents=True)
-    (repo / "skills" / "fastapi_contract").mkdir(parents=True)
+    (repo / "slms" / "fastapi_contract").mkdir(parents=True)
     (repo / "tmp").mkdir(parents=True)
     (repo / "datasets" / "fastapi_contract" / "dataset-report.json").write_text('{"status": "ok"}\n')
     (repo / "runtime" / "fastapi_contract_runtime" / "README.md").write_text("runtime bundle\n")
     return repo
 
 
-def test_agent_run_records_dynamic_skill_switch_and_trace(tmp_path, monkeypatch, capsys):
+def test_agent_run_records_dynamic_slm_switch_and_trace(tmp_path, monkeypatch, capsys):
     repo = _toy_repo(tmp_path)
     trace = tmp_path / "trace.json"
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -352,17 +352,17 @@ def test_agent_run_records_dynamic_skill_switch_and_trace(tmp_path, monkeypatch,
     assert repo.joinpath("app.py").read_text() == "def answer():\n    return 0\n"
     assert result["status"] == "validation_failed"
     assert result["validation"]["status"] == "failed"
-    assert result["steps"][1]["selected_skills"] == []
+    assert result["steps"][1]["selected_slms"] == []
     assert result["steps"][2]["write_status"] == "review_required"
     assert result["review_artifact_path"] is not None
     assert Path(result["review_artifact_path"]).exists()
     assert result["steps"][3]["status"] == "failed"
-    assert result["steps"][4]["selected_skills"] == ["debugging_skill", "python_skill"]
+    assert result["steps"][4]["selected_slms"] == ["debugging_slm", "python_slm"]
     trace_payload = json.loads(trace.read_text())
     assert trace_payload["status"] == "validation_failed"
     assert trace_payload["generated_patch"]
     assert trace_payload["review_artifact_path"]
-    assert trace_payload["steps"][4]["selected_skills"] == ["debugging_skill", "python_skill"]
+    assert trace_payload["steps"][4]["selected_slms"] == ["debugging_slm", "python_slm"]
     assert fake_runtime.calls[-1]["task_type"] == "debugging"
 
 
@@ -370,7 +370,7 @@ def test_agent_run_can_apply_file_replace_when_writes_on(tmp_path, monkeypatch, 
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -413,7 +413,7 @@ def test_agent_run_supports_dry_run_without_materializing_changes(tmp_path, monk
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
 
     assert (
         main(
@@ -445,7 +445,7 @@ def test_agent_run_dry_run_skips_generation_apply_and_validation(tmp_path, monke
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
 
     def fail_validation(command, repo):
         raise AssertionError("validation should not run in dry-run mode")
@@ -484,7 +484,7 @@ def test_agent_run_confirm_mode_writes_review_artifact(tmp_path, monkeypatch, ca
     trace = tmp_path / "trace.json"
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
 
     assert (
         main(
@@ -518,7 +518,7 @@ def test_agent_run_can_apply_proposed_diff_when_writes_on(tmp_path, monkeypatch,
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeDiffRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -551,7 +551,7 @@ def test_agent_run_can_apply_proposed_diff_when_writes_on(tmp_path, monkeypatch,
     )
     result = json.loads(capsys.readouterr().out)
     assert repo.joinpath("app.py").read_text() == "def answer():\n    return 42\n"
-    assert result["steps"][2]["selected_skills"] == ["python_skill"]
+    assert result["steps"][2]["selected_slms"] == ["python_slm"]
     assert result["steps"][2]["write_status"] == "applied"
     assert result["status"] == "applied"
 
@@ -560,7 +560,7 @@ def test_agent_run_can_apply_raw_code_generation_when_writes_on(tmp_path, monkey
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRawCodeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -601,7 +601,7 @@ def test_agent_run_can_apply_multiple_explicit_actions_when_writes_on(tmp_path, 
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeMultiActionRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -646,7 +646,7 @@ def test_agent_run_avoids_artifact_files_when_repo_has_no_source_files(tmp_path,
     repo = _artifact_only_repo(tmp_path)
     fake_runtime = FakeRawCodeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -687,7 +687,7 @@ def test_agent_run_loops_over_multiple_task_inputs(tmp_path, monkeypatch, capsys
     fake_runtime = FakeRuntime()
     trace = tmp_path / "trace.json"
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -751,7 +751,7 @@ def test_agent_run_accepts_tasks_dynamically_from_stdin(tmp_path, monkeypatch, c
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -800,7 +800,7 @@ def test_agent_run_interactive_loop_requests_next_task_after_execution(tmp_path,
         "",
     ])
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -855,7 +855,7 @@ def test_agent_run_rejects_truncating_followup_file_replace(tmp_path, monkeypatc
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeTruncatingIterationRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {
@@ -900,7 +900,7 @@ def test_agent_run_second_iteration_reads_full_current_target_file(tmp_path, mon
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeFollowupContextRuntime()
 
-    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SlmRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
         "slmcortex.agent._run_validation_command",
         lambda command, repo: {

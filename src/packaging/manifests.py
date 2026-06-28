@@ -19,7 +19,7 @@ from .composition import default_composition
 
 def build_manifests(
     *,
-    skill_id: str,
+    slm_id: str,
     name: str,
     version: str,
     description: str,
@@ -43,13 +43,13 @@ def build_manifests(
     )
     weight_path = f"adapter/{adapter_weight_name_for_format(adapter_format)}"
     training_defaults = training_config()
-    rank = int(adapter_metadata.get("rank") or training_defaults["skill_rank"])
+    rank = int(adapter_metadata.get("rank") or training_defaults["slm_rank"])
     target_modules = adapter_metadata.get("target_modules") or training_defaults["target_modules"]
     trainable_parameters = int(adapter_metadata.get("trainable_parameters") or 0)
     train_dataset_hash = sha256(train_dataset)
     eval_dataset_hash = sha256(eval_dataset)
     examples_count = line_count(examples) if examples else 0
-    resolved_composition = composition or default_composition(skill_id)
+    resolved_composition = composition or default_composition(slm_id)
     package_training = {
         "seed": int(adapter_metadata.get("seed") or training_defaults["seed"]),
         "batch_size": int(
@@ -80,9 +80,9 @@ def build_manifests(
     }
     metadata = {
         "schema_version": "1",
-        "package_type": "skill",
+        "package_type": "slm",
         "status": "complete",
-        "skill_id": skill_id,
+        "slm_id": slm_id,
         "name": name,
         "version": version,
         "created_at": created_at,
@@ -134,10 +134,10 @@ def build_manifests(
         "composition": resolved_composition,
         "protected_inputs": protected_inputs,
     }
-    skill_yaml = {
+    slm_yaml = {
         "schema_version": "1",
-        "package_type": "skill",
-        "skill_id": skill_id,
+        "package_type": "slm",
+        "slm_id": slm_id,
         "name": name,
         "version": version,
         "description": description,
@@ -164,12 +164,12 @@ def build_manifests(
         },
     }
     if resolved_composition is not None:
-        skill_yaml["composition"] = resolved_composition
+        slm_yaml["composition"] = resolved_composition
     if examples is not None:
-        skill_yaml["examples"] = {"path": "examples.jsonl", "count": examples_count}
-    readme = build_readme(name, skill_id, version, description, metadata, evaluation)
+        slm_yaml["examples"] = {"path": "examples.jsonl", "count": examples_count}
+    readme = build_readme(name, slm_id, version, description, metadata, evaluation)
     return {
-        "skill.yaml": yaml.safe_dump(skill_yaml, sort_keys=False),
+        "slm.yaml": yaml.safe_dump(slm_yaml, sort_keys=False),
         "metadata.json": json.dumps(metadata, indent=2, sort_keys=True) + "\n",
         "training_config.json": json.dumps(package_training, indent=2, sort_keys=True) + "\n",
         "eval.json": json.dumps(evaluation, indent=2, sort_keys=True) + "\n",
@@ -199,7 +199,7 @@ def write_package(
 
 def build_readme(
     name: str,
-    skill_id: str,
+    slm_id: str,
     version: str,
     description: str,
     metadata: dict,
@@ -213,7 +213,7 @@ def build_readme(
             "",
             "## Package",
             "",
-            f"- Skill ID: `{skill_id}`",
+            f"- Slm ID: `{slm_id}`",
             f"- Version: `{version}`",
             f"- Source model: `{metadata['base']['source_model']}`",
             f"- Runtime model: `{metadata['base']['runtime_model']}`",

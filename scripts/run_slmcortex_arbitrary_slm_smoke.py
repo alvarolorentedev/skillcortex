@@ -92,11 +92,11 @@ def _write_demo_eval_summary(path: Path) -> Path:
                 "hypothesis": None,
                 "modes": {
                     "base": {"count": 2, "fuzzy_score": 0.2},
-                    "single-skill": {"count": 2, "fuzzy_score": 1.0},
+                    "single-slm": {"count": 2, "fuzzy_score": 1.0},
                 },
                 "tasks": {
-                    "python_generation": {"single-skill": {"count": 1, "fuzzy_score": 1.0}},
-                    "debugging": {"single-skill": {"count": 1, "fuzzy_score": 1.0}},
+                    "python_generation": {"single-slm": {"count": 1, "fuzzy_score": 1.0}},
+                    "debugging": {"single-slm": {"count": 1, "fuzzy_score": 1.0}},
                 },
             },
             indent=2,
@@ -110,7 +110,7 @@ def _write_demo_eval_summary(path: Path) -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Run the arbitrary-skill SLM Cortex smoke flow. Default mode is a no-model, "
+            "Run the arbitrary-slm SLM Cortex smoke flow. Default mode is a no-model, "
             "package-first demo. Pass --real-training to run real local LoRA training."
         ),
     )
@@ -122,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         "--real-training",
         action="store_true",
         help=(
-            "Run the real local train-skill path. Slow and opt-in. Not intended for CI. "
+            "Run the real local train-slm path. Slow and opt-in. Not intended for CI. "
             "Requires a working local mlx-lm training environment."
         ),
     )
@@ -135,9 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     output_root.mkdir(parents=True, exist_ok=True)
 
-    skill_id = "fastapi_contract"
-    name = "FastAPI Contract Skill"
-    package_output = output_root / skill_id
+    slm_id = "fastapi_contract"
+    name = "FastAPI Contract Slm"
+    package_output = output_root / slm_id
     runtime = output_root / "runtime"
     toy_repo = _copy_demo_repo(output_root / "toy-repo")
     trace_path = output_root / "agent-trace.json"
@@ -151,9 +151,9 @@ def main(argv: list[str] | None = None) -> int:
             _run(
                 "train_fastapi_contract",
                 [
-                    "train-skill",
-                    "--skill-id",
-                    skill_id,
+                    "train-slm",
+                    "--slm-id",
+                    slm_id,
                     "--name",
                     name,
                     "--train-dataset",
@@ -172,15 +172,15 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     else:
-        adapter_dir = _stage_demo_adapter(output_root / "demo-adapters" / skill_id)
+        adapter_dir = _stage_demo_adapter(output_root / "demo-adapters" / slm_id)
         eval_summary = _write_demo_eval_summary(output_root / "eval-summary.json")
         steps.append(
             _run(
                 "package_fastapi_contract",
                 [
-                    "package-skill",
-                    "--skill-id",
-                    skill_id,
+                    "package-slm",
+                    "--slm-id",
+                    slm_id,
                     "--name",
                     name,
                     "--adapter-dir",
@@ -207,8 +207,8 @@ def main(argv: list[str] | None = None) -> int:
             _run(
                 "compose_runtime",
                 [
-                    "compose-skills",
-                    "--skills",
+                    "compose-slms",
+                    "--slms",
                     str(package_output),
                     "--output",
                     str(runtime),

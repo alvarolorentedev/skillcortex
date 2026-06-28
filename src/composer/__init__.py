@@ -4,13 +4,13 @@ from pathlib import Path
 
 from .bundle import build_budget_report, build_bundle, bundle_files, write_checksums
 from .compatibility import build_compatibility_report, load_registry_enrichment
-from .loading import load_skill_package, validate_unique_skill_ids
+from .loading import load_slm_package, validate_unique_slm_ids
 from .routing import build_routes
 
 
-def compose_skill_packages(
+def compose_slm_packages(
     *,
-    skills: list[Path],
+    slms: list[Path],
     strategy: str,
     output: Path,
     registry: Path | None = None,
@@ -19,11 +19,11 @@ def compose_skill_packages(
 ) -> dict:
     if strategy != "routed":
         raise ValueError("only the routed composition strategy is currently supported")
-    if not skills:
-        raise ValueError("at least one skill package is required")
+    if not slms:
+        raise ValueError("at least one slm package is required")
 
-    loaded = [load_skill_package(path) for path in skills]
-    validate_unique_skill_ids(loaded)
+    loaded = [load_slm_package(path) for path in slms]
+    validate_unique_slm_ids(loaded)
     enrichment = load_registry_enrichment(registry, loaded)
     compatibility = build_compatibility_report(loaded, enrichment)
     if compatibility["errors"]:
@@ -40,7 +40,7 @@ def compose_skill_packages(
             "status": "dry-run",
             "strategy": strategy,
             "output": str(output),
-            "skills": [item["skill_id"] for item in loaded],
+            "slms": [item["slm_id"] for item in loaded],
             "files": sorted(bundle_files(bundle, compatibility, budget)),
         }
     if output_exists and any(output.iterdir()) and not force:
@@ -63,5 +63,5 @@ def compose_skill_packages(
         "status": "complete",
         "strategy": strategy,
         "output": str(output),
-        "skills": [item["skill_id"] for item in loaded],
+        "slms": [item["slm_id"] for item in loaded],
     }

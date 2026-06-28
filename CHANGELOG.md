@@ -21,7 +21,7 @@ Versioning for public releases.
 - Canonical public identity is now SLMCortex in top-level docs and package
   metadata
 - Research workflows, reports, and experiment outputs were extracted into the
-  separate `skill_lattice_coder_research` repository
+  separate `slm_lattice_coder_research` repository
 - Repo boundary documentation now distinguishes the public product surface from
   archived research assets
 

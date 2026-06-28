@@ -5,11 +5,11 @@ import json
 from pathlib import Path
 
 
-def package_fingerprint(skill_manifest: dict, metadata: dict) -> str:
+def package_fingerprint(slm_manifest: dict, metadata: dict) -> str:
     payload = json.dumps(
         {
-            "skill_id": skill_manifest["skill_id"],
-            "version": skill_manifest["version"],
+            "slm_id": slm_manifest["slm_id"],
+            "version": slm_manifest["version"],
             "base": metadata["base"],
             "adapter": metadata["adapter"],
             "checksums": metadata["checksums"],

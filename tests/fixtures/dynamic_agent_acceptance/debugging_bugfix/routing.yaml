@@ -1,5 +1,5 @@
-skill_id: debugging_fix_skill
-name: Debugging Fix Skill
+slm_id: debugging_fix_slm
+name: Debugging Fix Slm
 description: Debugging and bugfix work for failing Python code.
 capabilities:
   - debugging

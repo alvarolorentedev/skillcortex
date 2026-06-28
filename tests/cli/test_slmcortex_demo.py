@@ -27,8 +27,8 @@ def test_slmcortex_root_help_lists_product_commands_and_examples():
     completed = _run_slmcortex("--help")
     assert completed.returncode == 0
     assert "Package, compose, validate, and run Slm Cortex runtime bundles." in completed.stdout
-    assert "package-skill" in completed.stdout
-    assert "compose-skills" in completed.stdout
+    assert "package-slm" in completed.stdout
+    assert "compose-slms" in completed.stdout
     assert "validate-runtime" in completed.stdout
     assert "agent" in completed.stdout
     assert "Examples:" in completed.stdout
@@ -36,10 +36,10 @@ def test_slmcortex_root_help_lists_product_commands_and_examples():
 
 def test_slmcortex_product_help_examples_cover_every_command():
     commands = {
-        ("train-skill", "--help"): "slmcortex train-skill --skill-id fastapi_contract",
-        ("package-skill", "--help"): "slmcortex package-skill --skill-id python_skill",
-        ("validate-skill-package", "--help"): "slmcortex validate-skill-package --path",
-        ("compose-skills", "--help"): "slmcortex compose-skills --skills",
+        ("train-slm", "--help"): "slmcortex train-slm --slm-id fastapi_contract",
+        ("package-slm", "--help"): "slmcortex package-slm --slm-id python_slm",
+        ("validate-slm-package", "--help"): "slmcortex validate-slm-package --path",
+        ("compose-slms", "--help"): "slmcortex compose-slms --slms",
         ("validate-runtime", "--help"): "slmcortex validate-runtime --runtime",
         ("infer", "--help"): "slmcortex infer --runtime",
         ("serve", "--help"): "slmcortex serve --runtime",
@@ -65,15 +65,15 @@ def test_slmcortex_demo_script_runs_end_to_end(tmp_path):
     summary = json.loads(completed.stdout)
     assert summary["status"] == "complete"
     assert [step["name"] for step in summary["steps"]] == [
-        "package_python_skill",
-        "package_debugging_skill",
+        "package_python_slm",
+        "package_debugging_slm",
         "compose_runtime",
         "validate_runtime",
         "infer_dry_run",
         "agent_run_dry_run",
     ]
-    assert output_root.joinpath("python_skill", "skill.yaml").exists()
-    assert output_root.joinpath("debugging_skill", "skill.yaml").exists()
+    assert output_root.joinpath("python_slm", "slm.yaml").exists()
+    assert output_root.joinpath("debugging_slm", "slm.yaml").exists()
     assert output_root.joinpath("runtime", "composition.yaml").exists()
     assert output_root.joinpath("agent-trace.json").exists()
 
@@ -83,12 +83,12 @@ def test_slmcortex_demo_script_runs_end_to_end(tmp_path):
     assert agent_step["status"] == "dry-run"
 
 
-def test_arbitrary_skill_smoke_script_runs_default_no_model_loop(tmp_path):
+def test_arbitrary_slm_smoke_script_runs_default_no_model_loop(tmp_path):
     output_root = tmp_path / "fastapi-contract-smoke"
     completed = subprocess.run(
         [
             sys.executable,
-            "scripts/run_slmcortex_arbitrary_skill_smoke.py",
+            "scripts/run_slmcortex_arbitrary_slm_smoke.py",
             "--output-root",
             str(output_root),
         ],
@@ -108,7 +108,7 @@ def test_arbitrary_skill_smoke_script_runs_default_no_model_loop(tmp_path):
         "infer_dry_run",
         "agent_run_dry_run",
     ]
-    assert output_root.joinpath("fastapi_contract", "skill.yaml").exists()
+    assert output_root.joinpath("fastapi_contract", "slm.yaml").exists()
     assert output_root.joinpath("runtime", "composition.yaml").exists()
     assert output_root.joinpath("agent-trace.json").exists()
 
@@ -136,8 +136,8 @@ def test_dynamic_adaptive_smoke_script_runs_mock_loop(tmp_path):
         "remote": "remote_lora",
         "plasticity": "plasticity_train",
     }
-    assert output_root.joinpath("skills", "fastapi_skill", "skill.yaml").exists()
-    assert output_root.joinpath("skills", "sql_remote", "skill.yaml").exists()
+    assert output_root.joinpath("slms", "fastapi_slm", "slm.yaml").exists()
+    assert output_root.joinpath("slms", "sql_remote", "slm.yaml").exists()
 
 
 def test_dynamic_adaptive_smoke_script_exercises_failure_modes(tmp_path):

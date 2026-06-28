@@ -19,35 +19,35 @@ BASE_FIXTURES = ROOT / "tests" / "fixtures" / "slmcortex_demo"
 SCENARIOS = [
     {
         "name": "fastapi_pydantic",
-        "skill_id": "fastapi_contract_skill",
-        "display_name": "FastAPI Contract Skill",
-        "adapter_dir": ROOT / "artifacts" / "adapters" / "python_skill",
+        "slm_id": "fastapi_contract_slm",
+        "display_name": "FastAPI Contract Slm",
+        "adapter_dir": ROOT / "artifacts" / "adapters" / "python_slm",
         "allowed_task_types": ["python_generation"],
-        "expected_selected_skill_id": "fastapi_contract_skill",
+        "expected_selected_slm_id": "fastapi_contract_slm",
     },
     {
         "name": "pytest_generation",
-        "skill_id": "pytest_generation_skill",
-        "display_name": "Pytest Generation Skill",
-        "adapter_dir": ROOT / "artifacts" / "adapters" / "test_generation_skill",
+        "slm_id": "pytest_generation_slm",
+        "display_name": "Pytest Generation Slm",
+        "adapter_dir": ROOT / "artifacts" / "adapters" / "test_generation_slm",
         "allowed_task_types": ["python_generation", "test_generation"],
-        "expected_selected_skill_id": "pytest_generation_skill",
+        "expected_selected_slm_id": "pytest_generation_slm",
     },
     {
         "name": "debugging_bugfix",
-        "skill_id": "debugging_fix_skill",
-        "display_name": "Debugging Fix Skill",
-        "adapter_dir": ROOT / "artifacts" / "adapters" / "debugging_skill",
+        "slm_id": "debugging_fix_slm",
+        "display_name": "Debugging Fix Slm",
+        "adapter_dir": ROOT / "artifacts" / "adapters" / "debugging_slm",
         "allowed_task_types": ["python_generation", "debugging"],
-        "expected_selected_skill_id": "debugging_fix_skill",
+        "expected_selected_slm_id": "debugging_fix_slm",
     },
     {
         "name": "python_refactor",
-        "skill_id": "python_refactor_skill",
-        "display_name": "Python Refactor Skill",
-        "adapter_dir": ROOT / "artifacts" / "adapters" / "python_skill",
+        "slm_id": "python_refactor_slm",
+        "display_name": "Python Refactor Slm",
+        "adapter_dir": ROOT / "artifacts" / "adapters" / "python_slm",
         "allowed_task_types": ["python_generation"],
-        "expected_selected_skill_id": "python_refactor_skill",
+        "expected_selected_slm_id": "python_refactor_slm",
     },
 ]
 
@@ -104,31 +104,31 @@ def _package_checksums(root: Path) -> dict[str, str]:
 
 
 def _ensure_routing_metadata(package_dir: Path, routing_file: Path, routing_card_file: Path) -> None:
-    manifest = yaml.safe_load((package_dir / "skill.yaml").read_text())
+    manifest = yaml.safe_load((package_dir / "slm.yaml").read_text())
     overlay = yaml.safe_load(routing_file.read_text()) or {}
     for key, value in overlay.items():
         manifest[key] = value
-    (package_dir / "skill.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
+    (package_dir / "slm.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
     shutil.copy2(routing_card_file, package_dir / "routing_card.json")
     metadata = json.loads((package_dir / "metadata.json").read_text())
     metadata["checksums"] = _package_checksums(package_dir)
     (package_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
 
 
-def _build_skill_packages(output_root: Path) -> Path:
-    skills_dir = output_root / "skills"
-    skills_dir.mkdir(parents=True, exist_ok=True)
+def _build_slm_packages(output_root: Path) -> Path:
+    slms_dir = output_root / "slms"
+    slms_dir.mkdir(parents=True, exist_ok=True)
     train_dataset = BASE_FIXTURES / "train.jsonl"
     eval_dataset = BASE_FIXTURES / "eval.jsonl"
     eval_summary = BASE_FIXTURES / "eval-summary.json"
 
     for scenario in SCENARIOS:
-        package_dir = skills_dir / scenario["skill_id"]
+        package_dir = slms_dir / scenario["slm_id"]
         routing_root = FIXTURES / scenario["name"]
         _run(
-            "package-skill",
-            "--skill-id",
-            scenario["skill_id"],
+            "package-slm",
+            "--slm-id",
+            scenario["slm_id"],
             "--name",
             scenario["display_name"],
             "--adapter-dir",
@@ -151,8 +151,8 @@ def _build_skill_packages(output_root: Path) -> Path:
             routing_root / "routing.yaml",
             routing_root / "routing_card.json",
         )
-        _run("validate-skill-package", "--path", str(package_dir))
-    return skills_dir
+        _run("validate-slm-package", "--path", str(package_dir))
+    return slms_dir
 
 
 def _scenario_task(scenario: dict) -> str:
@@ -178,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     output_root.mkdir(parents=True, exist_ok=True)
 
-    skills_dir = _build_skill_packages(output_root)
+    slms_dir = _build_slm_packages(output_root)
     scenarios_output = []
     for scenario in SCENARIOS:
         repo = _scenario_repo(scenario, output_root)
@@ -189,8 +189,8 @@ def main(argv: list[str] | None = None) -> int:
         completed = _run(
             "agent",
             "run",
-            "--skills-dir",
-            str(skills_dir),
+            "--slms-dir",
+            str(slms_dir),
             "--repo",
             str(repo),
             "--task",
@@ -204,10 +204,10 @@ def main(argv: list[str] | None = None) -> int:
         result = completed["result"]
         if result["mode"] != "dynamic_agent":
             raise RuntimeError(f"unexpected mode for {scenario['name']}: {result['mode']}")
-        selected_skill_id = result["routing_decision"]["selected_skills"][0]["skill_id"]
-        if selected_skill_id != scenario["expected_selected_skill_id"]:
+        selected_slm_id = result["routing_decision"]["selected_slms"][0]["slm_id"]
+        if selected_slm_id != scenario["expected_selected_slm_id"]:
             raise RuntimeError(
-                f"unexpected routing for {scenario['name']}: {selected_skill_id}"
+                f"unexpected routing for {scenario['name']}: {selected_slm_id}"
             )
         if result["agent_execution_status"] != "dry_run_completed":
             raise RuntimeError(
@@ -223,20 +223,20 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError(f"trace was not written for {scenario['name']}")
         if not result.get("agent_result"):
             raise RuntimeError(f"missing agent_result for {scenario['name']}")
-        agent_selected = result["agent_result"].get("selected_skills") or []
+        agent_selected = result["agent_result"].get("selected_slms") or []
         if _snapshot_repo(repo) != before:
             raise RuntimeError(f"repo changed during dry-run for {scenario['name']}")
         scenarios_output.append(
             {
                 "name": scenario["name"],
-                "expected_selected_skill_id": scenario["expected_selected_skill_id"],
-                "selected_skill_id": selected_skill_id,
+                "expected_selected_slm_id": scenario["expected_selected_slm_id"],
+                "selected_slm_id": selected_slm_id,
                 "runtime_out": str(runtime_out),
                 "trace_out": str(trace_out),
                 "mode": result["mode"],
                 "agent_execution_status": result["agent_execution_status"],
                 "validation_status": result["validation_status"],
-                "agent_selected_skills": agent_selected,
+                "agent_selected_slms": agent_selected,
                 "repo_unchanged": True,
             }
         )
@@ -244,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = {
         "status": "complete",
         "output_root": str(output_root),
-        "skills_dir": str(skills_dir),
+        "slms_dir": str(slms_dir),
         "scenarios": scenarios_output,
     }
     json.dump(summary, sys.stdout, indent=2)

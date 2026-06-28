@@ -20,9 +20,9 @@ from .data import load_product_jsonl
 from .reporting import evaluation_report
 
 
-def train_product_skill_to_run_directory(
+def train_product_slm_to_run_directory(
     *,
-    skill_id: str,
+    slm_id: str,
     train_dataset: Path,
     run_directory: Path,
     seed: int | None,
@@ -31,7 +31,7 @@ def train_product_skill_to_run_directory(
     run_directory.mkdir(parents=True, exist_ok=True)
     examples = load_product_jsonl(train_dataset)
     training_directory = run_directory / "training-data"
-    adapter_directory = run_directory / "adapters" / skill_id
+    adapter_directory = run_directory / "adapters" / slm_id
     if adapter_directory.exists() and any(adapter_directory.iterdir()) and not force:
         raise FileExistsError(f"{adapter_directory} exists; pass --force to replace it")
     if adapter_directory.exists():
@@ -45,7 +45,7 @@ def train_product_skill_to_run_directory(
     start = time.perf_counter()
     subprocess.run(command, check=True)
     metadata = training_metadata(
-        skill_id,
+        slm_id,
         examples,
         rank=8,
         elapsed=time.perf_counter() - start,
@@ -58,9 +58,9 @@ def train_product_skill_to_run_directory(
     return adapter_directory, metadata
 
 
-def evaluate_product_skill_adapter(
+def evaluate_product_slm_adapter(
     *,
-    skill_id: str,
+    slm_id: str,
     dataset: Path,
     output: Path,
     adapter_dir: Path,
@@ -72,7 +72,7 @@ def evaluate_product_skill_adapter(
     raw_path = output / "results.jsonl"
     with raw_path.open("w") as handle:
         for example in examples:
-            for mode, resolved_adapter in (("base", None), ("single-skill", adapter_dir)):
+            for mode, resolved_adapter in (("base", None), ("single-slm", adapter_dir)):
                 try:
                     generation = generate_for_example(example.prompt, adapter_dir=resolved_adapter, model_cache=model_cache)
                     text = extract_code(generation["generation"])
@@ -90,7 +90,7 @@ def evaluate_product_skill_adapter(
                         "syntax_valid": syntax,
                         "execution_passed": execution,
                         "latency_seconds": generation["latency_seconds"],
-                        "selected_skills": [skill_id] if resolved_adapter else [],
+                        "selected_slms": [slm_id] if resolved_adapter else [],
                         "active_adapter_count": 1 if resolved_adapter else 0,
                         "active_adapter_parameters": generation["active_adapter_parameters"],
                         "prompt_tokens": generation["prompt_tokens"],
@@ -109,7 +109,7 @@ def evaluate_product_skill_adapter(
                         "syntax_valid": None,
                         "execution_passed": None,
                         "latency_seconds": 0,
-                        "selected_skills": [skill_id] if resolved_adapter else [],
+                        "selected_slms": [slm_id] if resolved_adapter else [],
                         "active_adapter_count": 1 if resolved_adapter else 0,
                         "active_adapter_parameters": 0,
                         "prompt_tokens": None,
@@ -124,7 +124,7 @@ def evaluate_product_skill_adapter(
     tasks = {task: aggregate_results([row for row in rows if row["task_type"] == task]) for task in sorted({row["task_type"] for row in rows})}
     payload = {"hypothesis": None, "modes": summary, "tasks": tasks}
     (output / "summary.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    (output / "report.md").write_text(evaluation_report(skill_id, summary, tasks))
+    (output / "report.md").write_text(evaluation_report(slm_id, summary, tasks))
     return output / "summary.json"
 
 

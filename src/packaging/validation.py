@@ -9,7 +9,7 @@ from .artifacts import REQUIRED_PACKAGE_FILES, validate_package_checksums
 from .composition import validate_composition_metadata
 
 
-def validate_skill_package(path: Path) -> dict:
+def validate_slm_package(path: Path) -> dict:
     root = path.resolve()
     if not root.exists() or not root.is_dir():
         raise FileNotFoundError(f"package not found: {root}")
@@ -17,39 +17,39 @@ def validate_skill_package(path: Path) -> dict:
     if missing:
         raise ValueError(f"package is missing required files: {missing[0]}")
 
-    skill_manifest = read_yaml(root / "skill.yaml")
+    slm_manifest = read_yaml(root / "slm.yaml")
     metadata = read_json(root / "metadata.json")
     training = read_json(root / "training_config.json")
     evaluation = read_json(root / "eval.json")
 
-    if skill_manifest.get("schema_version") != "1":
-        raise ValueError("skill.yaml schema_version must be '1'")
+    if slm_manifest.get("schema_version") != "1":
+        raise ValueError("slm.yaml schema_version must be '1'")
     if metadata.get("schema_version") != "1":
         raise ValueError("metadata.json schema_version must be '1'")
     if metadata.get("status") != "complete":
         raise ValueError("metadata.json status must be 'complete'")
-    if skill_manifest.get("status") != "complete":
-        raise ValueError("skill.yaml status must be 'complete'")
+    if slm_manifest.get("status") != "complete":
+        raise ValueError("slm.yaml status must be 'complete'")
 
-    for field in ("skill_id", "name", "version"):
-        if skill_manifest.get(field) != metadata.get(field):
+    for field in ("slm_id", "name", "version"):
+        if slm_manifest.get(field) != metadata.get(field):
             raise ValueError(f"manifest mismatch for {field}")
 
-    skill_base = skill_manifest.get("base") or {}
+    slm_base = slm_manifest.get("base") or {}
     metadata_base = metadata.get("base") or {}
-    if skill_base.get("source_model") != metadata_base.get("source_model"):
+    if slm_base.get("source_model") != metadata_base.get("source_model"):
         raise ValueError("manifest mismatch for base source_model")
-    if skill_base.get("runtime_model") != metadata_base.get("runtime_model"):
+    if slm_base.get("runtime_model") != metadata_base.get("runtime_model"):
         raise ValueError("manifest mismatch for base runtime_model")
-    if (skill_manifest.get("adapter") or {}).get("trainable_parameters") != (
+    if (slm_manifest.get("adapter") or {}).get("trainable_parameters") != (
         metadata.get("adapter") or {}
     ).get("trainable_parameters"):
         raise ValueError("manifest mismatch for trainable_parameters")
-    backend = metadata_base.get("backend") or skill_base.get("backend") or "mlx"
+    backend = metadata_base.get("backend") or slm_base.get("backend") or "mlx"
     adapter_format = (metadata.get("adapter") or {}).get("format")
     if adapter_format != adapter_format_for_backend(backend):
         raise ValueError(f"adapter format {adapter_format} is incompatible with backend {backend}")
-    adapter_path = root / ((skill_manifest.get("adapter") or {}).get("path") or f"adapter/{adapter_weight_name_for_format(adapter_format)}")
+    adapter_path = root / ((slm_manifest.get("adapter") or {}).get("path") or f"adapter/{adapter_weight_name_for_format(adapter_format)}")
     if not adapter_path.exists():
         raise ValueError(f"adapter weights missing for backend {backend}")
 
@@ -73,17 +73,17 @@ def validate_skill_package(path: Path) -> dict:
         if current.exists() and sha256(current) != snapshot.get("after_sha256"):
             raise ValueError(f"protected input changed since packaging: {file_path}")
 
-    examples_path = (skill_manifest.get("examples") or {}).get("path")
+    examples_path = (slm_manifest.get("examples") or {}).get("path")
     if examples_path and not (root / examples_path).exists():
         raise ValueError("examples.jsonl is declared but missing")
-    if skill_manifest.get("composition") != metadata.get("composition"):
-        if not (skill_manifest.get("composition") is None and metadata.get("composition") is None):
+    if slm_manifest.get("composition") != metadata.get("composition"):
+        if not (slm_manifest.get("composition") is None and metadata.get("composition") is None):
             raise ValueError("manifest mismatch for composition metadata")
-    if skill_manifest.get("composition") is not None:
-        validate_composition_metadata(skill_manifest["composition"])
+    if slm_manifest.get("composition") is not None:
+        validate_composition_metadata(slm_manifest["composition"])
     return {
         "status": "valid",
         "path": str(root),
-        "skill_id": skill_manifest["skill_id"],
-        "version": skill_manifest["version"],
+        "slm_id": slm_manifest["slm_id"],
+        "version": slm_manifest["version"],
     }

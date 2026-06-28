@@ -1,11 +1,11 @@
 {
   "router": "slmcortex_router_v1",
-  "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
-  "skills": [
+  "benchmark_sha256": "3a83b9874437e33285f234fec80d90b7f7d48c5f50cbf7d66f7897e25e093118",
+  "slms": [
     {
-      "skill_name": "python_skill",
+      "slm_name": "python_slm",
       "status": "core",
-      "origin": "seed_skill",
+      "origin": "seed_slm",
       "semantic_family": "python",
       "allowed_task_types": [
         "debugging",
@@ -25,9 +25,9 @@
       "rollback_router": null
     },
     {
-      "skill_name": "debugging_skill",
+      "slm_name": "debugging_slm",
       "status": "core",
-      "origin": "seed_skill",
+      "origin": "seed_slm",
       "semantic_family": "debugging",
       "allowed_task_types": [
         "debugging"
@@ -46,9 +46,9 @@
       "rollback_router": null
     },
     {
-      "skill_name": "test_generation_skill",
+      "slm_name": "test_generation_slm",
       "status": "core",
-      "origin": "seed_skill",
+      "origin": "seed_slm",
       "semantic_family": "test_generation",
       "allowed_task_types": [
         "test_generation"
@@ -67,7 +67,7 @@
       "rollback_router": null
     },
     {
-      "skill_name": "alternating_skill",
+      "slm_name": "alternating_slm",
       "status": "promoted",
       "origin": "failure_born",
       "semantic_family": "alternating",
@@ -81,7 +81,7 @@
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": true,
-      "promotion_source_experiment": "artifacts/governance-fixtures/alternating_skill",
+      "promotion_source_experiment": "artifacts/governance-fixtures/alternating_slm",
       "promotion_status": "promoted",
       "promotion_reason": "Improved independent holdout from 74.0% to 99.3%, improved fixed target from 0.0% to 50.0%, caused 0 non-target regressions.",
       "historical_quarantine": {
@@ -91,7 +91,7 @@
         "promotion_status_before_integration": "recommend_promotion"
       },
       "rollback_supported": true,
-      "rollback_router": "protected_skill_router_without_failure_born"
+      "rollback_router": "protected_slm_router_without_failure_born"
     }
   ],
   "immune": {
@@ -102,10 +102,10 @@
     "rollback_on_regression": true
   },
   "capacity_budget": {
-    "max_promoted_failure_born_skills": 5,
+    "max_promoted_failure_born_slms": 5,
     "max_total_adapter_parameters": 2500000,
     "current_total_adapter_parameters": 1245184,
-    "current_promoted_failure_born_skills": 1,
+    "current_promoted_failure_born_slms": 1,
     "requires_capacity_check_before_promotion": true
   }
 }

@@ -13,11 +13,11 @@ training_enabled: true
 plasticity_train_dataset: data/train.jsonl
 plasticity_eval_dataset: data/eval.jsonl
 plasticity_live_source_handler: null
-plasticity_publish_dir: .slmcortex/prototype-skills
+plasticity_publish_dir: .slmcortex/prototype-slms
 max_plasticity_loras: 8
 remote_lora_catalog_url: null
 remote_lora_catalog:
-  - skill_id: codewraith_remote
+  - slm_id: codewraith_remote
     source: hf://slenk/codewraith-lora-8b
     name: Codewraith Remote
     description: Public code-generation LoRA for code editing and implementation tasks.

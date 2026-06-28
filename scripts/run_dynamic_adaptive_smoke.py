@@ -17,26 +17,26 @@ def _write_eval(path: Path) -> Path:
     return path
 
 
-def _package(output_root: Path, skill_id: str, description: str, output: Path | None = None) -> Path:
-    output = output or output_root / "skills" / skill_id
+def _package(output_root: Path, slm_id: str, description: str, output: Path | None = None) -> Path:
+    output = output or output_root / "slms" / slm_id
     completed = subprocess.run(
         [
             sys.executable,
             "-m",
             "slmcortex",
-            "package-skill",
-            "--skill-id",
-            skill_id,
+            "package-slm",
+            "--slm-id",
+            slm_id,
             "--name",
-            skill_id.replace("_", " ").title(),
+            slm_id.replace("_", " ").title(),
             "--adapter-dir",
-            str(ROOT / "artifacts" / "adapters" / "python_skill"),
+            str(ROOT / "artifacts" / "adapters" / "python_slm"),
             "--train-dataset",
             str(ROOT / "data" / "train.jsonl"),
             "--eval-dataset",
             str(ROOT / "data" / "eval.jsonl"),
             "--eval-summary",
-            str(_write_eval(output_root / f"{skill_id}-eval.json")),
+            str(_write_eval(output_root / f"{slm_id}-eval.json")),
             "--output",
             str(output),
             "--description",
@@ -44,7 +44,7 @@ def _package(output_root: Path, skill_id: str, description: str, output: Path | 
             "--allowed-task-types",
             "python_generation",
             "--semantic-families",
-            skill_id.split("_")[0],
+            slm_id.split("_")[0],
             "--activation-scope",
             "task",
             "--force",
@@ -61,26 +61,26 @@ def _package(output_root: Path, skill_id: str, description: str, output: Path | 
 def _mock_runtime(output_root: Path, failure_mode: str | None = None):
     from slmcortex.runtime.dynamic import DynamicRuntime
 
-    _package(output_root, "fastapi_skill", "FastAPI endpoint validation")
-    runtime = DynamicRuntime.load(output_root / "skills", allow_remote_loras=True)
+    _package(output_root, "fastapi_slm", "FastAPI endpoint validation")
+    runtime = DynamicRuntime.load(output_root / "slms", allow_remote_loras=True)
 
-    def fake_resolve(source, skill_id, name=None):
+    def fake_resolve(source, slm_id, name=None):
         if failure_mode == "remote-download":
             raise ValueError("mock remote download failed")
-        _package(output_root, skill_id, f"Imported mock LoRA from {source}")
+        _package(output_root, slm_id, f"Imported mock LoRA from {source}")
         runtime.registry.reload()
-        return runtime.registry.local[skill_id]
+        return runtime.registry.local[slm_id]
 
     def fake_train(**kwargs):
         if failure_mode == "training":
             raise ValueError("mock training failed")
-        _package(output_root, kwargs["skill"], "Mock trained plasticity LoRA", output=kwargs["output"])
-        return {"status": "complete", "skill_id": kwargs["skill"]}
+        _package(output_root, kwargs["slm"], "Mock trained plasticity LoRA", output=kwargs["output"])
+        return {"status": "complete", "slm_id": kwargs["slm"]}
 
     import slmcortex.runtime.dynamic as dynamic
 
     runtime.registry.resolve_remote = fake_resolve
-    dynamic.train_skill_package = fake_train
+    dynamic.train_slm_package = fake_train
     dynamic.load_model = lambda model_name=None, adapter=None: ("mock-model", "mock-tokenizer")
     dynamic.generate_text = lambda *args, **kwargs: ("mock generation", 1, 1)
     return runtime
@@ -104,10 +104,10 @@ def _write_mock_config(output_root: Path) -> Path:
                 "training_enabled: true",
                 f"plasticity_train_dataset: {ROOT / 'data' / 'train.jsonl'}",
                 f"plasticity_eval_dataset: {ROOT / 'data' / 'eval.jsonl'}",
-                f"plasticity_publish_dir: {output_root / 'skills'}",
+                f"plasticity_publish_dir: {output_root / 'slms'}",
                 "max_plasticity_loras: 8",
                 "remote_lora_catalog:",
-                "  - skill_id: sql_remote",
+                "  - slm_id: sql_remote",
                 "    source: hf://owner/sql",
                 "    name: SQL Remote",
                 "    description: SQL query tuning",
@@ -142,10 +142,10 @@ def _write_real_config(output_root: Path, remote_source: str) -> Path:
                 "training_enabled: true",
                 f"plasticity_train_dataset: {ROOT / 'data' / 'train.jsonl'}",
                 f"plasticity_eval_dataset: {ROOT / 'data' / 'eval.jsonl'}",
-                f"plasticity_publish_dir: {output_root / 'skills'}",
+                f"plasticity_publish_dir: {output_root / 'slms'}",
                 "max_plasticity_loras: 8",
                 "remote_lora_catalog:",
-                "  - skill_id: sql_remote",
+                "  - slm_id: sql_remote",
                 f"    source: {remote_source}",
                 "    cues: [sql]",
                 "max_tokens: 8",
@@ -177,24 +177,24 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["SLMCORTEX_BASE_CONFIG"] = parsed.config if parsed.real else str(_write_mock_config(output_root))
 
     if parsed.real:
-        _package(output_root, "fastapi_skill", "FastAPI endpoint validation")
-        runtime = DynamicRuntime.load(output_root / "skills", allow_remote_loras=True)
+        _package(output_root, "fastapi_slm", "FastAPI endpoint validation")
+        runtime = DynamicRuntime.load(output_root / "slms", allow_remote_loras=True)
     else:
         runtime = _mock_runtime(output_root, parsed.failure_mode)
 
-    def router(messages, skills):
+    def router(messages, slms):
         text = messages[-1]["content"].lower()
         if "train" in text:
             return DynamicRouteDecision(
                 base_model="mlx-test-base",
-                selected_skills=[],
+                selected_slms=[],
                 remote_loras=[],
                 task_type="python_generation",
                 semantic_family="custom",
                 train_new_lora=True,
                 reason="smoke training branch",
             )
-        return runtime._rule_router(messages, skills)
+        return runtime._rule_router(messages, slms)
 
     runtime._router_model = router
     results = {
@@ -207,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
         "mode": "real" if parsed.real else "mock",
         "output_root": str(output_root),
         "branches": {name: result["route_branch"] for name, result in results.items()},
-        "selected_skills": {name: result["selected_skills"] for name, result in results.items()},
+        "selected_slms": {name: result["selected_slms"] for name, result in results.items()},
         "results": results,
     }
     json.dump(summary, sys.stdout, indent=2)

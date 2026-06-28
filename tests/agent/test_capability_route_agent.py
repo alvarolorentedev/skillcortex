@@ -7,14 +7,14 @@ from slmcortex.cli import main
 from slmcortex.packaging.artifacts import package_checksums
 
 
-def write_fastapi_skill(skills_dir):
-    package = skills_dir / "fastapi_contract"
+def write_fastapi_slm(slms_dir):
+    package = slms_dir / "fastapi_contract"
     package.mkdir(parents=True)
-    (package / "skill.yaml").write_text(
+    (package / "slm.yaml").write_text(
         yaml.safe_dump(
             {
-                "skill_id": "fastapi_contract",
-                "name": "FastAPI Contract Skill",
+                "slm_id": "fastapi_contract",
+                "name": "FastAPI Contract Slm",
                 "description": "FastAPI endpoints with Pydantic validation.",
                 "capabilities": ["fastapi", "pydantic"],
                 "activation_cues": ["FastAPI", "Pydantic"],
@@ -24,16 +24,16 @@ def write_fastapi_skill(skills_dir):
     )
 
 
-def package_fastapi_skill(tmp_path):
-    skills_dir = tmp_path / "skills"
-    package = skills_dir / "fastapi_contract"
+def package_fastapi_slm(tmp_path):
+    slms_dir = tmp_path / "slms"
+    package = slms_dir / "fastapi_contract"
     eval_summary = tmp_path / "eval-summary.json"
     eval_summary.write_text(
         json.dumps(
             {
                 "hypothesis": None,
-                "modes": {"single-skill": {"count": 1, "fuzzy_score": 1.0}},
-                "tasks": {"python_generation": {"single-skill": {"count": 1}}},
+                "modes": {"single-slm": {"count": 1, "fuzzy_score": 1.0}},
+                "tasks": {"python_generation": {"single-slm": {"count": 1}}},
             }
         )
         + "\n"
@@ -41,13 +41,13 @@ def package_fastapi_skill(tmp_path):
     assert (
         main(
             [
-                "package-skill",
-                "--skill-id",
+                "package-slm",
+                "--slm-id",
                 "fastapi_contract",
                 "--name",
-                "FastAPI Contract Skill",
+                "FastAPI Contract Slm",
                 "--adapter-dir",
-                "artifacts/adapters/python_skill",
+                "artifacts/adapters/python_slm",
                 "--output",
                 str(package),
                 "--train-dataset",
@@ -79,11 +79,11 @@ def package_fastapi_skill(tmp_path):
     metadata = json.loads((package / "metadata.json").read_text())
     metadata["checksums"] = package_checksums(package)
     (package / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-    return skills_dir
+    return slms_dir
 
 
-def test_agent_run_skills_dir_dry_run_executes_dynamic_agent_without_writes(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_dry_run_executes_dynamic_agent_without_writes(tmp_path, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -95,8 +95,8 @@ def test_agent_run_skills_dir_dry_run_executes_dynamic_agent_without_writes(tmp_
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -113,13 +113,13 @@ def test_agent_run_skills_dir_dry_run_executes_dynamic_agent_without_writes(tmp_
     assert result["mode"] == "dynamic_agent"
     assert result["agent_execution_status"] == "dry_run_completed"
     assert result["write_mode"] == "dry_run"
-    assert result["selected_skills"] == [str(skills_dir / "fastapi_contract")]
+    assert result["selected_slms"] == [str(slms_dir / "fastapi_contract")]
     assert result["agent_result"]["status"] == "dry-run"
     assert app.read_text() == "from fastapi import FastAPI\n"
 
 
-def test_agent_run_skills_dir_confirm_uses_review_path_without_silent_writes(tmp_path, monkeypatch, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_confirm_uses_review_path_without_silent_writes(tmp_path, monkeypatch, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -143,8 +143,8 @@ def test_agent_run_skills_dir_confirm_uses_review_path_without_silent_writes(tmp
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -166,19 +166,19 @@ def test_agent_run_skills_dir_confirm_uses_review_path_without_silent_writes(tmp
     assert app.read_text() == "from fastapi import FastAPI\n"
 
 
-def test_agent_run_skills_dir_write_mode_on_fails_clearly(tmp_path, capsys):
-    skills_dir = tmp_path / "skills"
+def test_agent_run_slms_dir_write_mode_on_fails_clearly(tmp_path, capsys):
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
     repo.mkdir()
-    write_fastapi_skill(skills_dir)
+    write_fastapi_slm(slms_dir)
 
     assert (
         main(
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -193,10 +193,10 @@ def test_agent_run_skills_dir_write_mode_on_fails_clearly(tmp_path, capsys):
     assert "only supports --dry-run or --write-mode confirm" in capsys.readouterr().err
 
 
-def test_agent_run_skills_dir_fails_when_no_skill_selected(tmp_path, monkeypatch, capsys):
-    skills_dir = tmp_path / "skills"
+def test_agent_run_slms_dir_fails_when_no_slm_selected(tmp_path, monkeypatch, capsys):
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
-    skills_dir.mkdir()
+    slms_dir.mkdir()
     repo.mkdir()
 
     def fail_run_agent(**kwargs):
@@ -209,8 +209,8 @@ def test_agent_run_skills_dir_fails_when_no_skill_selected(tmp_path, monkeypatch
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -221,14 +221,14 @@ def test_agent_run_skills_dir_fails_when_no_skill_selected(tmp_path, monkeypatch
         == 2
     )
 
-    assert "no skill selected" in capsys.readouterr().err
+    assert "no slm selected" in capsys.readouterr().err
 
 
-def test_agent_run_skills_dir_composition_failure_prevents_agent_execution(tmp_path, monkeypatch, capsys):
-    skills_dir = tmp_path / "skills"
+def test_agent_run_slms_dir_composition_failure_prevents_agent_execution(tmp_path, monkeypatch, capsys):
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
     repo.mkdir()
-    write_fastapi_skill(skills_dir)
+    write_fastapi_slm(slms_dir)
 
     def fail_run_agent(**kwargs):
         raise AssertionError("run_agent should not be called")
@@ -240,8 +240,8 @@ def test_agent_run_skills_dir_composition_failure_prevents_agent_execution(tmp_p
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -255,8 +255,8 @@ def test_agent_run_skills_dir_composition_failure_prevents_agent_execution(tmp_p
     assert "not composable" in capsys.readouterr().err
 
 
-def test_agent_run_skills_dir_validation_failure_prevents_agent_execution(tmp_path, monkeypatch, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_validation_failure_prevents_agent_execution(tmp_path, monkeypatch, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     runtime = tmp_path / "runtime"
@@ -277,8 +277,8 @@ def test_agent_run_skills_dir_validation_failure_prevents_agent_execution(tmp_pa
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -294,8 +294,8 @@ def test_agent_run_skills_dir_validation_failure_prevents_agent_execution(tmp_pa
     assert "validation failed" in capsys.readouterr().err
 
 
-def test_agent_run_skills_dir_trace_out_writes_dynamic_wrapper(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_trace_out_writes_dynamic_wrapper(tmp_path, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     trace = tmp_path / "dynamic-trace.json"
@@ -307,8 +307,8 @@ def test_agent_run_skills_dir_trace_out_writes_dynamic_wrapper(tmp_path, capsys)
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -331,8 +331,8 @@ def test_agent_run_skills_dir_trace_out_writes_dynamic_wrapper(tmp_path, capsys)
     assert payload["agent_result"]
 
 
-def test_agent_run_skills_dir_runtime_overwrite_behavior(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_runtime_overwrite_behavior(tmp_path, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     runtime = tmp_path / "runtime"
@@ -343,8 +343,8 @@ def test_agent_run_skills_dir_runtime_overwrite_behavior(tmp_path, capsys):
     args = [
         "agent",
         "run",
-        "--skills-dir",
-        str(skills_dir),
+        "--slms-dir",
+        str(slms_dir),
         "--repo",
         str(repo),
         "--task",
@@ -361,8 +361,8 @@ def test_agent_run_skills_dir_runtime_overwrite_behavior(tmp_path, capsys):
     assert not (runtime / "old.txt").exists()
 
 
-def test_agent_run_skills_dir_default_runtime_path_is_deterministic(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+def test_agent_run_slms_dir_default_runtime_path_is_deterministic(tmp_path, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -373,8 +373,8 @@ def test_agent_run_skills_dir_default_runtime_path_is_deterministic(tmp_path, ca
             [
                 "agent",
                 "run",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",

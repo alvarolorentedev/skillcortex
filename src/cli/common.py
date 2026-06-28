@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from ..contracts import SKILLS
+from ..contracts import PRESET_SLMS
 
 
 COMPOSITION_SCOPES = ("task", "semantic_family")
@@ -23,8 +23,8 @@ def csv_paths(value: str) -> list[Path]:
     return [Path(item.strip()) for item in value.split(",") if item.strip()]
 
 
-def default_dataset_outputs(skill_id: str) -> tuple[Path, Path]:
-    root = Path("datasets") / skill_id
+def default_dataset_outputs(slm_id: str) -> tuple[Path, Path]:
+    root = Path("datasets") / slm_id
     return root / "train.jsonl", root / "eval.jsonl"
 
 
@@ -40,7 +40,7 @@ def infer_payload(parsed: argparse.Namespace) -> dict:
         + [{"role": "user", "content": parsed.prompt}],
         "task_type": parsed.task_type,
         "semantic_family": parsed.semantic_family,
-        "skill_override": parsed.skill_override,
+        "slm_override": parsed.slm_override,
         "max_tokens": parsed.max_tokens,
         "temperature": parsed.temperature,
     }
@@ -59,8 +59,8 @@ def package_composition(parsed: argparse.Namespace) -> dict | None:
             parsed.allowed_task_types,
             parsed.activation_scope,
             parsed.semantic_families,
-            parsed.compatible_skills,
-            parsed.incompatible_skills,
+            parsed.compatible_slms,
+            parsed.incompatible_slms,
         )
     ):
         return None
@@ -78,8 +78,8 @@ def package_composition(parsed: argparse.Namespace) -> dict | None:
             "semantic_families": list(parsed.semantic_families or []),
         },
         "compatibility": {
-            "compatible_skills": list(parsed.compatible_skills or []),
-            "incompatible_skills": list(parsed.incompatible_skills or []),
+            "compatible_slms": list(parsed.compatible_slms or []),
+            "incompatible_slms": list(parsed.incompatible_slms or []),
         },
         "routing": {
             "tasks": {},
@@ -87,8 +87,8 @@ def package_composition(parsed: argparse.Namespace) -> dict | None:
     }
 
 
-def train_skill_composition(parsed: argparse.Namespace) -> tuple[dict | None, dict[str, object]]:
-    if not parsed.skill_id:
+def train_slm_composition(parsed: argparse.Namespace) -> tuple[dict | None, dict[str, object]]:
+    if not parsed.slm_id:
         return package_composition(parsed), {}
 
     defaults_applied: dict[str, object] = {}
@@ -110,8 +110,8 @@ def train_skill_composition(parsed: argparse.Namespace) -> tuple[dict | None, di
             "semantic_families": list(parsed.semantic_families or []),
         },
         "compatibility": {
-            "compatible_skills": list(parsed.compatible_skills or []),
-            "incompatible_skills": list(parsed.incompatible_skills or []),
+            "compatible_slms": list(parsed.compatible_slms or []),
+            "incompatible_slms": list(parsed.incompatible_slms or []),
         },
         "routing": {
             "tasks": {},
@@ -119,18 +119,18 @@ def train_skill_composition(parsed: argparse.Namespace) -> tuple[dict | None, di
     }, defaults_applied
 
 
-def resolve_train_skill(parsed: argparse.Namespace) -> tuple[str, str, dict | None, dict[str, object]]:
-    preset_skill = parsed.skill
-    explicit_skill_id = parsed.skill_id
-    if explicit_skill_id and preset_skill and explicit_skill_id != preset_skill:
-        raise ValueError("provide either a preset positional skill or a matching --skill-id")
-    if explicit_skill_id:
-        composition, defaults_applied = train_skill_composition(parsed)
-        return "generic", explicit_skill_id, composition, defaults_applied
-    if preset_skill is None:
-        raise ValueError("train-skill requires either a preset skill or --skill-id")
-    if preset_skill not in SKILLS:
+def resolve_train_slm(parsed: argparse.Namespace) -> tuple[str, str, dict | None, dict[str, object]]:
+    preset_slm = parsed.slm
+    explicit_slm_id = parsed.slm_id
+    if explicit_slm_id and preset_slm and explicit_slm_id != preset_slm:
+        raise ValueError("provide either a preset positional slm or a matching --slm-id")
+    if explicit_slm_id:
+        composition, defaults_applied = train_slm_composition(parsed)
+        return "generic", explicit_slm_id, composition, defaults_applied
+    if preset_slm is None:
+        raise ValueError("train-slm requires either a preset slm or --slm-id")
+    if preset_slm not in PRESET_SLMS:
         raise ValueError(
-            f"unknown built-in preset: {preset_skill}; use --skill-id for arbitrary skills"
+            f"unknown built-in preset: {preset_slm}; use --slm-id for arbitrary slms"
         )
-    return "preset", preset_skill, None, {}
+    return "preset", preset_slm, None, {}

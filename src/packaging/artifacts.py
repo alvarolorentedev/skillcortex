@@ -7,7 +7,7 @@ from ..shared.hashing import sha256
 
 
 REQUIRED_PACKAGE_FILES = (
-    "skill.yaml",
+    "slm.yaml",
     "metadata.json",
     "training_config.json",
     "eval.json",
@@ -23,8 +23,8 @@ def protected_input_paths(*, train_dataset: Path, eval_dataset: Path) -> list[Pa
         eval_dataset.resolve(),
         (CONFIG_DIR / "base.yaml").resolve(),
         (CONFIG_DIR / "training.yaml").resolve(),
-        (CONFIG_DIR / "skill_registry.json").resolve(),
-        (CONFIG_DIR / "skills.yaml").resolve(),
+        (CONFIG_DIR / "slm_registry.json").resolve(),
+        (CONFIG_DIR / "slms.yaml").resolve(),
     }
     for path in sorted((ARTIFACT_DIR / "adapters").rglob("*")):
         if path.is_file():

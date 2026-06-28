@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from ..contracts import KNOWN_SKILLS, TASK_TYPES
+from ..contracts import KNOWN_SLMS, TASK_TYPES
 
 
 def _nonempty(name: str, value: str) -> None:
@@ -11,10 +11,10 @@ def _nonempty(name: str, value: str) -> None:
         raise ValueError(f"{name} must be non-empty")
 
 
-def _known_skills(skills: list[str]) -> None:
-    unknown = set(skills) - set(KNOWN_SKILLS)
+def _known_slms(slms: list[str]) -> None:
+    unknown = set(slms) - set(KNOWN_SLMS)
     if unknown:
-        raise ValueError(f"unknown skill: {sorted(unknown)[0]}")
+        raise ValueError(f"unknown slm: {sorted(unknown)[0]}")
 
 
 @dataclass(slots=True)
@@ -52,7 +52,7 @@ class EvaluationResult:
     syntax_valid: bool | None
     execution_passed: bool | None
     latency_seconds: float
-    selected_skills: list[str]
+    selected_slms: list[str]
     active_adapter_count: int
     active_adapter_parameters: int
     prompt_tokens: int | None = None
@@ -66,7 +66,7 @@ class EvaluationResult:
         _nonempty("example_id", self.example_id)
         if self.task_type not in TASK_TYPES:
             raise ValueError(f"unknown task_type: {self.task_type}")
-        _known_skills(self.selected_skills)
+        _known_slms(self.selected_slms)
         if not 0 <= self.fuzzy_score <= 1:
             raise ValueError("fuzzy_score must be between 0 and 1")
 

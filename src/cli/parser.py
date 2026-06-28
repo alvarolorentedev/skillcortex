@@ -17,9 +17,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Package, compose, validate, and run Slm Cortex runtime bundles.",
             dedent(
                 """
-                slmcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_skill
-                slmcortex compose-skills --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill --strategy routed --output /tmp/slmcortex-demo/runtime
-                slmcortex compose-from-route --skills-dir skills --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/slmcortex-demo/runtime
+                slmcortex package-slm --slm-id python_slm --name \"Python Slm\" --adapter-dir artifacts/adapters/python_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_slm
+                slmcortex compose-slms --slms /tmp/slmcortex-demo/python_slm,/tmp/slmcortex-demo/debugging_slm --strategy routed --output /tmp/slmcortex-demo/runtime
+                slmcortex compose-from-route --slms-dir slms --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/slmcortex-demo/runtime
                 slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime
                 slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run
                 slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run
@@ -30,13 +30,13 @@ def build_parser() -> argparse.ArgumentParser:
     commands = root.add_subparsers(dest="command", required=True, title="product commands")
     _add_generate_dataset_parser(commands)
     _add_validate_dataset_parser(commands)
-    _add_train_skill_parser(commands)
+    _add_train_slm_parser(commands)
     _add_train_plasticity_lora_parser(commands)
     _add_import_lora_parser(commands)
-    _add_package_skill_parser(commands)
-    _add_validate_skill_package_parser(commands)
+    _add_package_slm_parser(commands)
+    _add_validate_slm_package_parser(commands)
     _add_validate_runtime_parser(commands)
-    _add_compose_skills_parser(commands)
+    _add_compose_slms_parser(commands)
     _add_route_parser(commands)
     _add_compose_from_route_parser(commands)
     _add_infer_parser(commands)
@@ -49,12 +49,12 @@ def _add_generate_dataset_parser(commands) -> None:
     generate = commands.add_parser(
         "generate-dataset",
         **parser_kwargs(
-            "Generate a deterministic train/eval JSONL dataset for product train-skill.",
-            "slmcortex generate-dataset --skill-id fastapi_contract --domain fastapi\n"
-            "slmcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
+            "Generate a deterministic train/eval JSONL dataset for product train-slm.",
+            "slmcortex generate-dataset --slm-id fastapi_contract --domain fastapi\n"
+            "slmcortex generate-dataset --slm-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
         ),
     )
-    generate.add_argument("--skill-id", required=True)
+    generate.add_argument("--slm-id", required=True)
     generate.add_argument("--domain", required=True)
     generate.add_argument("--task-type", default="python_generation", choices=TASK_TYPES)
     generate.add_argument("--num-examples", default=100, type=int)
@@ -79,17 +79,17 @@ def _add_validate_dataset_parser(commands) -> None:
     validate_dataset.add_argument("--report-output")
 
 
-def _add_train_skill_parser(commands) -> None:
+def _add_train_slm_parser(commands) -> None:
     train = commands.add_parser(
-        "train-skill",
+        "train-slm",
         **parser_kwargs(
-            "Train a LoRA skill from datasets and package it as a Slm Cortex artifact.",
-            "slmcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract\n"
-            "slmcortex train-skill python_skill --output skills/python_skill_run --force",
+            "Train a LoRA slm from datasets and package it as a Slm Cortex artifact.",
+            "slmcortex train-slm --slm-id fastapi_contract --name \"FastAPI Contract Slm\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output slms/fastapi_contract\n"
+            "slmcortex train-slm python_slm --output slms/python_slm_run --force",
         ),
     )
-    train.add_argument("skill", nargs="?")
-    train.add_argument("--skill-id")
+    train.add_argument("slm", nargs="?")
+    train.add_argument("--slm-id")
     train.add_argument("--output", required=True)
     train.add_argument("--train-dataset", default="data/train.jsonl")
     train.add_argument("--eval-dataset", default="data/eval.jsonl")
@@ -100,8 +100,8 @@ def _add_train_skill_parser(commands) -> None:
     train.add_argument("--allowed-task-types", nargs="+", choices=TASK_TYPES)
     train.add_argument("--activation-scope", choices=COMPOSITION_SCOPES)
     train.add_argument("--semantic-families", nargs="+")
-    train.add_argument("--compatible-skills", nargs="+")
-    train.add_argument("--incompatible-skills", nargs="+")
+    train.add_argument("--compatible-slms", nargs="+")
+    train.add_argument("--incompatible-slms", nargs="+")
     train.add_argument("--seed", type=int)
     train.add_argument("--force", action="store_true")
     train.add_argument("--dry-run", action="store_true")
@@ -112,10 +112,10 @@ def _add_train_plasticity_lora_parser(commands) -> None:
         "train-plasticity-lora",
         **parser_kwargs(
             "Train an explicit on-demand LoRA from a JSONL prompt/target dataset.",
-            "slmcortex train-plasticity-lora --skill-id local_fix --name \"Local Fix\" --prompt-file data/train.jsonl --output skills/local_fix --dry-run",
+            "slmcortex train-plasticity-lora --slm-id local_fix --name \"Local Fix\" --prompt-file data/train.jsonl --output slms/local_fix --dry-run",
         ),
     )
-    train.add_argument("--skill-id", required=True)
+    train.add_argument("--slm-id", required=True)
     train.add_argument("--name", required=True)
     train.add_argument("--prompt-file", required=True)
     train.add_argument("--eval-dataset")
@@ -133,11 +133,11 @@ def _add_import_lora_parser(commands) -> None:
         "import-lora",
         **parser_kwargs(
             "Import a public Hugging Face LoRA into a local SlmCortex package.",
-            "slmcortex import-lora --source hf://owner/repo --skill-id fastapi_skill --name \"FastAPI Skill\" --output skills/fastapi_skill --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
+            "slmcortex import-lora --source hf://owner/repo --slm-id fastapi_slm --name \"FastAPI Slm\" --output slms/fastapi_slm --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
         ),
     )
     import_lora.add_argument("--source", required=True)
-    import_lora.add_argument("--skill-id", required=True)
+    import_lora.add_argument("--slm-id", required=True)
     import_lora.add_argument("--name", required=True)
     import_lora.add_argument("--output", required=True)
     import_lora.add_argument("--train-dataset", required=True)
@@ -149,16 +149,16 @@ def _add_import_lora_parser(commands) -> None:
     import_lora.add_argument("--force", action="store_true")
 
 
-def _add_package_skill_parser(commands) -> None:
+def _add_package_slm_parser(commands) -> None:
     package = commands.add_parser(
-        "package-skill",
+        "package-slm",
         **parser_kwargs(
-            "Package an existing LoRA adapter into a self-describing skill artifact.",
-            "slmcortex package-skill --skill-id python_skill --name \"Python Skill\" --adapter-dir artifacts/adapters/python_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_skill\n"
-            "slmcortex package-skill --skill-id debugging_skill --name \"Debugging Skill\" --adapter-dir artifacts/adapters/debugging_skill --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/debugging_skill",
+            "Package an existing LoRA adapter into a self-describing slm artifact.",
+            "slmcortex package-slm --slm-id python_slm --name \"Python Slm\" --adapter-dir artifacts/adapters/python_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_slm\n"
+            "slmcortex package-slm --slm-id debugging_slm --name \"Debugging Slm\" --adapter-dir artifacts/adapters/debugging_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/debugging_slm",
         ),
     )
-    package.add_argument("--skill-id", required=True)
+    package.add_argument("--slm-id", required=True)
     package.add_argument("--name", required=True)
     package.add_argument("--adapter-dir", required=True)
     package.add_argument("--output", required=True)
@@ -171,18 +171,18 @@ def _add_package_skill_parser(commands) -> None:
     package.add_argument("--allowed-task-types", nargs="+", choices=TASK_TYPES)
     package.add_argument("--activation-scope", choices=COMPOSITION_SCOPES)
     package.add_argument("--semantic-families", nargs="+")
-    package.add_argument("--compatible-skills", nargs="+")
-    package.add_argument("--incompatible-skills", nargs="+")
+    package.add_argument("--compatible-slms", nargs="+")
+    package.add_argument("--incompatible-slms", nargs="+")
     package.add_argument("--force", action="store_true")
     package.add_argument("--dry-run", action="store_true")
 
 
-def _add_validate_skill_package_parser(commands) -> None:
+def _add_validate_slm_package_parser(commands) -> None:
     validate = commands.add_parser(
-        "validate-skill-package",
+        "validate-slm-package",
         **parser_kwargs(
-            "Validate a packaged skill artifact and its recorded fingerprints.",
-            "slmcortex validate-skill-package --path /tmp/slmcortex-demo/python_skill",
+            "Validate a packaged slm artifact and its recorded fingerprints.",
+            "slmcortex validate-slm-package --path /tmp/slmcortex-demo/python_slm",
         ),
     )
     validate.add_argument("--path", required=True)
@@ -199,15 +199,15 @@ def _add_validate_runtime_parser(commands) -> None:
     validate_runtime.add_argument("--runtime", required=True)
 
 
-def _add_compose_skills_parser(commands) -> None:
+def _add_compose_slms_parser(commands) -> None:
     compose = commands.add_parser(
-        "compose-skills",
+        "compose-slms",
         **parser_kwargs(
-            "Compose validated skill packages into a deterministic runtime bundle.",
-            "slmcortex compose-skills --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill --output /tmp/slmcortex-demo/runtime",
+            "Compose validated slm packages into a deterministic runtime bundle.",
+            "slmcortex compose-slms --slms /tmp/slmcortex-demo/python_slm,/tmp/slmcortex-demo/debugging_slm --output /tmp/slmcortex-demo/runtime",
         ),
     )
-    compose.add_argument("--skills", required=True)
+    compose.add_argument("--slms", required=True)
     compose.add_argument("--strategy", choices=("routed",), default="routed")
     compose.add_argument("--output", required=True)
     compose.add_argument("--registry")
@@ -219,11 +219,11 @@ def _add_route_parser(commands) -> None:
     route = commands.add_parser(
         "route",
         **parser_kwargs(
-            "Route a task against discovered skill packages without loading adapters.",
-            "slmcortex route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --explain",
+            "Route a task against discovered slm packages without loading adapters.",
+            "slmcortex route --slms-dir slms --repo . --task \"Create a FastAPI endpoint\" --explain",
         ),
     )
-    route.add_argument("--skills-dir", required=True)
+    route.add_argument("--slms-dir", required=True, dest="slms_dir")
     route.add_argument("--repo", required=True)
     route.add_argument("--task", required=True)
     route.add_argument("--base-model")
@@ -234,11 +234,11 @@ def _add_compose_from_route_parser(commands) -> None:
     compose = commands.add_parser(
         "compose-from-route",
         **parser_kwargs(
-            "Route a task and compose selected skill packages into a runtime bundle.",
-            "slmcortex compose-from-route --skills-dir skills --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
+            "Route a task and compose selected slm packages into a runtime bundle.",
+            "slmcortex compose-from-route --slms-dir slms --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
         ),
     )
-    compose.add_argument("--skills-dir", required=True)
+    compose.add_argument("--slms-dir", required=True, dest="slms_dir")
     compose.add_argument("--repo", required=True)
     compose.add_argument("--task", required=True)
     compose.add_argument("--runtime-out", required=True)
@@ -257,7 +257,7 @@ def _add_infer_parser(commands) -> None:
         ),
     )
     infer.add_argument("--runtime")
-    infer.add_argument("--skills-dir")
+    infer.add_argument("--slms-dir", dest="slms_dir")
     infer.add_argument("--allow-remote-loras", action="store_true")
     infer.add_argument("--lora-cache-dir")
     infer.add_argument("--prompt")
@@ -265,7 +265,7 @@ def _add_infer_parser(commands) -> None:
     infer.add_argument("--system")
     infer.add_argument("--task-type", choices=TASK_TYPES)
     infer.add_argument("--semantic-family")
-    infer.add_argument("--skill-override")
+    infer.add_argument("--slm-override")
     infer.add_argument("--max-tokens", type=int)
     infer.add_argument("--temperature", type=float)
     infer.add_argument("--dry-run", action="store_true")
@@ -305,7 +305,7 @@ def _add_agent_parser(commands) -> None:
         ),
     )
     agent_run.add_argument("--runtime")
-    agent_run.add_argument("--skills-dir")
+    agent_run.add_argument("--slms-dir", dest="slms_dir")
     agent_run.add_argument("--repo", required=True)
     agent_run.add_argument(
         "--task",

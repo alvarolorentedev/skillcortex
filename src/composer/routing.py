@@ -6,7 +6,7 @@ from ..contracts import TASK_TYPES
 def build_routes(loaded: list[dict]) -> list[dict]:
     task_scoped = [item for item in loaded if item["composition"]["activation"]["scope"] == "task"]
     semantic_scoped = [item for item in loaded if item not in task_scoped]
-    available = {item["skill_id"] for item in loaded}
+    available = {item["slm_id"] for item in loaded}
     routes = []
     for task_type in TASK_TYPES:
         selected = route_selection(task_scoped, task_type, available)
@@ -16,7 +16,7 @@ def build_routes(loaded: list[dict]) -> list[dict]:
                 "task_type": task_type,
                 "semantic_family": None,
                 "route_type": "adapter" if selected else "base_fallback",
-                "selected_skills": selected,
+                "selected_slms": selected,
             }
         )
     semantic_families = sorted(
@@ -45,7 +45,7 @@ def build_routes(loaded: list[dict]) -> list[dict]:
                 for route in routes
                 if route["task_type"] == task_type and route["semantic_family"] is None
             )
-            if selected == default["selected_skills"]:
+            if selected == default["selected_slms"]:
                 continue
             routes.append(
                 {
@@ -53,7 +53,7 @@ def build_routes(loaded: list[dict]) -> list[dict]:
                     "task_type": task_type,
                     "semantic_family": semantic_family,
                     "route_type": "adapter" if selected else "base_fallback",
-                    "selected_skills": selected,
+                    "selected_slms": selected,
                 }
             )
     return routes
@@ -73,7 +73,7 @@ def route_selection(items: list[dict], task_type: str, available: set[str]) -> l
             continue
         if requires_any and not (requires_any & available):
             continue
-        candidates.append((int(rule.get("order", 100)), item["skill_id"]))
-    for _, skill_id in sorted(candidates, key=lambda value: (value[0], value[1])):
-        selected.append(skill_id)
+        candidates.append((int(rule.get("order", 100)), item["slm_id"]))
+    for _, slm_id in sorted(candidates, key=lambda value: (value[0], value[1])):
+        selected.append(slm_id)
     return selected

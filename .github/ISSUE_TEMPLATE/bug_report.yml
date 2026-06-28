@@ -25,7 +25,7 @@ body:
       options:
         - README or docs
         - Packaging
-        - Compose skills
+        - Compose slms
         - Runtime validation or inference
         - Compatibility server
         - Agent runtime

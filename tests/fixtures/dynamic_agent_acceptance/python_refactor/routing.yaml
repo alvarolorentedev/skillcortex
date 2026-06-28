@@ -1,5 +1,5 @@
-skill_id: python_refactor_skill
-name: Python Refactor Skill
+slm_id: python_refactor_slm
+name: Python Refactor Slm
 description: Small Python refactors and cleanup work.
 capabilities:
   - refactor

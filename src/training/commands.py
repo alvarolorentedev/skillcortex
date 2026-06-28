@@ -6,20 +6,20 @@ from typing import Any
 
 import yaml
 
-from ..contracts import SKILLS
+from ..contracts import PRESET_SLMS
 from ..shared.config import base_config, resolve_backend, training_config, validate_runtime_model
 from .data import dataset_hash
 
 
-def build_skill_command(
-    skill: str,
+def build_slm_command(
+    slm: str,
     data_directory: str | Path,
     output_directory: str | Path,
     *,
     seed: int | None = None,
 ) -> list[str]:
-    if skill not in SKILLS:
-        raise ValueError(f"unknown skill: {skill}")
+    if slm not in PRESET_SLMS:
+        raise ValueError(f"unknown slm: {slm}")
     return training_command(data_directory, output_directory, rank=8, seed=seed)
 
 
@@ -66,7 +66,7 @@ def training_command(
 
 
 def training_metadata(
-    skill_id: str,
+    slm_id: str,
     examples: list[Any],
     *,
     rank: int,
@@ -78,7 +78,7 @@ def training_metadata(
     backend = resolve_backend(base)
     training = training_config()
     return {
-        "adapter": skill_id,
+        "adapter": slm_id,
         "base_model": base["model"],
         "source_model": base["source_model"],
         "quantization": "4bit",

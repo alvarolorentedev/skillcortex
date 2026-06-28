@@ -1,5 +1,5 @@
-skill_id: pytest_generation_skill
-name: Pytest Generation Skill
+slm_id: pytest_generation_slm
+name: Pytest Generation Slm
 description: Test generation for Python modules using pytest.
 capabilities:
   - pytest

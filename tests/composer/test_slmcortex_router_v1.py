@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from scripts.build_slmcortex_router_v1_report import main
-from slmcortex.contracts import PROMOTED_SKILLS, QUARANTINED_SKILLS
+from slmcortex.contracts import PROMOTED_SLMS, QUARANTINED_SLMS
 
 
 def _repo_root() -> Path:
@@ -16,19 +16,19 @@ def _repo_root() -> Path:
 
 
 ROOT = _repo_root()
-SOURCE = ROOT / "artifacts/governance-fixtures/alternating_skill/summary.json"
+SOURCE = ROOT / "artifacts/governance-fixtures/alternating_slm/summary.json"
 
 
-def test_alternating_skill_is_promoted_and_historical_quarantine_is_preserved(tmp_path):
+def test_alternating_slm_is_promoted_and_historical_quarantine_is_preserved(tmp_path):
     source_before = hashlib.sha256(SOURCE.read_bytes()).hexdigest()
     benchmark = ROOT / "data/eval.jsonl"
     benchmark_before = hashlib.sha256(benchmark.read_bytes()).hexdigest()
 
-    assert "alternating_skill" in PROMOTED_SKILLS
-    assert "alternating_skill" not in QUARANTINED_SKILLS
-    assert "alternating_skill" in yaml.safe_load(
-        (ROOT / "configs/skills.yaml").read_text()
-    )["skills"]
+    assert "alternating_slm" in PROMOTED_SLMS
+    assert "alternating_slm" not in QUARANTINED_SLMS
+    assert "alternating_slm" in yaml.safe_load(
+        (ROOT / "configs/slms.yaml").read_text()
+    )["slms"]
 
     assert main(["--source", str(SOURCE), "--output", str(tmp_path)]) == 0
 
@@ -51,11 +51,11 @@ def test_report_reuses_fixed_and_holdout_results_without_training_or_inference(t
         "integration_validation_only": True,
     }
     assert set(summary["fixed_benchmark"]["routers"]) == {
-        "protected_skill_router_without_failure_born",
+        "protected_slm_router_without_failure_born",
         "slmcortex_router_v1",
     }
     assert set(summary["independent_alternating_holdout"]["routers"]) == {
-        "protected_skill_router_without_failure_born",
+        "protected_slm_router_without_failure_born",
         "slmcortex_router_v1",
     }
     assert summary["fixed_benchmark"]["pass_fail_vs_previous_protected_router"] == {

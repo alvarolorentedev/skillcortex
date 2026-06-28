@@ -1,5 +1,5 @@
-skill_id: fastapi_contract_skill
-name: FastAPI Contract Skill
+slm_id: fastapi_contract_slm
+name: FastAPI Contract Slm
 description: FastAPI endpoints with Pydantic validation.
 capabilities:
   - fastapi

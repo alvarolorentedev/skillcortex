@@ -6,7 +6,7 @@
   },
   "benchmark_family": "fastapi_contract",
   "candidate_activated": false,
-  "candidate_skill": "api_contract_fastapi_skill",
+  "candidate_slm": "api_contract_fastapi_slm",
   "checksums": {
     "combined_jsonl_sha256": "e72781c60815cd0c60807d7b42d8230fd9de9ad452e0038f50621df71a371873",
     "holdout_jsonl_sha256": "2bd9fbcce86f5252cbaba59e18ce3413d0cd173cbe699500b9e59ed69976edde",

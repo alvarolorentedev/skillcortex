@@ -6,14 +6,14 @@ from slmcortex.cli import main
 from slmcortex.packaging.artifacts import package_checksums
 
 
-def write_fastapi_skill(skills_dir):
-    package = skills_dir / "fastapi_contract"
+def write_fastapi_slm(slms_dir):
+    package = slms_dir / "fastapi_contract"
     package.mkdir(parents=True)
-    (package / "skill.yaml").write_text(
+    (package / "slm.yaml").write_text(
         yaml.safe_dump(
             {
-                "skill_id": "fastapi_contract",
-                "name": "FastAPI Contract Skill",
+                "slm_id": "fastapi_contract",
+                "name": "FastAPI Contract Slm",
                 "description": "FastAPI endpoints with Pydantic validation.",
                 "capabilities": ["fastapi", "pydantic"],
                 "activation_cues": ["FastAPI", "Pydantic"],
@@ -23,16 +23,16 @@ def write_fastapi_skill(skills_dir):
     )
 
 
-def package_fastapi_skill(tmp_path):
-    skills_dir = tmp_path / "skills"
-    package = skills_dir / "fastapi_contract"
+def package_fastapi_slm(tmp_path):
+    slms_dir = tmp_path / "slms"
+    package = slms_dir / "fastapi_contract"
     eval_summary = tmp_path / "eval-summary.json"
     eval_summary.write_text(
         json.dumps(
             {
                 "hypothesis": None,
-                "modes": {"single-skill": {"count": 1, "fuzzy_score": 1.0}},
-                "tasks": {"python_generation": {"single-skill": {"count": 1}}},
+                "modes": {"single-slm": {"count": 1, "fuzzy_score": 1.0}},
+                "tasks": {"python_generation": {"single-slm": {"count": 1}}},
             }
         )
         + "\n"
@@ -40,13 +40,13 @@ def package_fastapi_skill(tmp_path):
     assert (
         main(
             [
-                "package-skill",
-                "--skill-id",
+                "package-slm",
+                "--slm-id",
                 "fastapi_contract",
                 "--name",
-                "FastAPI Contract Skill",
+                "FastAPI Contract Slm",
                 "--adapter-dir",
-                "artifacts/adapters/python_skill",
+                "artifacts/adapters/python_slm",
                 "--output",
                 str(package),
                 "--train-dataset",
@@ -79,22 +79,22 @@ def package_fastapi_skill(tmp_path):
     metadata = json.loads((package / "metadata.json").read_text())
     metadata["checksums"] = package_checksums(package)
     (package / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-    return skills_dir
+    return slms_dir
 
 
 def test_route_command_emits_stable_json_contract(tmp_path, capsys):
-    skills_dir = tmp_path / "skills"
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "app.py").write_text("from fastapi import FastAPI\nfrom pydantic import BaseModel\n")
-    write_fastapi_skill(skills_dir)
+    write_fastapi_slm(slms_dir)
 
     assert (
         main(
             [
                 "route",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -108,21 +108,21 @@ def test_route_command_emits_stable_json_contract(tmp_path, capsys):
     result = json.loads(capsys.readouterr().out)
     assert list(result) == [
         "routing_mode",
-        "skills_dir",
+        "slms_dir",
         "repo",
         "task",
         "repo_context",
-        "selected_skills",
+        "selected_slms",
         "candidates",
         "fallback",
         "errors",
         "warnings",
     ]
     assert result["routing_mode"] == "capability"
-    assert result["selected_skills"][0]["skill_id"] == "fastapi_contract"
+    assert result["selected_slms"][0]["slm_id"] == "fastapi_contract"
     candidate = result["candidates"][0]
     assert list(candidate) == [
-        "skill_id",
+        "slm_id",
         "score",
         "selected",
         "compatible",
@@ -134,7 +134,7 @@ def test_route_command_emits_stable_json_contract(tmp_path, capsys):
 
 
 def test_compose_from_route_writes_and_validates_runtime(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     runtime = tmp_path / "runtime"
@@ -145,8 +145,8 @@ def test_compose_from_route_writes_and_validates_runtime(tmp_path, capsys):
         main(
             [
                 "compose-from-route",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -162,7 +162,7 @@ def test_compose_from_route_writes_and_validates_runtime(tmp_path, capsys):
     result = json.loads(capsys.readouterr().out)
     assert (runtime / "composition.yaml").exists()
     assert result["routing_decision"]["routing_mode"] == "capability"
-    assert result["selected_skills"] == [str(skills_dir / "fastapi_contract")]
+    assert result["selected_slms"] == [str(slms_dir / "fastapi_contract")]
     assert result["runtime_out"] == str(runtime.resolve())
     assert result["composition_strategy"] == "routed"
     assert result["composition_status"] == "written"
@@ -171,18 +171,18 @@ def test_compose_from_route_writes_and_validates_runtime(tmp_path, capsys):
     assert result["errors"] == []
 
 
-def test_compose_from_route_requires_selected_skill_without_allow_base(tmp_path, capsys):
-    skills_dir = tmp_path / "skills"
+def test_compose_from_route_requires_selected_slm_without_allow_base(tmp_path, capsys):
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
-    skills_dir.mkdir()
+    slms_dir.mkdir()
     repo.mkdir()
 
     assert (
         main(
             [
                 "compose-from-route",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -194,22 +194,22 @@ def test_compose_from_route_requires_selected_skill_without_allow_base(tmp_path,
         == 2
     )
 
-    assert "no skill selected" in capsys.readouterr().err
+    assert "no slm selected" in capsys.readouterr().err
 
 
 def test_compose_from_route_allow_base_skips_runtime_write(tmp_path, capsys):
-    skills_dir = tmp_path / "skills"
+    slms_dir = tmp_path / "slms"
     repo = tmp_path / "repo"
     runtime = tmp_path / "runtime"
-    skills_dir.mkdir()
+    slms_dir.mkdir()
     repo.mkdir()
 
     assert (
         main(
             [
                 "compose-from-route",
-                "--skills-dir",
-                str(skills_dir),
+                "--slms-dir",
+                str(slms_dir),
                 "--repo",
                 str(repo),
                 "--task",
@@ -231,7 +231,7 @@ def test_compose_from_route_allow_base_skips_runtime_write(tmp_path, capsys):
 
 
 def test_compose_from_route_overwrite_controls_existing_runtime(tmp_path, capsys):
-    skills_dir = package_fastapi_skill(tmp_path)
+    slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     runtime = tmp_path / "runtime"
@@ -241,8 +241,8 @@ def test_compose_from_route_overwrite_controls_existing_runtime(tmp_path, capsys
     (runtime / "old.txt").write_text("old\n")
     args = [
         "compose-from-route",
-        "--skills-dir",
-        str(skills_dir),
+        "--slms-dir",
+        str(slms_dir),
         "--repo",
         str(repo),
         "--task",

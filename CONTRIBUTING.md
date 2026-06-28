@@ -9,7 +9,7 @@ changes should preserve the current product boundaries:
 
 - do not change adapters, benchmarks, or checked-in validation fixtures unless
   the change explicitly targets those assets
-- do not change the skill package contract or runtime bundle contract without a
+- do not change the slm package contract or runtime bundle contract without a
   coordinated design update
 - keep the public product surface `slmcortex` clear and documented
 
@@ -48,7 +48,7 @@ When you change the public product surface, update the relevant docs:
 
 - `README.md` for first-time user experience
 - `docs/architecture/` for product-layer responsibilities
-- `docs/skill-package-contract.md` for package/runtime contract changes
+- `docs/slm-package-contract.md` for package/runtime contract changes
 - `CHANGELOG.md` for user-visible release changes
 
 ## Pull requests

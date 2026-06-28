@@ -9,6 +9,6 @@ Start here if you want the shortest path to using SLMCortex from the command lin
 
 ## Also Useful
 
-- [Architecture docs](architecture/skill-factory.md)
-- [Skill Package Contract](skill-package-contract.md)
+- [Architecture docs](architecture/slm-factory.md)
+- [Slm Package Contract](slm-package-contract.md)
 - [Repo Boundary Map](repo-boundary-map.md)

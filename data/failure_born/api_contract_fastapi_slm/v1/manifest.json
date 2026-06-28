@@ -3,7 +3,7 @@
   "adapter_created": false,
   "benchmark_family": "fastapi_contract",
   "candidate_activated": false,
-  "candidate_skill": "api_contract_fastapi_skill",
+  "candidate_slm": "api_contract_fastapi_slm",
   "combined_sha256": "34241236c0c4d83d42bf82dd76b30d7d0e960b6b57aaac10ae2398724c811525",
   "dependency_versions": {
     "fastapi": "0.138.0",
@@ -56,7 +56,7 @@
       "approvals"
     ]
   },
-  "existing_benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
+  "existing_benchmark_sha256": "3a83b9874437e33285f234fec80d90b7f7d48c5f50cbf7d66f7897e25e093118",
   "fixed_fastapi_benchmark_sha256": "05f903fbdb5271e15ebee6edb6d2583f02724678ae946b93817a17b5d9f6d85e",
   "generator_version": 1,
   "holdout_sha256": "86f4e1dec7ebe3321484a43f3d7483a4d825fc958fcecd6385d9186f3269b2f1",

@@ -12,7 +12,7 @@ def build_bundle(loaded: list[dict], routes: list[dict], enrichment: dict) -> di
     base = loaded[0]["metadata"]["base"]
     return {
         "schema_version": "1",
-        "composition_type": "skill_runtime_bundle",
+        "composition_type": "slm_runtime_bundle",
         "strategy": "routed",
         "status": "complete",
         "runtime": {
@@ -21,9 +21,9 @@ def build_bundle(loaded: list[dict], routes: list[dict], enrichment: dict) -> di
             "quantization": base["quantization"],
             "backend": base.get("backend") or "mlx",
         },
-        "skills": [
+        "slms": [
             {
-                "skill_id": item["skill_id"],
+                "slm_id": item["slm_id"],
                 "name": item["name"],
                 "version": item["version"],
                 "package_path": str(item["path"]),
@@ -31,7 +31,7 @@ def build_bundle(loaded: list[dict], routes: list[dict], enrichment: dict) -> di
                 "composition": item["composition"],
                 "adapter": item["metadata"]["adapter"],
             }
-            for item in sorted(loaded, key=lambda value: value["skill_id"])
+            for item in sorted(loaded, key=lambda value: value["slm_id"])
         ],
         "routes": routes,
         "provenance": {"registry_enrichment": enrichment},
@@ -40,22 +40,22 @@ def build_bundle(loaded: list[dict], routes: list[dict], enrichment: dict) -> di
 
 def build_budget_report(loaded: list[dict], routes: list[dict]) -> dict:
     stored_parameters = sum(int(item["metadata"]["adapter"]["trainable_parameters"]) for item in loaded)
-    bytes_by_skill = {
-        item["skill_id"]: (item["path"] / item["metadata"]["adapter"]["files"]["weights"]).stat().st_size
+    bytes_by_slm = {
+        item["slm_id"]: (item["path"] / item["metadata"]["adapter"]["files"]["weights"]).stat().st_size
         for item in loaded
     }
-    params_by_skill = {
-        item["skill_id"]: int(item["metadata"]["adapter"]["trainable_parameters"])
+    params_by_slm = {
+        item["slm_id"]: int(item["metadata"]["adapter"]["trainable_parameters"])
         for item in loaded
     }
-    max_active_parameters = max(sum(params_by_skill[skill_id] for skill_id in route["selected_skills"]) for route in routes)
-    max_active_bytes = max(sum(bytes_by_skill[skill_id] for skill_id in route["selected_skills"]) for route in routes)
+    max_active_parameters = max(sum(params_by_slm[slm_id] for slm_id in route["selected_slms"]) for route in routes)
+    max_active_bytes = max(sum(bytes_by_slm[slm_id] for slm_id in route["selected_slms"]) for route in routes)
     return {
         "schema_version": "1",
         "stored_adapter_count": len(loaded),
         "stored_adapter_parameters": stored_parameters,
-        "stored_adapter_bytes": sum(bytes_by_skill.values()),
-        "max_active_adapter_count": max(len(route["selected_skills"]) for route in routes),
+        "stored_adapter_bytes": sum(bytes_by_slm.values()),
+        "max_active_adapter_count": max(len(route["selected_slms"]) for route in routes),
         "max_active_adapter_parameters": max_active_parameters,
         "max_active_adapter_bytes": max_active_bytes,
         "memory_estimate_method": "active packaged adapter file bytes",
@@ -63,11 +63,11 @@ def build_budget_report(loaded: list[dict], routes: list[dict]) -> dict:
 
 
 def bundle_files(bundle: dict, compatibility: dict, budget: dict) -> dict[str, str]:
-    active_skills = {
+    active_slms = {
         "schema_version": "1",
-        "skills": [
+        "slms": [
             {
-                "skill_id": item["skill_id"],
+                "slm_id": item["slm_id"],
                 "name": item["name"],
                 "version": item["version"],
                 "package_path": item["package_path"],
@@ -77,10 +77,10 @@ def bundle_files(bundle: dict, compatibility: dict, budget: dict) -> dict[str, s
                 "route_membership": [
                     route["route_id"]
                     for route in bundle["routes"]
-                    if item["skill_id"] in route["selected_skills"]
+                    if item["slm_id"] in route["selected_slms"]
                 ],
             }
-            for item in bundle["skills"]
+            for item in bundle["slms"]
         ],
     }
     router_config = {
@@ -91,7 +91,7 @@ def bundle_files(bundle: dict, compatibility: dict, budget: dict) -> dict[str, s
     return {
         "composition.yaml": yaml.safe_dump(bundle, sort_keys=False),
         "router_config.json": json.dumps(router_config, indent=2, sort_keys=True) + "\n",
-        "active_skills.json": json.dumps(active_skills, indent=2, sort_keys=True) + "\n",
+        "active_slms.json": json.dumps(active_slms, indent=2, sort_keys=True) + "\n",
         "compatibility_report.json": json.dumps(compatibility, indent=2, sort_keys=True) + "\n",
         "budget_report.json": json.dumps(budget, indent=2, sort_keys=True) + "\n",
         "README.md": build_readme(bundle, compatibility, budget),
@@ -107,7 +107,7 @@ def write_checksums(staging: Path, files: dict[str, str], loaded: list[dict], en
                 "files": checksums,
                 "source_packages": [
                     {
-                        "skill_id": item["skill_id"],
+                        "slm_id": item["slm_id"],
                         "path": str(item["path"]),
                         "fingerprint": item["fingerprint"],
                     }
@@ -127,7 +127,7 @@ def build_readme(bundle: dict, compatibility: dict, budget: dict) -> str:
         "# SLMCortex Runtime Bundle",
         "",
         f"- Strategy: `{bundle['strategy']}`",
-        f"- Skills: {', '.join(item['skill_id'] for item in bundle['skills'])}",
+        f"- Slms: {', '.join(item['slm_id'] for item in bundle['slms'])}",
         f"- Runtime model: `{bundle['runtime']['runtime_model']}`",
         f"- Compatibility status: `{compatibility['status']}`",
         f"- Max active adapter parameters: **{budget['max_active_adapter_parameters']}**",

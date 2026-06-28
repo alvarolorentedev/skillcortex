@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..packaging.validation import validate_skill_package
+from ..packaging.validation import validate_slm_package
 from ..packaging.importers import import_lora
 from ..shared.config import base_config
 from ..shared.config import adapter_format_for_backend, resolve_backend
@@ -13,7 +13,7 @@ from ..shared.io import read_json, read_yaml
 
 @dataclass(slots=True)
 class ResolvedAdapter:
-    skill_id: str
+    slm_id: str
     package_path: Path
     adapter_path: Path
     source: str | None
@@ -30,12 +30,12 @@ class ResolvedAdapter:
 class AdapterRegistry:
     def __init__(
         self,
-        skills_dir: Path,
+        slms_dir: Path,
         *,
         allow_remote: bool = False,
         cache_dir: Path | None = None,
     ):
-        self.skills_dir = skills_dir.resolve()
+        self.slms_dir = slms_dir.resolve()
         self.allow_remote = allow_remote
         self.cache_dir = cache_dir or Path(base_config().get("lora_cache_dir") or ".slmcortex/lora-cache")
         self.local = self._discover()
@@ -43,53 +43,53 @@ class AdapterRegistry:
     @classmethod
     def load(
         cls,
-        skills_dir: Path,
+        slms_dir: Path,
         *,
         allow_remote: bool = False,
         cache_dir: Path | None = None,
     ) -> "AdapterRegistry":
-        return cls(skills_dir, allow_remote=allow_remote, cache_dir=cache_dir)
+        return cls(slms_dir, allow_remote=allow_remote, cache_dir=cache_dir)
 
     def reload(self) -> None:
         self.local = self._discover()
 
-    def resolve_remote(self, source: str, skill_id: str, name: str | None = None) -> ResolvedAdapter:
+    def resolve_remote(self, source: str, slm_id: str, name: str | None = None) -> ResolvedAdapter:
         config = base_config()
         if not (self.allow_remote or bool(config.get("allow_remote_lora_downloads"))):
             raise ValueError("remote LoRA downloads are disabled")
-        output = self.skills_dir / skill_id
+        output = self.slms_dir / slm_id
         import_lora(
             source=source,
-            skill_id=skill_id,
-            name=name or skill_id.replace("_", " ").title(),
+            slm_id=slm_id,
+            name=name or slm_id.replace("_", " ").title(),
             output=output,
             train_dataset=Path(config.get("remote_lora_train_dataset") or "data/train.jsonl"),
             eval_dataset=Path(config.get("remote_lora_eval_dataset") or "data/eval.jsonl"),
             cache_dir=self.cache_dir,
         )
         self.reload()
-        if skill_id not in self.local:
-            raise ValueError(f"resolved remote LoRA did not produce a valid package: {skill_id}")
-        return self.local[skill_id]
+        if slm_id not in self.local:
+            raise ValueError(f"resolved remote LoRA did not produce a valid package: {slm_id}")
+        return self.local[slm_id]
 
     def _discover(self) -> dict[str, ResolvedAdapter]:
-        if not self.skills_dir.exists():
+        if not self.slms_dir.exists():
             return {}
         found: dict[str, ResolvedAdapter] = {}
-        for package in sorted(path for path in self.skills_dir.iterdir() if path.is_dir()):
+        for package in sorted(path for path in self.slms_dir.iterdir() if path.is_dir()):
             try:
                 adapter = _resolved_adapter(package)
             except (FileNotFoundError, KeyError, TypeError, ValueError):
                 continue
             if adapter.adapter_format != adapter_format_for_backend(resolve_backend(base_config())):
                 continue
-            found[adapter.skill_id] = adapter
+            found[adapter.slm_id] = adapter
         return found
 
 
 def _resolved_adapter(package: Path) -> ResolvedAdapter:
-    validate_skill_package(package)
-    manifest = read_yaml(package / "skill.yaml")
+    validate_slm_package(package)
+    manifest = read_yaml(package / "slm.yaml")
     metadata = read_json(package / "metadata.json")
     adapter = manifest.get("adapter") or {}
     adapter_path = package / (adapter.get("path") or "adapter/adapters.safetensors")
@@ -99,16 +99,16 @@ def _resolved_adapter(package: Path) -> ResolvedAdapter:
     checksums = metadata.get("checksums") or {}
     weight_key = "adapter/adapters.safetensors"
     return ResolvedAdapter(
-        skill_id=manifest["skill_id"],
+        slm_id=manifest["slm_id"],
         package_path=package.resolve(),
         adapter_path=adapter_path.resolve(),
         source=(metadata.get("source_artifacts") or {}).get("source"),
         sha256=checksums.get(weight_key) or sha256(adapter_path),
-        name=manifest.get("name") or manifest["skill_id"],
+        name=manifest.get("name") or manifest["slm_id"],
         description=" ".join(
             item
             for item in (
-                manifest["skill_id"].replace("_", " "),
+                manifest["slm_id"].replace("_", " "),
                 str(manifest.get("name") or ""),
                 str(manifest.get("description") or ""),
             )

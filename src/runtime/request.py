@@ -54,7 +54,7 @@ def normalize_chat_request(payload: dict[str, Any], *, runtime_name: str | None 
         "messages": coerce_messages(messages),
         "task_type": task_type,
         "semantic_family": payload.get("semantic_family"),
-        "skill_override": payload.get("skill_override"),
+        "slm_override": payload.get("slm_override"),
         "max_tokens": payload.get("max_tokens"),
         "temperature": payload.get("temperature"),
     }

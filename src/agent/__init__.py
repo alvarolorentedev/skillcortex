@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from ..runtime import SkillRuntime
+from ..runtime import SlmRuntime
 from .reporting import execution_history, final_status, merge_task_statuses, multi_task_summary, task_result_payload, task_trace_payload
 from .sandbox import WRITE_MODES, ToolSandbox
 from .service import run_single_task
@@ -28,7 +28,7 @@ def run_agent(
     repo_root = repo.resolve()
     if not repo_root.exists() or not repo_root.is_dir():
         raise FileNotFoundError(f"repo not found: {repo_root}")
-    runtime = SkillRuntime.load(runtime_path)
+    runtime = SlmRuntime.load(runtime_path)
     runtime.validate()
     sandbox = ToolSandbox(repo_root, writes)
     tasks: list[str] = []

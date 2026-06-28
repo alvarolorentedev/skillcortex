@@ -1,7 +1,7 @@
-# Skill Composer
+# Slm Composer
 
-Skill Composer is the deterministic assembly layer in SLMCortex v0.1. It
-loads validated skill packages, checks compatibility, and writes a runtime
+Slm Composer is the deterministic assembly layer in SLMCortex v0.1. It
+loads validated slm packages, checks compatibility, and writes a runtime
 bundle that Runtime Core can consume directly.
 
 ## Responsibilities
@@ -13,19 +13,19 @@ bundle that Runtime Core can consume directly.
 
 ## Inputs
 
-- one or more validated skill packages
+- one or more validated slm packages
 - optional registry enrichment file
 - composition strategy, currently `routed`
 
 ## Outputs
 
 - one runtime bundle containing `composition.yaml`, `router_config.json`,
-  `active_skills.json`, `compatibility_report.json`, `budget_report.json`,
+  `active_slms.json`, `compatibility_report.json`, `budget_report.json`,
   `checksums.json`, and `README.md`
 
 ## Role In The Product Flow
 
-Skill Composer owns the `compose-skills` stage in the quickstart and scripted
+Slm Composer owns the `compose-slms` stage in the quickstart and scripted
 demo. The runtime bundle it emits is the deployment artifact and source of
 truth for runtime loading.
 

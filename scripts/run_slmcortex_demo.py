@@ -44,7 +44,7 @@ def _copy_demo_repo(destination: Path) -> Path:
     return destination
 
 
-def _stage_demo_adapter(skill_id: str, destination: Path) -> Path:
+def _stage_demo_adapter(slm_id: str, destination: Path) -> Path:
     destination.mkdir(parents=True, exist_ok=True)
 
     (destination / "adapter_config.json").write_text(
@@ -103,14 +103,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     output_root.mkdir(parents=True, exist_ok=True)
 
-    python_skill = output_root / "python_skill"
-    debugging_skill = output_root / "debugging_skill"
+    python_slm = output_root / "python_slm"
+    debugging_slm = output_root / "debugging_slm"
     demo_adapters = output_root / "demo-adapters"
     runtime = output_root / "runtime"
     toy_repo = _copy_demo_repo(output_root / "toy-repo")
     trace_path = output_root / "agent-trace.json"
-    python_adapter = _stage_demo_adapter("python_skill", demo_adapters / "python_skill")
-    debugging_adapter = _stage_demo_adapter("debugging_skill", demo_adapters / "debugging_skill")
+    python_adapter = _stage_demo_adapter("python_slm", demo_adapters / "python_slm")
+    debugging_adapter = _stage_demo_adapter("debugging_slm", demo_adapters / "debugging_slm")
 
     dataset_train = FIXTURES / "train.jsonl"
     dataset_eval = FIXTURES / "eval.jsonl"
@@ -119,13 +119,13 @@ def main(argv: list[str] | None = None) -> int:
 
     steps = [
         _run(
-            "package_python_skill",
+            "package_python_slm",
             [
-                "package-skill",
-                "--skill-id",
-                "python_skill",
+                "package-slm",
+                "--slm-id",
+                "python_slm",
                 "--name",
-                "Python Skill",
+                "Python Slm",
                 "--adapter-dir",
                 str(python_adapter),
                 "--train-dataset",
@@ -135,17 +135,17 @@ def main(argv: list[str] | None = None) -> int:
                 "--eval-summary",
                 str(eval_summary),
                 "--output",
-                str(python_skill),
+                str(python_slm),
             ],
         ),
         _run(
-            "package_debugging_skill",
+            "package_debugging_slm",
             [
-                "package-skill",
-                "--skill-id",
-                "debugging_skill",
+                "package-slm",
+                "--slm-id",
+                "debugging_slm",
                 "--name",
-                "Debugging Skill",
+                "Debugging Slm",
                 "--adapter-dir",
                 str(debugging_adapter),
                 "--train-dataset",
@@ -155,15 +155,15 @@ def main(argv: list[str] | None = None) -> int:
                 "--eval-summary",
                 str(eval_summary),
                 "--output",
-                str(debugging_skill),
+                str(debugging_slm),
             ],
         ),
         _run(
             "compose_runtime",
             [
-                "compose-skills",
-                "--skills",
-                f"{python_skill},{debugging_skill}",
+                "compose-slms",
+                "--slms",
+                f"{python_slm},{debugging_slm}",
                 "--output",
                 str(runtime),
             ],

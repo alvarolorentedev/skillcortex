@@ -4,19 +4,19 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from ..contracts import KNOWN_SKILLS, SKILLS, TASK_TYPES
+from ..contracts import KNOWN_SLMS, PRESET_SLMS, TASK_TYPES
 
 
 RULES = {
-    "debugging_skill": ("traceback", "error", "exception", "failing", "fix", "bug"),
-    "test_generation_skill": (
+    "debugging_slm": ("traceback", "error", "exception", "failing", "fix", "bug"),
+    "test_generation_slm": (
         "pytest",
         "unit test",
         "tests for",
         "test cases",
         "generate tests",
     ),
-    "python_skill": (
+    "python_slm": (
         "python",
         "function",
         "def ",
@@ -26,7 +26,7 @@ RULES = {
         "algorithm",
     ),
 }
-PRIORITY = ("debugging_skill", "test_generation_skill", "python_skill")
+PRIORITY = ("debugging_slm", "test_generation_slm", "python_slm")
 
 
 def _nonempty(name: str, value: str) -> None:
@@ -34,23 +34,23 @@ def _nonempty(name: str, value: str) -> None:
         raise ValueError(f"{name} must be non-empty")
 
 
-def _known_skills(skills: list[str]) -> None:
-    unknown = set(skills) - set(KNOWN_SKILLS)
+def _known_slms(slms: list[str]) -> None:
+    unknown = set(slms) - set(KNOWN_SLMS)
     if unknown:
-        raise ValueError(f"unknown skill: {sorted(unknown)[0]}")
+        raise ValueError(f"unknown slm: {sorted(unknown)[0]}")
 
 
 @dataclass(slots=True)
 class RouteDecision:
-    selected_skills: list[str]
+    selected_slms: list[str]
     confidence: float
     reason: str
     route_type: str = "adapter"
 
     def __post_init__(self) -> None:
-        _known_skills(self.selected_skills)
-        if len(self.selected_skills) > 3:
-            raise ValueError("at most three skills may be selected")
+        _known_slms(self.selected_slms)
+        if len(self.selected_slms) > 3:
+            raise ValueError("at most three slms may be selected")
         if not 0 <= self.confidence <= 1:
             raise ValueError("confidence must be between 0 and 1")
         _nonempty("reason", self.reason)
@@ -63,9 +63,9 @@ class RouteDecision:
 class RuleRouter:
     def route(self, prompt: str, tags: list[str] | None = None) -> RouteDecision:
         if tags:
-            selected = [skill for skill in tags if skill in SKILLS][:2]
+            selected = [slm for slm in tags if slm in PRESET_SLMS][:2]
             if not selected:
-                raise ValueError("tags contain no known skills")
+                raise ValueError("tags contain no known slms")
             return RouteDecision(
                 selected, 1.0, "Explicit dataset tags override prompt rules."
             )
@@ -73,21 +73,21 @@ class RuleRouter:
         text = prompt.lower()
         scores = Counter(
             {
-                skill: sum(marker in text for marker in markers)
-                for skill, markers in RULES.items()
+                slm: sum(marker in text for marker in markers)
+                for slm, markers in RULES.items()
             }
         )
-        ranked = [skill for skill in PRIORITY if scores[skill] > 0]
+        ranked = [slm for slm in PRIORITY if scores[slm] > 0]
         if not ranked:
             return RouteDecision(
-                ["python_skill"],
+                ["python_slm"],
                 0.35,
                 "No strong marker; defaulted to Python generation.",
             )
         selected = ranked[:2]
         total = sum(scores.values())
         confidence = min(0.95, 0.55 + 0.1 * total)
-        markers = ", ".join(f"{skill}={scores[skill]}" for skill in selected)
+        markers = ", ".join(f"{slm}={scores[slm]}" for slm in selected)
         return RouteDecision(selected, confidence, f"Matched prompt rules: {markers}.")
 
 
@@ -103,41 +103,41 @@ class PythonOnlyForTestGenerationRouter:
                 route_type="base_fallback",
             )
         selected = (
-            ["debugging_skill", "python_skill"]
+            ["debugging_slm", "python_slm"]
             if task_type == "debugging"
-            else ["python_skill", "test_generation_skill"]
+            else ["python_slm", "test_generation_slm"]
         )
         return RouteDecision(selected, 1.0, f"Protected route for {task_type}.")
 
 
-ProtectedSkillRouter = PythonOnlyForTestGenerationRouter
-ProtectedSkillRouterWithoutFailureBorn = PythonOnlyForTestGenerationRouter
+ProtectedSlmRouter = PythonOnlyForTestGenerationRouter
+ProtectedSlmRouterWithoutFailureBorn = PythonOnlyForTestGenerationRouter
 
 
 class SLMCortexRouterV1:
     def route(self, task_type: str, semantic_family: str | None) -> RouteDecision:
-        protected = ProtectedSkillRouterWithoutFailureBorn().route(task_type)
+        protected = ProtectedSlmRouterWithoutFailureBorn().route(task_type)
         if semantic_family != "alternating" or task_type == "python_generation":
             return protected
         selected = (
-            ["debugging_skill", "python_skill", "alternating_skill"]
+            ["debugging_slm", "python_slm", "alternating_slm"]
             if task_type == "debugging"
-            else ["python_skill", "test_generation_skill", "alternating_skill"]
+            else ["python_slm", "test_generation_slm", "alternating_slm"]
         )
         return RouteDecision(selected, 1.0, "Promoted alternating route.")
 
 
-class ProtectedRouterPlusAlternatingSkill:
+class ProtectedRouterPlusAlternatingSlm:
     quarantined = True
 
     def route(self, task_type: str, semantic_family: str | None) -> RouteDecision:
-        protected = ProtectedSkillRouter().route(task_type)
+        protected = ProtectedSlmRouter().route(task_type)
         if semantic_family != "alternating" or task_type == "python_generation":
             return protected
         selected = (
-            ["debugging_skill", "python_skill", "alternating_skill"]
+            ["debugging_slm", "python_slm", "alternating_slm"]
             if task_type == "debugging"
-            else ["python_skill", "test_generation_skill", "alternating_skill"]
+            else ["python_slm", "test_generation_slm", "alternating_slm"]
         )
         return RouteDecision(
             selected,
@@ -148,6 +148,6 @@ class ProtectedRouterPlusAlternatingSkill:
 
 
 def route_text(text: str) -> list[str]:
-    return list(RuleRouter().route(text).selected_skills)
+    return list(RuleRouter().route(text).selected_slms)
 
 # Note: `SLMCortexRouterV1` is the canonical router class name.
