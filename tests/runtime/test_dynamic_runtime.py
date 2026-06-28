@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from skillcortex.cli import main
-from skillcortex.packaging import package_skill
-from skillcortex.runtime.dynamic import DynamicRuntime, DynamicRouteDecision
+from slmcortex.cli import main
+from slmcortex.packaging import package_skill
+from slmcortex.runtime.dynamic import DynamicRuntime, DynamicRouteDecision
 
 
 def _skill(tmp_path, skill_id, *, description, capabilities=()):
@@ -88,7 +88,7 @@ def test_dynamic_infer_dry_run_selects_remote_catalog_match(tmp_path, monkeypatc
     calls = []
 
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -106,7 +106,7 @@ def test_dynamic_infer_dry_run_selects_remote_catalog_match(tmp_path, monkeypatc
         return runtime.registry.local[skill_id]
 
     monkeypatch.setattr(runtime.registry, "resolve_remote", fake_resolve)
-    monkeypatch.setattr("skillcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
 
     assert (
         main(
@@ -135,7 +135,7 @@ def test_dynamic_infer_dry_run_selects_remote_catalog_match(tmp_path, monkeypatc
 
 def test_dynamic_infer_dry_run_matches_richer_remote_catalog_fields(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -159,7 +159,7 @@ def test_dynamic_infer_dry_run_matches_richer_remote_catalog_fields(tmp_path, mo
         return runtime.registry.local[skill_id]
 
     monkeypatch.setattr(runtime.registry, "resolve_remote", fake_resolve)
-    monkeypatch.setattr("skillcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
 
     assert main([
         "infer",
@@ -178,7 +178,7 @@ def test_dynamic_infer_dry_run_matches_richer_remote_catalog_fields(tmp_path, mo
 
 def test_dynamic_infer_dry_run_selects_fetched_remote_catalog_match(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -186,7 +186,7 @@ def test_dynamic_infer_dry_run_selects_fetched_remote_catalog_match(tmp_path, mo
         },
     )
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic._fetch_remote_lora_catalog",
+        "slmcortex.runtime.dynamic._fetch_remote_lora_catalog",
         lambda url: [
             {
                 "skill_id": "fastapi_remote",
@@ -205,7 +205,7 @@ def test_dynamic_infer_dry_run_selects_fetched_remote_catalog_match(tmp_path, mo
         return runtime.registry.local[skill_id]
 
     monkeypatch.setattr(runtime.registry, "resolve_remote", fake_resolve)
-    monkeypatch.setattr("skillcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.DynamicRuntime.load", lambda *args, **kwargs: runtime)
 
     assert main([
         "infer",
@@ -269,7 +269,7 @@ def test_dynamic_router_allows_unknown_skill_when_remote_lora_is_available(tmp_p
 def test_dynamic_router_rejects_training_when_disabled(tmp_path, monkeypatch):
     runtime = DynamicRuntime.load(tmp_path / "skills")
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -295,7 +295,7 @@ def test_dynamic_router_rejects_training_when_disabled(tmp_path, monkeypatch):
 def test_dynamic_router_rejects_ambiguous_train_and_remote(tmp_path, monkeypatch):
     runtime = DynamicRuntime.load(tmp_path / "skills")
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -327,7 +327,7 @@ def test_dynamic_router_trains_plasticity_lora_when_enabled(tmp_path, monkeypatc
     calls = []
 
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -358,7 +358,7 @@ def test_dynamic_router_trains_plasticity_lora_when_enabled(tmp_path, monkeypatc
         )
         return {"status": "complete", "skill_id": kwargs["skill"]}
 
-    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
 
     decision = runtime.route(
         [{"role": "user", "content": prompt}],
@@ -410,7 +410,7 @@ def test_dynamic_router_uses_live_source_for_plasticity_training(tmp_path, monke
         ]
 
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -441,7 +441,7 @@ def test_dynamic_router_uses_live_source_for_plasticity_training(tmp_path, monke
         )
         return {"status": "complete", "skill_id": kwargs["skill"]}
 
-    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
 
     decision = runtime.route(
         [{"role": "user", "content": prompt}],
@@ -477,7 +477,7 @@ def test_dynamic_router_reuses_existing_plasticity_lora(tmp_path, monkeypatch):
     _skill(tmp_path, expected_skill, description="Existing plasticity adapter")
     runtime = DynamicRuntime.load(tmp_path / "skills")
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -487,7 +487,7 @@ def test_dynamic_router_reuses_existing_plasticity_lora(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.train_skill_package",
+        "slmcortex.runtime.dynamic.train_skill_package",
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("should reuse existing skill")),
     )
 
@@ -512,7 +512,7 @@ def test_dynamic_router_does_not_publish_invalid_plasticity_lora(tmp_path, monke
     prompt = "Fix FastAPI validation"
     expected_skill = "plasticity_" + hashlib.sha256(prompt.encode()).hexdigest()[:8]
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -527,9 +527,9 @@ def test_dynamic_router_does_not_publish_invalid_plasticity_lora(tmp_path, monke
         (kwargs["output"] / "skill.yaml").write_text("skill_id: broken\n")
         return {"status": "complete", "skill_id": kwargs["skill"]}
 
-    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.validate_skill_package",
+        "slmcortex.runtime.dynamic.validate_skill_package",
         lambda path: (_ for _ in ()).throw(ValueError("invalid package")),
     )
 
@@ -554,7 +554,7 @@ def test_dynamic_router_respects_plasticity_skill_cap(tmp_path, monkeypatch):
     _skill(tmp_path, "plasticity_existing", description="Existing plasticity adapter")
     runtime = DynamicRuntime.load(tmp_path / "skills")
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -565,7 +565,7 @@ def test_dynamic_router_respects_plasticity_skill_cap(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.train_skill_package",
+        "slmcortex.runtime.dynamic.train_skill_package",
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("should refuse before training")),
     )
 
@@ -600,8 +600,8 @@ def test_dynamic_infer_falls_back_to_base_when_adaptation_fails(tmp_path, monkey
         "resolve_remote",
         lambda source, skill_id, name=None: (_ for _ in ()).throw(ValueError("fetch failed")),
     )
-    monkeypatch.setattr("skillcortex.runtime.dynamic.load_model", lambda model_name=None, adapter=None: ("m", "t"))
-    monkeypatch.setattr("skillcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("base answer", 1, 2))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.load_model", lambda model_name=None, adapter=None: ("m", "t"))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("base answer", 1, 2))
 
     result = runtime.infer(prompt="Fix FastAPI")
 
@@ -644,7 +644,7 @@ def test_dynamic_infer_trains_reloads_and_reuses_plasticity_lora(tmp_path, monke
     calls = []
     loaded = []
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -684,12 +684,12 @@ def test_dynamic_infer_trains_reloads_and_reuses_plasticity_lora(tmp_path, monke
         train_new_lora=True,
         reason="needs training",
     )
-    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.load_model",
+        "slmcortex.runtime.dynamic.load_model",
         lambda model_name=None, adapter=None: (loaded.append(adapter) or "m", "t"),
     )
-    monkeypatch.setattr("skillcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("adapter answer", 1, 2))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("adapter answer", 1, 2))
 
     first = runtime.infer(prompt=prompt)
     second = runtime.infer(prompt=prompt)
@@ -711,7 +711,7 @@ def test_dynamic_acceptance_flow_local_remote_and_plasticity(tmp_path, monkeypat
     remote_calls = []
     loaded = []
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",
@@ -767,12 +767,12 @@ def test_dynamic_acceptance_flow_local_remote_and_plasticity(tmp_path, monkeypat
 
     runtime._router_model = router
     monkeypatch.setattr(runtime.registry, "resolve_remote", fake_resolve)
-    monkeypatch.setattr("skillcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.train_skill_package", fake_train_skill_package)
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.load_model",
+        "slmcortex.runtime.dynamic.load_model",
         lambda model_name=None, adapter=None: (loaded.append(adapter) or "m", "t"),
     )
-    monkeypatch.setattr("skillcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("answer", 1, 2))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("answer", 1, 2))
 
     local = runtime.infer(prompt="Fix a FastAPI validation bug")
     remote = runtime.infer(prompt="Tune a SQL query")
@@ -797,7 +797,7 @@ def test_dynamic_runtime_cache_key_includes_base_model_and_loras(tmp_path, monke
         calls.append((model_name, str(adapter) if adapter else None))
         return f"model:{model_name}", "tokenizer"
 
-    monkeypatch.setattr("skillcortex.runtime.dynamic.load_model", fake_load_model)
+    monkeypatch.setattr("slmcortex.runtime.dynamic.load_model", fake_load_model)
 
     first = runtime._get_model("base-a", ("fastapi_skill",))
     second = runtime._get_model("base-b", ("fastapi_skill",))
@@ -811,8 +811,8 @@ def test_dynamic_router_malformed_json_falls_back_to_base(tmp_path, monkeypatch)
     _skill(tmp_path, "fastapi_skill", description="FastAPI endpoint validation", capabilities=["fastapi"])
     runtime = DynamicRuntime.load(tmp_path / "skills")
 
-    monkeypatch.setattr("skillcortex.runtime.dynamic.load_model", lambda model_name=None, adapter=None: ("m", "t"))
-    monkeypatch.setattr("skillcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("not json", 0, 0))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.load_model", lambda model_name=None, adapter=None: ("m", "t"))
+    monkeypatch.setattr("slmcortex.runtime.dynamic.generate_text", lambda *args, **kwargs: ("not json", 0, 0))
 
     decision = runtime.route([{"role": "user", "content": "Fix FastAPI"}], router=runtime._router_model)
 

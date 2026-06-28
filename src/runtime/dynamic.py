@@ -313,7 +313,7 @@ class DynamicRuntime:
                 raise ValueError("plasticity skill cap reached")
         fallback_train_dataset = config.get("plasticity_train_dataset")
         live_source_handler = config.get("plasticity_live_source_handler")
-        with tempfile.TemporaryDirectory(prefix=f"skillcortex-{skill_id}-publish-") as directory:
+        with tempfile.TemporaryDirectory(prefix=f"slmcortex-{skill_id}-publish-") as directory:
             train_dataset = Path(directory) / "task-train.jsonl"
             if text.strip():
                 train_dataset.write_text(json.dumps(train_row, sort_keys=True) + "\n")

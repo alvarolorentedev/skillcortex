@@ -195,7 +195,7 @@ def package_skill(
     if output_exists:
         shutil.rmtree(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f"skillcortex-{skill_id}-") as directory:
+    with tempfile.TemporaryDirectory(prefix=f"slmcortex-{skill_id}-") as directory:
         staging = Path(directory) / output.name
         _write_package(
             staging=staging,

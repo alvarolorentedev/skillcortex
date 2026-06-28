@@ -16,7 +16,7 @@ def _repo_root() -> Path:
 
 ROOT = _repo_root()
 REGISTRY = ROOT / "configs/skill_registry.json"
-ROUTER_REPORT = ROOT / "artifacts/governance-fixtures/skillcortex-router-v1/summary.json"
+ROUTER_REPORT = ROOT / "artifacts/governance-fixtures/slmcortex-router-v1/summary.json"
 
 
 def load_registry():

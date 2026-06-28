@@ -24,7 +24,7 @@ jobs:
           pip install -e '.[test]'
 
       - name: Validate no-model demo
-        run: pytest tests/cli/test_skillcortex_demo.py -k 'demo_script_runs_end_to_end or arbitrary_skill_smoke_script_runs_default_no_model_loop' -q
+        run: pytest tests/cli/test_slmcortex_demo.py -k 'demo_script_runs_end_to_end or arbitrary_skill_smoke_script_runs_default_no_model_loop' -q
 
       - name: Validate adaptive mock demo
-        run: pytest tests/cli/test_skillcortex_demo.py -k dynamic_adaptive_smoke_script_runs_mock_loop -q
+        run: pytest tests/cli/test_slmcortex_demo.py -k dynamic_adaptive_smoke_script_runs_mock_loop -q

@@ -86,7 +86,7 @@ def build_manifests(
         "name": name,
         "version": version,
         "created_at": created_at,
-        "tool": {"name": "skillcortex", "version": __version__},
+        "tool": {"name": "slmcortex", "version": __version__},
         "environment": {
             "python_version": sys.version.split()[0],
             "platform": platform.platform(),

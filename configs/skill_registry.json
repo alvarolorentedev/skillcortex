@@ -1,5 +1,5 @@
 {
-  "router": "skillcortex_router_v1",
+  "router": "slmcortex_router_v1",
   "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
   "skills": [
     {
@@ -13,7 +13,7 @@
       ],
       "activation_scope": "protected_router",
       "active_by_default": true,
-      "router": "skillcortex_router_v1",
+      "router": "slmcortex_router_v1",
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": false,
@@ -34,7 +34,7 @@
       ],
       "activation_scope": "protected_router",
       "active_by_default": true,
-      "router": "skillcortex_router_v1",
+      "router": "slmcortex_router_v1",
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": false,
@@ -55,7 +55,7 @@
       ],
       "activation_scope": "protected_router",
       "active_by_default": true,
-      "router": "skillcortex_router_v1",
+      "router": "slmcortex_router_v1",
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": false,
@@ -77,7 +77,7 @@
       ],
       "activation_scope": "strict_gate",
       "active_by_default": false,
-      "router": "skillcortex_router_v1",
+      "router": "slmcortex_router_v1",
       "rank": 8,
       "trainable_parameters": 311296,
       "created_from_failure_cluster": true,

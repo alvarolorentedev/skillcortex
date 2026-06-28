@@ -1211,7 +1211,7 @@ wheels = [
 ]
 
 [[package]]
-name = "skillcortex"
+name = "slmcortex"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

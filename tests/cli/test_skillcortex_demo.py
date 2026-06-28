@@ -14,19 +14,19 @@ def _repo_root() -> Path:
 ROOT = _repo_root()
 
 
-def _run_skillcortex(*args: str) -> subprocess.CompletedProcess[str]:
+def _run_slmcortex(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-m", "skillcortex", *args],
+        [sys.executable, "-m", "slmcortex", *args],
         cwd=ROOT,
         capture_output=True,
         text=True,
     )
 
 
-def test_skillcortex_root_help_lists_product_commands_and_examples():
-    completed = _run_skillcortex("--help")
+def test_slmcortex_root_help_lists_product_commands_and_examples():
+    completed = _run_slmcortex("--help")
     assert completed.returncode == 0
-    assert "Package, compose, validate, and run Skill Cortex runtime bundles." in completed.stdout
+    assert "Package, compose, validate, and run Slm Cortex runtime bundles." in completed.stdout
     assert "package-skill" in completed.stdout
     assert "compose-skills" in completed.stdout
     assert "validate-runtime" in completed.stdout
@@ -34,28 +34,28 @@ def test_skillcortex_root_help_lists_product_commands_and_examples():
     assert "Examples:" in completed.stdout
 
 
-def test_skillcortex_product_help_examples_cover_every_command():
+def test_slmcortex_product_help_examples_cover_every_command():
     commands = {
-        ("train-skill", "--help"): "skillcortex train-skill --skill-id fastapi_contract",
-        ("package-skill", "--help"): "skillcortex package-skill --skill-id python_skill",
-        ("validate-skill-package", "--help"): "skillcortex validate-skill-package --path",
-        ("compose-skills", "--help"): "skillcortex compose-skills --skills",
-        ("validate-runtime", "--help"): "skillcortex validate-runtime --runtime",
-        ("infer", "--help"): "skillcortex infer --runtime",
-        ("serve", "--help"): "skillcortex serve --runtime",
-        ("agent", "run", "--help"): "skillcortex agent run --runtime",
+        ("train-skill", "--help"): "slmcortex train-skill --skill-id fastapi_contract",
+        ("package-skill", "--help"): "slmcortex package-skill --skill-id python_skill",
+        ("validate-skill-package", "--help"): "slmcortex validate-skill-package --path",
+        ("compose-skills", "--help"): "slmcortex compose-skills --skills",
+        ("validate-runtime", "--help"): "slmcortex validate-runtime --runtime",
+        ("infer", "--help"): "slmcortex infer --runtime",
+        ("serve", "--help"): "slmcortex serve --runtime",
+        ("agent", "run", "--help"): "slmcortex agent run --runtime",
     }
     for args, expected in commands.items():
-        completed = _run_skillcortex(*args)
+        completed = _run_slmcortex(*args)
         assert completed.returncode == 0, completed.stderr
         assert "Examples:" in completed.stdout
         assert expected in completed.stdout
 
 
-def test_skillcortex_demo_script_runs_end_to_end(tmp_path):
+def test_slmcortex_demo_script_runs_end_to_end(tmp_path):
     output_root = tmp_path / "demo"
     completed = subprocess.run(
-        [sys.executable, "scripts/run_skillcortex_demo.py", "--output-root", str(output_root)],
+        [sys.executable, "scripts/run_slmcortex_demo.py", "--output-root", str(output_root)],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -88,7 +88,7 @@ def test_arbitrary_skill_smoke_script_runs_default_no_model_loop(tmp_path):
     completed = subprocess.run(
         [
             sys.executable,
-            "scripts/run_skillcortex_arbitrary_skill_smoke.py",
+            "scripts/run_slmcortex_arbitrary_skill_smoke.py",
             "--output-root",
             str(output_root),
         ],

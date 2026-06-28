@@ -11,7 +11,7 @@ from .types import ExecutionFixture
 
 
 def run_fixture(fixture: ExecutionFixture, generated_code: str) -> tuple[bool, str]:
-    with tempfile.TemporaryDirectory(prefix="skillcortex-eval-") as directory:
+    with tempfile.TemporaryDirectory(prefix="slmcortex-eval-") as directory:
         root = Path(directory)
         generated_filename = (
             "test_generated.py" if "solution.py" in fixture.files else "solution.py"

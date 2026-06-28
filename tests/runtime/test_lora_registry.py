@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from skillcortex.packaging import package_skill
-from skillcortex.runtime.registry import AdapterRegistry
+from slmcortex.packaging import package_skill
+from slmcortex.runtime.registry import AdapterRegistry
 
 
 def _package(tmp_path, skill_id):
@@ -33,7 +33,7 @@ def _package(tmp_path, skill_id):
 
 def test_registry_discovers_valid_local_package_without_network(tmp_path, monkeypatch):
     root = _package(tmp_path, "local_skill")
-    monkeypatch.setattr("skillcortex.runtime.registry.import_lora", lambda **kwargs: pytest.fail("network import should not run"))
+    monkeypatch.setattr("slmcortex.runtime.registry.import_lora", lambda **kwargs: pytest.fail("network import should not run"))
 
     registry = AdapterRegistry.load(tmp_path / "skills")
 
@@ -56,7 +56,7 @@ def test_registry_resolves_remote_lora_when_allowed(tmp_path, monkeypatch):
     def fake_import_lora(**kwargs):
         return {"status": "complete", "output": str(imported), "skill_id": kwargs["skill_id"]}
 
-    monkeypatch.setattr("skillcortex.runtime.registry.import_lora", fake_import_lora)
+    monkeypatch.setattr("slmcortex.runtime.registry.import_lora", fake_import_lora)
     registry = AdapterRegistry.load(tmp_path / "skills", allow_remote=True)
 
     resolved = registry.resolve_remote("hf://owner/repo", "remote_skill")
@@ -69,7 +69,7 @@ def test_registry_uses_configured_remote_import_datasets(tmp_path, monkeypatch):
     imported = _package(tmp_path, "remote_skill")
     calls = []
     monkeypatch.setattr(
-        "skillcortex.runtime.registry.base_config",
+        "slmcortex.runtime.registry.base_config",
         lambda: {
             "remote_lora_train_dataset": "data/import-train.jsonl",
             "remote_lora_eval_dataset": "data/import-eval.jsonl",
@@ -80,7 +80,7 @@ def test_registry_uses_configured_remote_import_datasets(tmp_path, monkeypatch):
         calls.append(kwargs)
         return {"status": "complete", "output": str(imported), "skill_id": kwargs["skill_id"]}
 
-    monkeypatch.setattr("skillcortex.runtime.registry.import_lora", fake_import_lora)
+    monkeypatch.setattr("slmcortex.runtime.registry.import_lora", fake_import_lora)
     registry = AdapterRegistry.load(tmp_path / "skills", allow_remote=True)
 
     registry.resolve_remote("hf://owner/repo", "remote_skill")

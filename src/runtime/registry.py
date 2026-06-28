@@ -37,7 +37,7 @@ class AdapterRegistry:
     ):
         self.skills_dir = skills_dir.resolve()
         self.allow_remote = allow_remote
-        self.cache_dir = cache_dir or Path(base_config().get("lora_cache_dir") or ".skillcortex/lora-cache")
+        self.cache_dir = cache_dir or Path(base_config().get("lora_cache_dir") or ".slmcortex/lora-cache")
         self.local = self._discover()
 
     @classmethod

@@ -6,8 +6,8 @@ import json
 import sys
 from pathlib import Path
 
-from skillcortex.contracts import KNOWN_SKILLS, TASK_TYPES
-from skillcortex.runtime.router_rules import SkillCortexRouterV1
+from slmcortex.contracts import KNOWN_SKILLS, TASK_TYPES
+from slmcortex.runtime.router_rules import SkillCortexRouterV1
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -123,9 +123,9 @@ def build_report(registry: dict, router_report: dict) -> dict:
         total <= budget["max_total_adapter_parameters"]
         and promoted_count <= budget["max_promoted_failure_born_skills"]
     )
-    fixed = router_report["fixed_benchmark"]["routers"]["skillcortex_router_v1"]
+    fixed = router_report["fixed_benchmark"]["routers"]["slmcortex_router_v1"]
     holdout = router_report["independent_alternating_holdout"]["routers"][
-        "skillcortex_router_v1"
+        "slmcortex_router_v1"
     ]
     alternating = next(
         skill for skill in skills if skill["skill_name"] == "alternating_skill"
@@ -194,7 +194,7 @@ def main(argv=None) -> int:
     parser.add_argument("--registry", default="configs/skill_registry.json")
     parser.add_argument(
         "--router-report",
-        default="artifacts/governance-fixtures/skillcortex-router-v1/summary.json",
+        default="artifacts/governance-fixtures/slmcortex-router-v1/summary.json",
     )
     parser.add_argument(
         "--output", default="artifacts/governance/skill-registry"

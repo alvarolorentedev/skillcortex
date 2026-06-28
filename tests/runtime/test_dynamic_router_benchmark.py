@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from scripts.benchmark_dynamic_router import run_benchmark
-from skillcortex.packaging import package_skill
+from slmcortex.packaging import package_skill
 
 
 def _skill(tmp_path, skill_id, description, capabilities=()):
@@ -35,7 +35,7 @@ def _skill(tmp_path, skill_id, description, capabilities=()):
 def test_dynamic_router_benchmark_counts_expected_branches(tmp_path, monkeypatch):
     _skill(tmp_path, "fastapi_skill", "FastAPI endpoint validation", ["fastapi"])
     monkeypatch.setattr(
-        "skillcortex.runtime.dynamic.base_config",
+        "slmcortex.runtime.dynamic.base_config",
         lambda: {
             "model": "mlx-test-base",
             "default_runtime_model": "mlx-test-base",

@@ -2,8 +2,8 @@ import json
 
 import yaml
 
-from skillcortex.cli import main
-from skillcortex.packaging.artifacts import package_checksums
+from slmcortex.cli import main
+from slmcortex.packaging.artifacts import package_checksums
 
 
 def write_fastapi_skill(skills_dir):

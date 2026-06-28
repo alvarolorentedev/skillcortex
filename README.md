@@ -7,7 +7,7 @@
 
 Slm Cortex is a package manager and runtime for AI coding capabilities.
 
-Instead of shipping one larger fine-tune, Skill Cortex packages specialized LoRA
+Instead of shipping one larger fine-tune, Slm Cortex packages specialized LoRA
 skills as self-describing artifacts, composes those artifacts into deterministic
 runtime bundles, and runs local coding workflows on top of the same runtime
 core.
@@ -16,7 +16,7 @@ The package is the unit of distribution.
 The runtime bundle is the unit of deployment.
 The runtime is the unit of execution.
 
-## Why Skill Cortex?
+## Why Slm Cortex?
 
 Most coding-agent stacks treat model adaptation, deployment, and agent behavior
 as one opaque system. Slm Cortex separates those concerns:
@@ -161,7 +161,7 @@ python scripts/run_slmcortex_arbitrary_skill_smoke.py --output-root "$SMOKE_ROOT
 
 What the opt-in path additionally validates:
 
-- `skillcortex train-skill --skill-id fastapi_contract` using the tiny fixture in [examples/fastapi_contract_tiny/README.md](examples/fastapi_contract_tiny/README.md)
+- `slmcortex train-skill --skill-id fastapi_contract` using the tiny fixture in [examples/fastapi_contract_tiny/README.md](examples/fastapi_contract_tiny/README.md)
 - real local trainer execution
 - real local evaluator execution before packaging
 
@@ -192,7 +192,7 @@ python scripts/run_dynamic_adaptive_smoke.py --real --output-root "$SMOKE_ROOT"
 
 ## CLI Overview
 
-Skill Cortex ships one public CLI with command-specific help and examples.
+Slm Cortex ships one public CLI with command-specific help and examples.
 
 | Command | Purpose |
 | --- | --- |
@@ -208,7 +208,7 @@ Skill Cortex ships one public CLI with command-specific help and examples.
 | `slmcortex serve` | expose the minimal OpenAI-compatible compatibility server |
 | `slmcortex agent run` | run the bounded local agent workflow against a local repository |
 
-Use `skillcortex <command> --help` for command-specific examples.
+Use `slmcortex <command> --help` for command-specific examples.
 
 ## Common Workflows
 
@@ -216,10 +216,10 @@ Use `skillcortex <command> --help` for command-specific examples.
 
 The beginner path starts with deterministic dataset generation, then training, composition, and inference. The generic product dataset contract is JSONL with one row per example using required fields `id`, `task_type`, `prompt`, and `target`. Optional fields such as `execution`, `group`, `metadata`, `skills`, and `semantic_family` are preserved when present.
 
-`skillcortex generate-dataset` writes both train and eval datasets using that schema, then emits a dataset report JSON with counts, warnings, SHA-256 hashes, diversity stats, leakage results, and example previews.
+`slmcortex generate-dataset` writes both train and eval datasets using that schema, then emits a dataset report JSON with counts, warnings, SHA-256 hashes, diversity stats, leakage results, and example previews.
 
 ```bash
-skillcortex generate-dataset \
+slmcortex generate-dataset \
   --skill-id fastapi_contract \
   --domain fastapi
 ```
@@ -229,7 +229,7 @@ Defaults for the beginner command are `task_type=python_generation`, `num_exampl
 `train-skill` runs dataset validation as a mandatory preflight and fails early on malformed, duplicate, leaky, or obviously degenerate datasets.
 
 ```bash
-skillcortex train-skill \
+slmcortex train-skill \
   --skill-id fastapi_contract \
   --name "FastAPI Contract Skill" \
   --train-dataset datasets/fastapi_contract/train.jsonl \
@@ -238,13 +238,13 @@ skillcortex train-skill \
 ```
 
 ```bash
-skillcortex compose-skills \
+slmcortex compose-skills \
   --skills skills/fastapi_contract \
   --output runtime/fastapi_contract
 ```
 
 ```bash
-skillcortex infer \
+slmcortex infer \
   --runtime runtime/fastapi_contract \
   --prompt "Create a FastAPI POST endpoint for invoices with request validation." \
   --dry-run
@@ -253,7 +253,7 @@ skillcortex infer \
 If you want an explicit dataset quality gate before training, run the optional validator yourself:
 
 ```bash
-skillcortex validate-dataset datasets/fastapi_contract/train.jsonl \
+slmcortex validate-dataset datasets/fastapi_contract/train.jsonl \
   --eval-dataset datasets/fastapi_contract/eval.jsonl
 ```
 
@@ -264,7 +264,7 @@ When omitted for arbitrary `--skill-id`, composition metadata defaults to `allow
 Canonical built-in skills such as `python_skill`, `debugging_skill`, and `test_generation_skill` still work as legacy preset shortcuts:
 
 ```bash
-skillcortex train-skill python_skill --output /tmp/skillcortex-demo/python_skill
+slmcortex train-skill python_skill --output /tmp/slmcortex-demo/python_skill
 ```
 
 ### Discover and route skills without a runtime
@@ -274,7 +274,7 @@ metadata. It is deterministic and route-only; it does not load adapter weights.
 `task_type` is only a compatibility hint in this mode.
 
 ```bash
-skillcortex route \
+slmcortex route \
   --skills-dir skills \
   --repo . \
   --task "Create a FastAPI endpoint with Pydantic validation" \
@@ -282,7 +282,7 @@ skillcortex route \
 ```
 
 ```bash
-skillcortex agent run \
+slmcortex agent run \
   --skills-dir skills \
   --repo . \
   --task "Create a FastAPI endpoint with Pydantic validation" \
@@ -292,45 +292,45 @@ skillcortex agent run \
 To run the four-scenario dynamic acceptance harness locally:
 
 ```bash
-python scripts/run_dynamic_agent_acceptance_harness.py --output-root /tmp/skillcortex-dynamic-agent-harness
+python scripts/run_dynamic_agent_acceptance_harness.py --output-root /tmp/slmcortex-dynamic-agent-harness
 ```
 
 ### Package an existing adapter
 
 ```bash
-skillcortex package-skill \
+slmcortex package-skill \
   --skill-id python_skill \
   --name "Python Skill" \
   --adapter-dir artifacts/adapters/python_skill \
-  --train-dataset tests/fixtures/skillcortex_demo/train.jsonl \
-  --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl \
-  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
-  --output /tmp/skillcortex-demo/python_skill
+  --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
+  --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
+  --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
+  --output /tmp/slmcortex-demo/python_skill
 ```
 
 ### Compose multiple skills into a runtime bundle
 
 ```bash
-skillcortex compose-skills \
-  --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill \
-  --output /tmp/skillcortex-demo/runtime
+slmcortex compose-skills \
+  --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill \
+  --output /tmp/slmcortex-demo/runtime
 ```
 
 ### Validate and dry-run the runtime
 
 ```bash
-skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime
+slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime
 
-skillcortex infer \
-  --runtime /tmp/skillcortex-demo/runtime \
-  --request-file tests/fixtures/skillcortex_demo/request.json \
+slmcortex infer \
+  --runtime /tmp/slmcortex-demo/runtime \
+  --request-file tests/fixtures/slmcortex_demo/request.json \
   --dry-run
 ```
 
 ### Serve a runtime bundle
 
 ```bash
-skillcortex serve --runtime /tmp/skillcortex-demo/runtime --host 127.0.0.1 --port 8000
+slmcortex serve --runtime /tmp/slmcortex-demo/runtime --host 127.0.0.1 --port 8000
 ```
 
 ### Run the bounded local agent
@@ -338,17 +338,17 @@ skillcortex serve --runtime /tmp/skillcortex-demo/runtime --host 127.0.0.1 --por
 Execution mode still uses an explicit composed runtime bundle:
 
 ```bash
-skillcortex agent run \
-  --runtime /tmp/skillcortex-demo/runtime \
-  --repo /tmp/skillcortex-demo/toy-repo \
+slmcortex agent run \
+  --runtime /tmp/slmcortex-demo/runtime \
+  --repo /tmp/slmcortex-demo/toy-repo \
   --task "Fix the failing answer implementation." \
   --dry-run \
-  --trace-out /tmp/skillcortex-demo/agent-trace.json
+  --trace-out /tmp/slmcortex-demo/agent-trace.json
 ```
 
 ## v0.1 Limitations
 
-Skill Cortex v0.1 is intentionally narrow.
+Slm Cortex v0.1 is intentionally narrow.
 
 - The documented demo flow does not retrain models or download model weights
 - The demo validates routing and control flow, not model quality

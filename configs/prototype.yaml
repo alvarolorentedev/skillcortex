@@ -3,7 +3,7 @@ source_model: Qwen/Qwen2.5-Coder-1.5B-Instruct
 model: mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit
 default_runtime_model: mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit
 router_model: mlx-community/Qwen2.5-Coder-0.5B-Instruct-4bit
-lora_cache_dir: .skillcortex/lora-cache
+lora_cache_dir: .slmcortex/lora-cache
 allow_remote_lora_downloads: true
 allowed_hf_publishers: []
 max_download_bytes: 2000000000
@@ -13,7 +13,7 @@ training_enabled: true
 plasticity_train_dataset: data/train.jsonl
 plasticity_eval_dataset: data/eval.jsonl
 plasticity_live_source_handler: null
-plasticity_publish_dir: .skillcortex/prototype-skills
+plasticity_publish_dir: .slmcortex/prototype-skills
 max_plasticity_loras: 8
 remote_lora_catalog_url: null
 remote_lora_catalog:

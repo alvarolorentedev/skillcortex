@@ -3,8 +3,8 @@ from pathlib import Path
 
 import yaml
 
-from skillcortex.cli import main
-from skillcortex.packaging.artifacts import package_checksums
+from slmcortex.cli import main
+from slmcortex.packaging.artifacts import package_checksums
 
 
 def write_fastapi_skill(skills_dir):
@@ -136,7 +136,7 @@ def test_agent_run_skills_dir_confirm_uses_review_path_without_silent_writes(tmp
             "runtime": str(kwargs["runtime_path"].resolve()),
         }
 
-    monkeypatch.setattr("skillcortex.cli.handlers.run_agent", fake_run_agent)
+    monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fake_run_agent)
 
     assert (
         main(
@@ -202,7 +202,7 @@ def test_agent_run_skills_dir_fails_when_no_skill_selected(tmp_path, monkeypatch
     def fail_run_agent(**kwargs):
         raise AssertionError("run_agent should not be called")
 
-    monkeypatch.setattr("skillcortex.cli.handlers.run_agent", fail_run_agent)
+    monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fail_run_agent)
 
     assert (
         main(
@@ -233,7 +233,7 @@ def test_agent_run_skills_dir_composition_failure_prevents_agent_execution(tmp_p
     def fail_run_agent(**kwargs):
         raise AssertionError("run_agent should not be called")
 
-    monkeypatch.setattr("skillcortex.cli.handlers.run_agent", fail_run_agent)
+    monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fail_run_agent)
 
     assert (
         main(
@@ -269,8 +269,8 @@ def test_agent_run_skills_dir_validation_failure_prevents_agent_execution(tmp_pa
     def fail_run_agent(**kwargs):
         raise AssertionError("run_agent should not be called")
 
-    monkeypatch.setattr("skillcortex.catalog.validate_runtime_bundle", fake_validation)
-    monkeypatch.setattr("skillcortex.cli.handlers.run_agent", fail_run_agent)
+    monkeypatch.setattr("slmcortex.catalog.validate_runtime_bundle", fake_validation)
+    monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fail_run_agent)
 
     assert (
         main(
@@ -387,5 +387,5 @@ def test_agent_run_skills_dir_default_runtime_path_is_deterministic(tmp_path, ca
 
     result = json.loads(capsys.readouterr().out)
     runtime_path = Path(result["runtime_out"])
-    assert runtime_path.parent == repo / ".skillcortex" / "runtimes"
+    assert runtime_path.parent == repo / ".slmcortex" / "runtimes"
     assert (runtime_path / "composition.yaml").exists()

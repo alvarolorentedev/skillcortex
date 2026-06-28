@@ -80,7 +80,7 @@ def execute_command(
                 "output": str(output.resolve()),
                 "publish_dir": str(output.parent.resolve()),
             }
-        with tempfile.TemporaryDirectory(prefix=f"skillcortex-{parsed.skill_id}-publish-") as directory:
+        with tempfile.TemporaryDirectory(prefix=f"slmcortex-{parsed.skill_id}-publish-") as directory:
             staging = Path(directory) / parsed.skill_id
             result = train_skill_package(
                 skill=parsed.skill_id,
@@ -267,7 +267,7 @@ def _default_dynamic_runtime_path(repo: Path, skills_dir: Path, task: str) -> Pa
     repo_root = repo.resolve()
     key = f"{skills_dir.resolve()}|{repo_root}|{task}"
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
-    return repo_root / ".skillcortex" / "runtimes" / digest
+    return repo_root / ".slmcortex" / "runtimes" / digest
 
 
 def _run_dynamic_agent(

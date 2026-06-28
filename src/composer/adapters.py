@@ -136,5 +136,5 @@ def compose_adapter_directories(
 def temporary_composed_adapter(
     paths: Sequence[Path], weights: Sequence[float] | None = None
 ) -> Iterator[Path]:
-    with tempfile.TemporaryDirectory(prefix="skillcortex-adapter-") as directory:
+    with tempfile.TemporaryDirectory(prefix="slmcortex-adapter-") as directory:
         yield compose_adapter_directories(paths, directory, weights)

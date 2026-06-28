@@ -102,7 +102,7 @@ def append_step(trace: dict[str, Any], step: dict[str, Any]) -> None:
 
 
 def default_review_path(repo: Path, run_id: str) -> Path:
-    return repo / ".skillcortex" / "reviews" / f"{run_id}.patch"
+    return repo / ".slmcortex" / "reviews" / f"{run_id}.patch"
 
 
 def step_messages(

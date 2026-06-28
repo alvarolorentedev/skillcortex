@@ -1,6 +1,6 @@
 # Skill Package Contract
 
-`skillcortex` packages a trained LoRA adapter as a reusable skill artifact
+`slmcortex` packages a trained LoRA adapter as a reusable skill artifact
 without changing router semantics, registry semantics, accepted datasets, or
 checked-in benchmark artifacts.
 
@@ -9,32 +9,32 @@ checked-in benchmark artifacts.
 Package an existing adapter:
 
 ```bash
-skillcortex package-skill \
+slmcortex package-skill \
   --skill-id python_skill \
   --name "Python Skill" \
   --adapter-dir artifacts/adapters/python_skill \
   --train-dataset data/train.jsonl \
   --eval-dataset data/eval.jsonl \
-  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
+  --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
   --output skills/python_skill
 ```
 
 Train and package one of the built-in skills:
 
 ```bash
-skillcortex train-skill python_skill --output skills/python_skill_run --force
+slmcortex train-skill python_skill --output skills/python_skill_run --force
 ```
 
 Validate a package:
 
 ```bash
-skillcortex validate-skill-package --path skills/python_skill
+slmcortex validate-skill-package --path skills/python_skill
 ```
 
 Compose validated packages into a deterministic runtime bundle:
 
 ```bash
-skillcortex compose-skills \
+slmcortex compose-skills \
   --skills skills/python_skill,skills/debugging_skill \
   --strategy routed \
   --output runtime/debugging_bundle
@@ -43,7 +43,7 @@ skillcortex compose-skills \
 Route discovered packages without composing or loading adapters:
 
 ```bash
-skillcortex route \
+slmcortex route \
   --skills-dir skills \
   --repo . \
   --task "Create a FastAPI endpoint with Pydantic validation" \
@@ -80,7 +80,7 @@ evaluation summary used to build the final package.
 
 ## Capability Routing Metadata
 
-`skillcortex route` discovers direct child folders under `--skills-dir`. A
+`slmcortex route` discovers direct child folders under `--skills-dir`. A
 discoverable package only needs `skill.yaml`; `routing_card.json`,
 `eval_summary.json`, `examples.jsonl`, and `adapter/` are optional. Discovery
 does not load adapter weights.
@@ -250,13 +250,13 @@ Runtime backend rules:
 Validate a bundle before loading any model state:
 
 ```bash
-skillcortex validate-runtime --runtime runtime/debugging_bundle
+slmcortex validate-runtime --runtime runtime/debugging_bundle
 ```
 
 Run local CLI inference with a single prompt:
 
 ```bash
-skillcortex infer \
+slmcortex infer \
   --runtime runtime/debugging_bundle \
   --prompt "Fix this Python traceback" \
   --dry-run
@@ -275,7 +275,7 @@ Run local CLI inference with an OpenAI-style request file:
 ```
 
 ```bash
-skillcortex infer \
+slmcortex infer \
   --runtime runtime/debugging_bundle \
   --request-file request.json
 ```
@@ -283,7 +283,7 @@ skillcortex infer \
 Start the minimal OpenAI-compatible compatibility server:
 
 ```bash
-skillcortex serve --runtime runtime/debugging_bundle --host 127.0.0.1 --port 8000
+slmcortex serve --runtime runtime/debugging_bundle --host 127.0.0.1 --port 8000
 ```
 
 Minimal HTTP examples:

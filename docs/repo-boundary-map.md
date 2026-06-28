@@ -1,6 +1,6 @@
 # Repo Boundary Map
 
-Skill Cortex is the canonical public product surface for this repository.
+Slm Cortex is the canonical public product surface for this repository.
 Public documentation and runtime behavior should stay product-first.
 
 ## Canonical boundaries
@@ -19,13 +19,13 @@ Public documentation and runtime behavior should stay product-first.
 ## Stability policy
 
 - Do not change model behavior, adapters, registry semantics, or benchmark data.
-- Keep `skillcortex` as the canonical public identity.
+- Keep `slmcortex` as the canonical public identity.
 - Keep generated artifacts immutable.
 - Keep public documentation product-first.
 
 ## Current source of truth
 
-- Public CLI entry point: `skillcortex`
+- Public CLI entry point: `slmcortex`
 - Product runtime/package implementation: `src/`
 - Skill registry: `configs/skill_registry.json`
 - Skill metadata: `configs/skills.yaml`

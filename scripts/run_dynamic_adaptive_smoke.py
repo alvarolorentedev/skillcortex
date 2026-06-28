@@ -23,7 +23,7 @@ def _package(output_root: Path, skill_id: str, description: str, output: Path | 
         [
             sys.executable,
             "-m",
-            "skillcortex",
+            "slmcortex",
             "package-skill",
             "--skill-id",
             skill_id,
@@ -59,7 +59,7 @@ def _package(output_root: Path, skill_id: str, description: str, output: Path | 
 
 
 def _mock_runtime(output_root: Path, failure_mode: str | None = None):
-    from skillcortex.runtime.dynamic import DynamicRuntime
+    from slmcortex.runtime.dynamic import DynamicRuntime
 
     _package(output_root, "fastapi_skill", "FastAPI endpoint validation")
     runtime = DynamicRuntime.load(output_root / "skills", allow_remote_loras=True)
@@ -77,7 +77,7 @@ def _mock_runtime(output_root: Path, failure_mode: str | None = None):
         _package(output_root, kwargs["skill"], "Mock trained plasticity LoRA", output=kwargs["output"])
         return {"status": "complete", "skill_id": kwargs["skill"]}
 
-    import skillcortex.runtime.dynamic as dynamic
+    import slmcortex.runtime.dynamic as dynamic
 
     runtime.registry.resolve_remote = fake_resolve
     dynamic.train_skill_package = fake_train
@@ -162,7 +162,7 @@ def _run(runtime: DynamicRuntime, prompt: str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from skillcortex.runtime.dynamic import DynamicRuntime, DynamicRouteDecision
+    from slmcortex.runtime.dynamic import DynamicRuntime, DynamicRouteDecision
 
     parser = argparse.ArgumentParser(description="Run dynamic adaptive local/remote/plasticity smoke.")
     parser.add_argument("--output-root")
@@ -172,9 +172,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--failure-mode", choices=("remote-download", "training"))
     parsed = parser.parse_args(argv)
 
-    output_root = Path(parsed.output_root or tempfile.mkdtemp(prefix="skillcortex-dynamic-smoke-")).resolve()
+    output_root = Path(parsed.output_root or tempfile.mkdtemp(prefix="slmcortex-dynamic-smoke-")).resolve()
     output_root.mkdir(parents=True, exist_ok=True)
-    os.environ["SKILLCORTEX_BASE_CONFIG"] = parsed.config if parsed.real else str(_write_mock_config(output_root))
+    os.environ["SLMCORTEX_BASE_CONFIG"] = parsed.config if parsed.real else str(_write_mock_config(output_root))
 
     if parsed.real:
         _package(output_root, "fastapi_skill", "FastAPI endpoint validation")

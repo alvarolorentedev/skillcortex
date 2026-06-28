@@ -1,4 +1,4 @@
-from skillcortex.shared.config import base_config
+from slmcortex.shared.config import base_config
 
 
 def test_base_config_can_use_profile_path(tmp_path, monkeypatch):

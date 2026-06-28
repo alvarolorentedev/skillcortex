@@ -4,8 +4,8 @@ from pathlib import Path
 
 import yaml
 
-from scripts.build_skillcortex_router_v1_report import main
-from skillcortex.contracts import PROMOTED_SKILLS, QUARANTINED_SKILLS
+from scripts.build_slmcortex_router_v1_report import main
+from slmcortex.contracts import PROMOTED_SKILLS, QUARANTINED_SKILLS
 
 
 def _repo_root() -> Path:
@@ -52,11 +52,11 @@ def test_report_reuses_fixed_and_holdout_results_without_training_or_inference(t
     }
     assert set(summary["fixed_benchmark"]["routers"]) == {
         "protected_skill_router_without_failure_born",
-        "skillcortex_router_v1",
+        "slmcortex_router_v1",
     }
     assert set(summary["independent_alternating_holdout"]["routers"]) == {
         "protected_skill_router_without_failure_born",
-        "skillcortex_router_v1",
+        "slmcortex_router_v1",
     }
     assert summary["fixed_benchmark"]["pass_fail_vs_previous_protected_router"] == {
         "fail_to_pass": 5,

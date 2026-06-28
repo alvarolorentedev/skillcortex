@@ -1,17 +1,17 @@
 # Contributing
 
-Thanks for contributing to Skill Cortex.
+Thanks for contributing to Slm Cortex.
 
 ## Scope
 
-Skill Cortex v0.1 is intentionally narrow. Contributions are welcome, but
+Slm Cortex v0.1 is intentionally narrow. Contributions are welcome, but
 changes should preserve the current product boundaries:
 
 - do not change adapters, benchmarks, or checked-in validation fixtures unless
   the change explicitly targets those assets
 - do not change the skill package contract or runtime bundle contract without a
   coordinated design update
-- keep the public product surface `skillcortex` clear and documented
+- keep the public product surface `slmcortex` clear and documented
 
 ## Local setup
 
@@ -33,13 +33,13 @@ pytest -q
 Run the focused product CLI and demo checks:
 
 ```bash
-pytest tests/cli/test_skillcortex_cli.py tests/cli/test_skillcortex_demo.py -q
+pytest tests/cli/test_slmcortex_cli.py tests/cli/test_slmcortex_demo.py -q
 ```
 
 Run the no-model demo manually:
 
 ```bash
-python scripts/run_skillcortex_demo.py
+python scripts/run_slmcortex_demo.py
 ```
 
 ## Documentation expectations

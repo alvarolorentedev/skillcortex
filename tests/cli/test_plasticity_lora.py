@@ -1,10 +1,10 @@
 import json
 
-from skillcortex.cli import main
+from slmcortex.cli import main
 
 
 def test_train_plasticity_lora_dry_run_does_not_train(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr("skillcortex.cli.handlers.train_skill_package", lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not train")))
+    monkeypatch.setattr("slmcortex.cli.handlers.train_skill_package", lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not train")))
 
     assert main([
         "train-plasticity-lora",
@@ -27,8 +27,8 @@ def test_train_plasticity_lora_publishes_atomically(tmp_path, monkeypatch, capsy
         (output / "skill.yaml").write_text("skill_id: local_fix\n")
         return {"status": "complete", "output": str(output), "skill_id": "local_fix"}
 
-    monkeypatch.setattr("skillcortex.cli.handlers.train_skill_package", fake_train_skill_package)
-    monkeypatch.setattr("skillcortex.cli.handlers.validate_skill_package", lambda path: None)
+    monkeypatch.setattr("slmcortex.cli.handlers.train_skill_package", fake_train_skill_package)
+    monkeypatch.setattr("slmcortex.cli.handlers.validate_skill_package", lambda path: None)
 
     assert main([
         "train-plasticity-lora",

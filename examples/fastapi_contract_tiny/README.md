@@ -1,8 +1,8 @@
 # FastAPI Contract Tiny Fixture
 
-This fixture is the smallest documented arbitrary-skill dataset for Skill Cortex product training smoke checks.
+This fixture is the smallest documented arbitrary-skill dataset for Slm Cortex product training smoke checks.
 
-- `train.jsonl`: tiny supervised training set for `skillcortex train-skill --skill-id fastapi_contract`
+- `train.jsonl`: tiny supervised training set for `slmcortex train-skill --skill-id fastapi_contract`
 - `eval.jsonl`: tiny evaluation set for packaging and runtime validation
 - `request.json`: dry-run runtime request for the composed bundle
 

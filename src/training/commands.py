@@ -61,7 +61,7 @@ def training_command(
     }
     config_path.write_text(yaml.safe_dump(payload, sort_keys=False))
     if backend == "gguf":
-        return [sys.executable, "-m", "skillcortex.training.gguf_lora", "--config", str(config_path)]
+        return [sys.executable, "-m", "slmcortex.training.gguf_lora", "--config", str(config_path)]
     return [sys.executable, "-m", "mlx_lm", "lora", "--config", str(config_path)]
 
 

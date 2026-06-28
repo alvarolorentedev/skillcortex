@@ -51,7 +51,7 @@ def _add_generate_dataset_parser(commands) -> None:
         **parser_kwargs(
             "Generate a deterministic train/eval JSONL dataset for product train-skill.",
             "slmcortex generate-dataset --skill-id fastapi_contract --domain fastapi\n"
-            "skillcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
+            "slmcortex generate-dataset --skill-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
         ),
     )
     generate.add_argument("--skill-id", required=True)
@@ -83,7 +83,7 @@ def _add_train_skill_parser(commands) -> None:
     train = commands.add_parser(
         "train-skill",
         **parser_kwargs(
-            "Train a LoRA skill from datasets and package it as a Skill Cortex artifact.",
+            "Train a LoRA skill from datasets and package it as a Slm Cortex artifact.",
             "slmcortex train-skill --skill-id fastapi_contract --name \"FastAPI Contract Skill\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output skills/fastapi_contract\n"
             "slmcortex train-skill python_skill --output skills/python_skill_run --force",
         ),
@@ -132,7 +132,7 @@ def _add_import_lora_parser(commands) -> None:
     import_lora = commands.add_parser(
         "import-lora",
         **parser_kwargs(
-            "Import a public Hugging Face LoRA into a local SkillCortex package.",
+            "Import a public Hugging Face LoRA into a local SlmCortex package.",
             "slmcortex import-lora --source hf://owner/repo --skill-id fastapi_skill --name \"FastAPI Skill\" --output skills/fastapi_skill --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
         ),
     )
@@ -251,7 +251,7 @@ def _add_infer_parser(commands) -> None:
     infer = commands.add_parser(
         "infer",
         **parser_kwargs(
-            "Run local inference against a Skill Cortex runtime bundle.",
+            "Run local inference against a Slm Cortex runtime bundle.",
             "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run\n"
             "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --request-file tests/fixtures/slmcortex_demo/request.json --dry-run",
         ),

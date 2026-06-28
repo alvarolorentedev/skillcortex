@@ -15,7 +15,7 @@ from .router_rules import (
     ProtectedSkillRouter,
     RouteDecision,
     RuleRouter,
-    SkillCortexRouterV1,
+    SlmCortexRouterV1,
 )
 
 
@@ -152,8 +152,8 @@ def infer(
     elif mode == "lattice":
         if router_policy == "legacy_rule_router":
             route = RuleRouter().route(prompt)
-        elif router_policy in (None, "skillcortex_router_v1"):
-            route = SkillCortexRouterV1().route(task_type, semantic_family)
+        elif router_policy in (None, "slmcortex_router_v1"):
+            route = SlmCortexRouterV1().route(task_type, semantic_family)
         elif router_policy == "protected_router_plus_alternating_skill":
             route = ProtectedRouterPlusAlternatingSkill().route(task_type, semantic_family)
         elif router_policy in (
@@ -180,7 +180,7 @@ def infer(
 
     if len(adapter_names) == 3 and router_policy not in (
         None,
-        "skillcortex_router_v1",
+        "slmcortex_router_v1",
         "protected_router_plus_alternating_skill",
     ):
         raise ValueError("three-adapter composition is quarantined to alternating_skill")

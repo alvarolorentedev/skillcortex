@@ -146,7 +146,7 @@ class SkillRuntime:
         prompt_tokens = result.get("prompt_tokens") or 0
         generated_tokens = result.get("generated_tokens") or 0
         return {
-            "id": f"chatcmpl-skillcortex-{int(time.time() * 1000)}",
+            "id": f"chatcmpl-slmcortex-{int(time.time() * 1000)}",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": self.bundle.name,
@@ -215,6 +215,6 @@ def serve_runtime(
         }
     app = OpenAICompatApp(runtime)
     with make_server(host, port, app) as server:
-        print(f"Serving SkillCortex runtime '{runtime.bundle.name}' on http://{host}:{port}")
+        print(f"Serving SlmCortex runtime '{runtime.bundle.name}' on http://{host}:{port}")
         server.serve_forever()
     return {"status": "stopped"}

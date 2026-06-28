@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a Skill Cortex issue.
+        Thanks for reporting a Slm Cortex issue.
 
         Please include the exact command, environment, and expected vs actual behavior.
   - type: input
@@ -15,7 +15,7 @@ body:
     attributes:
       label: Summary
       description: One-line description of the problem.
-      placeholder: skillcortex validate-runtime fails on the documented demo bundle
+      placeholder: slmcortex validate-runtime fails on the documented demo bundle
     validations:
       required: true
   - type: dropdown

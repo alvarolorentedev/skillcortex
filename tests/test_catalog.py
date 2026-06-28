@@ -3,7 +3,7 @@ import json
 import pytest
 import yaml
 
-from skillcortex.catalog import SkillCatalog, route_task
+from slmcortex.catalog import SkillCatalog, route_task
 
 
 def write_skill(root, name, payload, *, routing_card=None, optional_bad=False):

@@ -1,6 +1,6 @@
 import pytest
 
-from skillcortex.shared.config import resolve_backend, validate_runtime_model
+from slmcortex.shared.config import resolve_backend, validate_runtime_model
 
 
 def test_auto_backend_uses_mlx_only_on_apple_silicon(monkeypatch):

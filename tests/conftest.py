@@ -660,7 +660,7 @@ def _ensure_router_fixtures() -> None:
         },
     }
     router_summary = {
-        "router": "skillcortex_router_v1",
+        "router": "slmcortex_router_v1",
         "promoted_skill": "alternating_skill",
         "benchmark_sha256": "0ec79d983ba1a9ee2363789288242843e46c78fc0ed997b5a934c2978b89bcc6",
         "validation": {
@@ -672,7 +672,7 @@ def _ensure_router_fixtures() -> None:
         "fixed_benchmark": {
             "routers": {
                 "protected_skill_router_without_failure_born": alternating_summary["fixed_benchmark"]["modes"]["protected_skill_router"],
-                "skillcortex_router_v1": alternating_summary["fixed_benchmark"]["modes"]["protected_router_plus_alternating_skill"],
+                "slmcortex_router_v1": alternating_summary["fixed_benchmark"]["modes"]["protected_router_plus_alternating_skill"],
             },
             "pass_fail_vs_previous_protected_router": alternating_summary["fixed_benchmark"]["pass_fail_vs_protected"],
             "non_target_regressions": alternating_summary["fixed_benchmark"]["non_target_regressions"],
@@ -680,7 +680,7 @@ def _ensure_router_fixtures() -> None:
         "independent_alternating_holdout": {
             "routers": {
                 "protected_skill_router_without_failure_born": alternating_summary["independent_holdout"]["modes"]["protected_skill_router"],
-                "skillcortex_router_v1": alternating_summary["independent_holdout"]["modes"]["protected_router_plus_alternating_skill"],
+                "slmcortex_router_v1": alternating_summary["independent_holdout"]["modes"]["protected_router_plus_alternating_skill"],
             },
             "pass_fail_vs_previous_protected_router": alternating_summary["independent_holdout"]["pass_fail_vs_protected"],
             "non_target_regressions": alternating_summary["independent_holdout"]["non_target_regressions"],
@@ -693,7 +693,7 @@ def _ensure_router_fixtures() -> None:
     }
     alternating_root = ROOT / "artifacts" / "governance-fixtures" / "alternating_skill"
     _write_text(alternating_root / "summary.json", json.dumps(alternating_summary, indent=2) + "\n", overwrite=True)
-    router_root = ROOT / "artifacts" / "governance-fixtures" / "skillcortex-router-v1"
+    router_root = ROOT / "artifacts" / "governance-fixtures" / "slmcortex-router-v1"
     _write_text(router_root / "summary.json", json.dumps(router_summary, indent=2) + "\n", overwrite=True)
     _ensure_adapter_fixture(
         alternating_root / "seed-11" / "adapters" / "alternating_skill",
@@ -727,7 +727,7 @@ def _ensure_dataset_fixtures() -> None:
 
 
 def _cleanup_generated_egg_info() -> None:
-    egg_info = ROOT / "src" / "skillcortex.egg-info"
+    egg_info = ROOT / "src" / "slmcortex.egg-info"
     if egg_info.exists():
         if egg_info.is_dir():
             shutil.rmtree(egg_info)

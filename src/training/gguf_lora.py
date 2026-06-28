@@ -44,7 +44,7 @@ def _train_peft_lora(config: dict, output: Path) -> None:
         from torch.utils.data import Dataset
         from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
     except ImportError as error:
-        raise ImportError("GGUF training requires the skillcortex[gguf] extra") from error
+        raise ImportError("GGUF training requires the slmcortex[gguf] extra") from error
 
     tokenizer = AutoTokenizer.from_pretrained(config["source_model"])
     if tokenizer.pad_token is None:

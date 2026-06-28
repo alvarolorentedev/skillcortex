@@ -149,3 +149,9 @@ class ProtectedRouterPlusAlternatingSkill:
 
 def route_text(text: str) -> list[str]:
     return list(RuleRouter().route(text).selected_skills)
+
+# Backwards-compatible alias: some modules were updated to reference the
+# rebranded `SlmCortex` class name during a repo-wide rename. Keep the
+# original class name and provide the new name as an alias so imports from
+# either name continue to work during transition.
+SlmCortexRouterV1 = SkillCortexRouterV1

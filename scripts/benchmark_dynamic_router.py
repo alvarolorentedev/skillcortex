@@ -7,7 +7,7 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-from skillcortex.runtime.dynamic import DynamicRouteDecision, DynamicRuntime
+from slmcortex.runtime.dynamic import DynamicRouteDecision, DynamicRuntime
 
 
 CASES = [
@@ -23,11 +23,11 @@ CASES = [
 
 
 def run_benchmark(skills_dir: Path) -> dict:
-    previous = os.environ.get("SKILLCORTEX_BASE_CONFIG")
-    os.environ["SKILLCORTEX_BASE_CONFIG"] = str(Path("configs/prototype.yaml").resolve())
+    previous = os.environ.get("SLMCORTEX_BASE_CONFIG")
+    os.environ["SLMCORTEX_BASE_CONFIG"] = str(Path("configs/prototype.yaml").resolve())
     rows = []
     try:
-        with tempfile.TemporaryDirectory(prefix="skillcortex-router-bench-") as directory:
+        with tempfile.TemporaryDirectory(prefix="slmcortex-router-bench-") as directory:
             benchmark_skills = skills_dir if any(skills_dir.glob("*/skill.yaml")) else _demo_skills(Path(directory))
             runtime = DynamicRuntime.load(benchmark_skills, allow_remote_loras=False)
             for prompt, expected in CASES:
@@ -50,7 +50,7 @@ def run_benchmark(skills_dir: Path) -> dict:
 
 
 def _demo_skills(root: Path) -> Path:
-    from skillcortex.packaging import package_skill
+    from slmcortex.packaging import package_skill
 
     eval_summary = root / "eval.json"
     eval_summary.write_text(json.dumps({"modes": {}, "tasks": {}}) + "\n")

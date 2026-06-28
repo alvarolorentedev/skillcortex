@@ -14,7 +14,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "tests" / "fixtures" / "dynamic_agent_acceptance"
-BASE_FIXTURES = ROOT / "tests" / "fixtures" / "skillcortex_demo"
+BASE_FIXTURES = ROOT / "tests" / "fixtures" / "slmcortex_demo"
 
 SCENARIOS = [
     {
@@ -53,7 +53,7 @@ SCENARIOS = [
 
 
 def _command(*args: str) -> list[str]:
-    return [sys.executable, "-m", "skillcortex", *args]
+    return [sys.executable, "-m", "slmcortex", *args]
 
 
 def _run(*args: str) -> dict:
@@ -64,7 +64,7 @@ def _run(*args: str) -> dict:
         text=True,
     )
     record = {
-        "command": ["python", "-m", "skillcortex", *args],
+        "command": ["python", "-m", "slmcortex", *args],
         "returncode": completed.returncode,
         "stdout": completed.stdout,
         "stderr": completed.stderr,
@@ -174,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     output_root = (
         Path(parsed.output_root).resolve()
         if parsed.output_root
-        else Path(tempfile.mkdtemp(prefix="skillcortex-dynamic-agent-"))
+        else Path(tempfile.mkdtemp(prefix="slmcortex-dynamic-agent-"))
     )
     output_root.mkdir(parents=True, exist_ok=True)
 

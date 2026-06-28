@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from skillcortex.packaging import package_skill
-from skillcortex.runtime.registry import AdapterRegistry
-from skillcortex.shared.hashing import sha256
-from skillcortex.shared.io import read_json, read_yaml
+from slmcortex.packaging import package_skill
+from slmcortex.runtime.registry import AdapterRegistry
+from slmcortex.shared.hashing import sha256
+from slmcortex.shared.io import read_json, read_yaml
 
 
 def _skill(tmp_path, skill_id):
@@ -53,7 +53,7 @@ def test_registry_skips_packages_for_other_backend(tmp_path, monkeypatch):
     gguf = _skill(tmp_path, "gguf_skill")
     _rewrite_backend(mlx, "mlx", "mlx-lora")
     _rewrite_backend(gguf, "gguf", "gguf-lora")
-    monkeypatch.setattr("skillcortex.runtime.registry.base_config", lambda: {"backend": "gguf"})
+    monkeypatch.setattr("slmcortex.runtime.registry.base_config", lambda: {"backend": "gguf"})
 
     registry = AdapterRegistry.load(tmp_path)
 

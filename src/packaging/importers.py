@@ -85,14 +85,14 @@ def import_lora(
 ) -> dict:
     from . import package_skill
 
-    cache_root = cache_dir or Path(base_config().get("lora_cache_dir") or ".skillcortex/lora-cache")
+    cache_root = cache_dir or Path(base_config().get("lora_cache_dir") or ".slmcortex/lora-cache")
     cached = resolve_hf_lora_cache(
         source=source,
         cache_dir=cache_root,
         force=force,
         max_download_bytes=max_download_bytes,
     )
-    with tempfile.TemporaryDirectory(prefix=f"skillcortex-import-{skill_id}-") as directory:
+    with tempfile.TemporaryDirectory(prefix=f"slmcortex-import-{skill_id}-") as directory:
         root = Path(directory)
         adapter = root / "adapter"
         adapter.mkdir()

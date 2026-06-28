@@ -24,7 +24,7 @@ class OpenAICompatApp:
                             {
                                 "id": self.runtime.bundle.name,
                                 "object": "model",
-                                "owned_by": "skillcortex",
+                                "owned_by": "slmcortex",
                             }
                         ],
                     },

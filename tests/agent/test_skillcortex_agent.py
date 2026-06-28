@@ -2,7 +2,7 @@ import json
 from io import StringIO
 from pathlib import Path
 
-from skillcortex.cli import main
+from slmcortex.cli import main
 
 
 class FakeRuntime:
@@ -316,9 +316,9 @@ def test_agent_run_records_dynamic_skill_switch_and_trace(tmp_path, monkeypatch,
     trace = tmp_path / "trace.json"
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "failed",
             "command": command,
@@ -370,9 +370,9 @@ def test_agent_run_can_apply_file_replace_when_writes_on(tmp_path, monkeypatch, 
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -413,7 +413,7 @@ def test_agent_run_supports_dry_run_without_materializing_changes(tmp_path, monk
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
 
     assert (
         main(
@@ -445,12 +445,12 @@ def test_agent_run_dry_run_skips_generation_apply_and_validation(tmp_path, monke
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
 
     def fail_validation(command, repo):
         raise AssertionError("validation should not run in dry-run mode")
 
-    monkeypatch.setattr("skillcortex.agent._run_validation_command", fail_validation)
+    monkeypatch.setattr("slmcortex.agent._run_validation_command", fail_validation)
 
     assert (
         main(
@@ -484,7 +484,7 @@ def test_agent_run_confirm_mode_writes_review_artifact(tmp_path, monkeypatch, ca
     trace = tmp_path / "trace.json"
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
 
     assert (
         main(
@@ -518,9 +518,9 @@ def test_agent_run_can_apply_proposed_diff_when_writes_on(tmp_path, monkeypatch,
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeDiffRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -560,9 +560,9 @@ def test_agent_run_can_apply_raw_code_generation_when_writes_on(tmp_path, monkey
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRawCodeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -601,9 +601,9 @@ def test_agent_run_can_apply_multiple_explicit_actions_when_writes_on(tmp_path, 
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeMultiActionRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -646,9 +646,9 @@ def test_agent_run_avoids_artifact_files_when_repo_has_no_source_files(tmp_path,
     repo = _artifact_only_repo(tmp_path)
     fake_runtime = FakeRawCodeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "skipped",
             "command": command,
@@ -687,9 +687,9 @@ def test_agent_run_loops_over_multiple_task_inputs(tmp_path, monkeypatch, capsys
     fake_runtime = FakeRuntime()
     trace = tmp_path / "trace.json"
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -751,9 +751,9 @@ def test_agent_run_accepts_tasks_dynamically_from_stdin(tmp_path, monkeypatch, c
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -762,7 +762,7 @@ def test_agent_run_accepts_tasks_dynamically_from_stdin(tmp_path, monkeypatch, c
             "stderr": "",
         },
     )
-    monkeypatch.setattr("skillcortex.cli.sys.stdin", StringIO("Fix the failing answer implementation.\nConfirm the implementation still returns 42.\n"))
+    monkeypatch.setattr("slmcortex.cli.sys.stdin", StringIO("Fix the failing answer implementation.\nConfirm the implementation still returns 42.\n"))
 
     assert (
         main(
@@ -800,9 +800,9 @@ def test_agent_run_interactive_loop_requests_next_task_after_execution(tmp_path,
         "",
     ])
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -816,7 +816,7 @@ def test_agent_run_interactive_loop_requests_next_task_after_execution(tmp_path,
         def isatty(self):
             return True
 
-    monkeypatch.setattr("skillcortex.cli.sys.stdin", FakeTtyStdin(""))
+    monkeypatch.setattr("slmcortex.cli.sys.stdin", FakeTtyStdin(""))
 
     def fake_input(prompt):
         if prompt == "task 2> ":
@@ -855,9 +855,9 @@ def test_agent_run_rejects_truncating_followup_file_replace(tmp_path, monkeypatc
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeTruncatingIterationRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,
@@ -900,9 +900,9 @@ def test_agent_run_second_iteration_reads_full_current_target_file(tmp_path, mon
     repo = _toy_repo(tmp_path)
     fake_runtime = FakeFollowupContextRuntime()
 
-    monkeypatch.setattr("skillcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
+    monkeypatch.setattr("slmcortex.agent.SkillRuntime.load", lambda path: fake_runtime)
     monkeypatch.setattr(
-        "skillcortex.agent._run_validation_command",
+        "slmcortex.agent._run_validation_command",
         lambda command, repo: {
             "status": "passed",
             "command": command,

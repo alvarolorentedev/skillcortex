@@ -5,7 +5,7 @@ follow-up to the [quickstart](quickstart.md).
 
 ## Common Conventions
 
-- Use `skillcortex` or `python -m skillcortex`.
+- Use `slmcortex` or `python -m slmcortex`.
 - Prefer `--dry-run` when you only want to inspect routing, composition, or
   agent behavior.
 - `generate-dataset`, `train-skill`, `package-skill`, and `compose-skills`
@@ -70,7 +70,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex generate-dataset \
+slmcortex generate-dataset \
   --skill-id fastapi_contract \
   --domain fastapi \
   --report-output /tmp/fastapi_contract-report.json
@@ -100,7 +100,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex validate-dataset datasets/fastapi_contract/train.jsonl \
+slmcortex validate-dataset datasets/fastapi_contract/train.jsonl \
   --eval-dataset datasets/fastapi_contract/eval.jsonl
 ```
 
@@ -108,12 +108,12 @@ Use this before training when you want an explicit quality gate.
 
 ## `train-skill`
 
-Train a LoRA skill from datasets and package it as a Skill Cortex artifact.
+Train a LoRA skill from datasets and package it as a Slm Cortex artifact.
 
 You can call it in two ways:
 
-- preset mode: `skillcortex train-skill python_skill --output ...`
-- generic mode: `skillcortex train-skill --skill-id fastapi_contract ...`
+- preset mode: `slmcortex train-skill python_skill --output ...`
+- generic mode: `slmcortex train-skill --skill-id fastapi_contract ...`
 
 Behavior:
 
@@ -151,7 +151,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex train-skill \
+slmcortex train-skill \
   --skill-id fastapi_contract \
   --name "FastAPI Contract Skill" \
   --train-dataset datasets/fastapi_contract/train.jsonl \
@@ -200,7 +200,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex train-plasticity-lora \
+slmcortex train-plasticity-lora \
   --skill-id local_fix \
   --name "Local Fix" \
   --prompt-file data/train.jsonl \
@@ -212,7 +212,7 @@ local package.
 
 ## `import-lora`
 
-Import a public Hugging Face LoRA into a local Skill Cortex package.
+Import a public Hugging Face LoRA into a local Slm Cortex package.
 
 Required flags:
 
@@ -239,7 +239,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex import-lora \
+slmcortex import-lora \
   --source hf://owner/repo \
   --skill-id fastapi_skill \
   --name "FastAPI Skill" \
@@ -292,14 +292,14 @@ Writes:
 Example:
 
 ```bash
-skillcortex package-skill \
+slmcortex package-skill \
   --skill-id python_skill \
   --name "Python Skill" \
   --adapter-dir artifacts/adapters/python_skill \
-  --train-dataset tests/fixtures/skillcortex_demo/train.jsonl \
-  --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl \
-  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
-  --output /tmp/skillcortex-demo/python_skill
+  --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
+  --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
+  --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
+  --output /tmp/slmcortex-demo/python_skill
 ```
 
 Use this when the adapter already exists and you only need a package wrapper.
@@ -320,7 +320,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex validate-skill-package --path /tmp/skillcortex-demo/python_skill
+slmcortex validate-skill-package --path /tmp/slmcortex-demo/python_skill
 ```
 
 Use this after packaging and before composition.
@@ -349,9 +349,9 @@ Writes:
 Example:
 
 ```bash
-skillcortex compose-skills \
-  --skills /tmp/skillcortex-demo/python_skill,/tmp/skillcortex-demo/debugging_skill \
-  --output /tmp/skillcortex-demo/runtime
+slmcortex compose-skills \
+  --skills /tmp/slmcortex-demo/python_skill,/tmp/slmcortex-demo/debugging_skill \
+  --output /tmp/slmcortex-demo/runtime
 ```
 
 Use this when you want a runtime that is stable and repeatable from a fixed set
@@ -380,7 +380,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex route \
+slmcortex route \
   --skills-dir skills \
   --repo . \
   --task "Create a FastAPI endpoint" \
@@ -415,7 +415,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex compose-from-route \
+slmcortex compose-from-route \
   --skills-dir skills \
   --repo . \
   --task "Create a FastAPI endpoint" \
@@ -440,7 +440,7 @@ Writes:
 Example:
 
 ```bash
-skillcortex validate-runtime --runtime /tmp/skillcortex-demo/runtime
+slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime
 ```
 
 Use this after composition and before serving or inference.
@@ -481,8 +481,8 @@ Returns:
 Example:
 
 ```bash
-skillcortex infer \
-  --runtime /tmp/skillcortex-demo/runtime \
+slmcortex infer \
+  --runtime /tmp/slmcortex-demo/runtime \
   --prompt "Fix this Python traceback" \
   --dry-run
 ```
@@ -513,7 +513,7 @@ Behavior:
 Example:
 
 ```bash
-skillcortex serve --runtime /tmp/skillcortex-demo/runtime --host 127.0.0.1 --port 8000
+slmcortex serve --runtime /tmp/slmcortex-demo/runtime --host 127.0.0.1 --port 8000
 ```
 
 Use `--dry-run` to check the serving configuration without starting the server.
@@ -527,7 +527,7 @@ Public subcommands:
 
 - `run`
 
-Use `skillcortex agent run ...` for actual execution.
+Use `slmcortex agent run ...` for actual execution.
 
 ## `agent run`
 
@@ -564,9 +564,9 @@ Writes:
 Example:
 
 ```bash
-skillcortex agent run \
-  --runtime /tmp/skillcortex-demo/runtime \
-  --repo /tmp/skillcortex-demo/toy-repo \
+slmcortex agent run \
+  --runtime /tmp/slmcortex-demo/runtime \
+  --repo /tmp/slmcortex-demo/toy-repo \
   --task "Fix the failing answer implementation." \
   --dry-run
 ```

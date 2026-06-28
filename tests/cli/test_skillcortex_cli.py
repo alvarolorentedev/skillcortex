@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from skillcortex.cli import main
-from skillcortex.dataset_factory import REQUIRED_FASTAPI_FEATURES
+from slmcortex.cli import main
+from slmcortex.dataset_factory import REQUIRED_FASTAPI_FEATURES
 
 
-def test_skillcortex_cli_alias_supports_dry_run():
-    assert main(["train-skill", "python_skill", "--output", "/tmp/skillcortex-dry-run", "--dry-run"]) == 0
+def test_slmcortex_cli_alias_supports_dry_run():
+    assert main(["train-skill", "python_skill", "--output", "/tmp/slmcortex-dry-run", "--dry-run"]) == 0
 
 
 def test_package_skill_and_validate_package(tmp_path):
@@ -144,7 +144,7 @@ def test_product_train_skill_creates_isolated_run_and_package(monkeypatch, tmp_p
     protected_adapter = Path("artifacts/adapters/python_skill/adapters.safetensors")
     before = hashlib.sha256(protected_adapter.read_bytes()).hexdigest()
 
-    import skillcortex.packaging as packaging
+    import slmcortex.packaging as packaging
 
     def fake_train(*, skill, train_dataset, run_directory, seed, force):
         adapter_dir = run_directory / "adapters" / skill
@@ -197,7 +197,7 @@ def test_product_train_skill_creates_isolated_run_and_package(monkeypatch, tmp_p
 
 
 def test_product_train_skill_accepts_arbitrary_skill_id_and_composes(monkeypatch, tmp_path):
-    import skillcortex.packaging as packaging
+    import slmcortex.packaging as packaging
 
     train_dataset = tmp_path / "train.jsonl"
     eval_dataset = tmp_path / "eval.jsonl"
@@ -315,7 +315,7 @@ def test_product_train_skill_accepts_arbitrary_skill_id_and_composes(monkeypatch
 def test_product_train_skill_defaults_routing_metadata_for_arbitrary_skill(
     monkeypatch, tmp_path, capsys
 ):
-    import skillcortex.packaging as packaging
+    import slmcortex.packaging as packaging
 
     train_dataset = tmp_path / "train.jsonl"
     eval_dataset = tmp_path / "eval.jsonl"
@@ -401,7 +401,7 @@ def test_product_train_skill_defaults_routing_metadata_for_arbitrary_skill(
 def test_product_train_skill_explicit_routing_metadata_overrides_defaults(
     monkeypatch, tmp_path, capsys
 ):
-    import skillcortex.packaging as packaging
+    import slmcortex.packaging as packaging
 
     train_dataset = tmp_path / "train.jsonl"
     eval_dataset = tmp_path / "eval.jsonl"
@@ -497,7 +497,7 @@ def test_product_train_skill_unknown_positional_skill_has_actionable_message(cap
 def test_product_train_skill_rejects_invalid_dataset_before_training(
     monkeypatch, tmp_path, capsys
 ):
-    import skillcortex.packaging as packaging
+    import slmcortex.packaging as packaging
 
     train_dataset = tmp_path / "train.jsonl"
     eval_dataset = tmp_path / "eval.jsonl"
@@ -1026,7 +1026,7 @@ def test_compose_skills_can_attach_optional_registry_enrichment_without_override
                         "skill_name": "python_skill",
                         "status": "core",
                         "origin": "seed_skill",
-                        "router": "skillcortex_router_v1",
+                        "router": "slmcortex_router_v1",
                         "activation_scope": "protected_router",
                         "allowed_task_types": ["debugging", "test_generation", "python_generation"],
                     }

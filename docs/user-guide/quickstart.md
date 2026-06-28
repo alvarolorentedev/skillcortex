@@ -24,7 +24,7 @@ GGUF configs must use a `.gguf` runtime model path.
 ## 2. Run the no-model demo
 
 ```bash
-python scripts/run_skillcortex_demo.py
+python scripts/run_slmcortex_demo.py
 ```
 
 This exercises the full public flow without loading a real model:
@@ -42,38 +42,38 @@ The script prints or writes outputs under a temporary directory and is the faste
 If you want the command-by-command version, use the same sequence the demo script wraps:
 
 ```bash
-DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/skillcortex-demo.XXXXXX")"
+DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-demo.XXXXXX")"
 
-skillcortex package-skill \
+slmcortex package-skill \
   --skill-id python_skill \
   --name "Python Skill" \
   --adapter-dir artifacts/adapters/python_skill \
-  --train-dataset tests/fixtures/skillcortex_demo/train.jsonl \
-  --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl \
-  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
+  --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
+  --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
+  --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
   --output "$DEMO_ROOT/python_skill"
 
-skillcortex package-skill \
+slmcortex package-skill \
   --skill-id debugging_skill \
   --name "Debugging Skill" \
   --adapter-dir artifacts/adapters/debugging_skill \
-  --train-dataset tests/fixtures/skillcortex_demo/train.jsonl \
-  --eval-dataset tests/fixtures/skillcortex_demo/eval.jsonl \
-  --eval-summary tests/fixtures/skillcortex_demo/eval-summary.json \
+  --train-dataset tests/fixtures/slmcortex_demo/train.jsonl \
+  --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl \
+  --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json \
   --output "$DEMO_ROOT/debugging_skill"
 
-skillcortex compose-skills \
+slmcortex compose-skills \
   --skills "$DEMO_ROOT/python_skill,$DEMO_ROOT/debugging_skill" \
   --output "$DEMO_ROOT/runtime"
 
-skillcortex validate-runtime --runtime "$DEMO_ROOT/runtime"
+slmcortex validate-runtime --runtime "$DEMO_ROOT/runtime"
 
-skillcortex infer \
+slmcortex infer \
   --runtime "$DEMO_ROOT/runtime" \
   --prompt "Fix this Python traceback" \
   --dry-run
 
-skillcortex agent run \
+slmcortex agent run \
   --runtime "$DEMO_ROOT/runtime" \
   --repo /path/to/local/repo \
   --task "Fix the failing answer implementation." \
@@ -85,13 +85,13 @@ skillcortex agent run \
 The default arbitrary-skill smoke stays no-model:
 
 ```bash
-python scripts/run_skillcortex_arbitrary_skill_smoke.py
+python scripts/run_slmcortex_arbitrary_skill_smoke.py
 ```
 
 If you explicitly want the slower local training path:
 
 ```bash
-python scripts/run_skillcortex_arbitrary_skill_smoke.py --real-training
+python scripts/run_slmcortex_arbitrary_skill_smoke.py --real-training
 ```
 
 For GGUF training/import conversion, set `gguf_converter` in the selected base

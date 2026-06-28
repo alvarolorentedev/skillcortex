@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from skillcortex.cli import main
-from skillcortex.shared.hashing import sha256
+from slmcortex.cli import main
+from slmcortex.shared.hashing import sha256
 
 
 def test_import_lora_from_huggingface_source_uses_cache_and_provenance(tmp_path, monkeypatch, capsys):
@@ -16,7 +16,7 @@ def test_import_lora_from_huggingface_source_uses_cache_and_provenance(tmp_path,
         (root / "adapters.safetensors").write_text("weights")
         return str(root)
 
-    monkeypatch.setattr("skillcortex.packaging.importers.snapshot_download", fake_snapshot_download)
+    monkeypatch.setattr("slmcortex.packaging.importers.snapshot_download", fake_snapshot_download)
 
     assert (
         main(
@@ -65,7 +65,7 @@ def test_import_lora_reuses_cache_without_force(tmp_path, monkeypatch, capsys):
     (cache / "adapters.safetensors").write_text("weights")
     (cache / "source.json").write_text(json.dumps({"source": "hf://owner/repo", "files": {}}))
 
-    monkeypatch.setattr("skillcortex.packaging.importers.snapshot_download", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should reuse cache")))
+    monkeypatch.setattr("slmcortex.packaging.importers.snapshot_download", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should reuse cache")))
 
     assert main([
         "import-lora",
@@ -82,7 +82,7 @@ def test_import_lora_reuses_cache_without_force(tmp_path, monkeypatch, capsys):
 
 
 def test_import_lora_rejects_disallowed_publisher(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr("skillcortex.packaging.importers.base_config", lambda: {"allowed_hf_publishers": ["trusted"]})
+    monkeypatch.setattr("slmcortex.packaging.importers.base_config", lambda: {"allowed_hf_publishers": ["trusted"]})
 
     assert main([
         "import-lora",
@@ -105,7 +105,7 @@ def test_import_lora_rejects_oversized_adapter(tmp_path, monkeypatch, capsys):
         (root / "adapters.safetensors").write_text("too large")
         return str(root)
 
-    monkeypatch.setattr("skillcortex.packaging.importers.snapshot_download", fake_snapshot_download)
+    monkeypatch.setattr("slmcortex.packaging.importers.snapshot_download", fake_snapshot_download)
 
     assert main([
         "import-lora",

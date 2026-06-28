@@ -29,12 +29,12 @@ def test_src_tree_is_flat_product_layout():
         "packaging",
         "runtime",
         "shared",
-        "skillcortex.py",
+        "slmcortex.py",
         "training",
     }
 
 
-def test_console_scripts_expose_only_skillcortex_product_entrypoint():
+def test_console_scripts_expose_only_slmcortex_product_entrypoint():
     payload = tomllib.loads((ROOT / "pyproject.toml").read_text())
     scripts = payload["project"]["scripts"]
-    assert scripts == {"skillcortex": "skillcortex:main"}
+    assert scripts == {"slmcortex": "slmcortex:main"}

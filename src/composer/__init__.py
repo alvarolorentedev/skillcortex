@@ -48,7 +48,7 @@ def compose_skill_packages(
     if output_exists:
         shutil.rmtree(output)
 
-    with tempfile.TemporaryDirectory(prefix="skillcortex-compose-") as directory:
+    with tempfile.TemporaryDirectory(prefix="slmcortex-compose-") as directory:
         staging = Path(directory) / output.name
         staging.mkdir(parents=True, exist_ok=True)
         files = bundle_files(bundle, compatibility, budget)

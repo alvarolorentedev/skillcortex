@@ -1,6 +1,6 @@
 import pytest
 
-from skillcortex.composer.compatibility import build_compatibility_report
+from slmcortex.composer.compatibility import build_compatibility_report
 
 
 def _loaded(skill_id, backend, adapter_format, runtime_model):

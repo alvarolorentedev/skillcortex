@@ -3,7 +3,7 @@ source_model: Qwen/Qwen2.5-Coder-1.5B-Instruct
 model: mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit
 default_runtime_model: mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit
 router_model: mlx-community/Qwen2.5-Coder-0.5B-Instruct-4bit
-lora_cache_dir: .skillcortex/lora-cache
+lora_cache_dir: .slmcortex/lora-cache
 allow_remote_lora_downloads: false
 allowed_hf_publishers: []
 max_download_bytes: 2000000000
