@@ -114,7 +114,7 @@ ProtectedSkillRouter = PythonOnlyForTestGenerationRouter
 ProtectedSkillRouterWithoutFailureBorn = PythonOnlyForTestGenerationRouter
 
 
-class SkillCortexRouterV1:
+class SLMCortexRouterV1:
     def route(self, task_type: str, semantic_family: str | None) -> RouteDecision:
         protected = ProtectedSkillRouterWithoutFailureBorn().route(task_type)
         if semantic_family != "alternating" or task_type == "python_generation":
@@ -150,8 +150,4 @@ class ProtectedRouterPlusAlternatingSkill:
 def route_text(text: str) -> list[str]:
     return list(RuleRouter().route(text).selected_skills)
 
-# Backwards-compatible alias: some modules were updated to reference the
-# rebranded `SlmCortex` class name during a repo-wide rename. Keep the
-# original class name and provide the new name as an alias so imports from
-# either name continue to work during transition.
-SlmCortexRouterV1 = SkillCortexRouterV1
+# Note: `SLMCortexRouterV1` is the canonical router class name.

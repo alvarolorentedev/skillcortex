@@ -1,4 +1,4 @@
-"""Validate the SkillCortex registry and write its governance report."""
+"""Validate the SLMCortex registry and write its governance report."""
 
 import argparse
 import hashlib
@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from slmcortex.contracts import KNOWN_SKILLS, TASK_TYPES
-from slmcortex.runtime.router_rules import SkillCortexRouterV1
+from slmcortex.runtime.router_rules import SLMCortexRouterV1
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,7 @@ def validate_registry(registry: dict, router_report: dict) -> None:
 
     for task_type in TASK_TYPES:
         for semantic_family in (None, "other", "alternating"):
-            for name in SkillCortexRouterV1().route(
+            for name in SLMCortexRouterV1().route(
                 task_type, semantic_family
             ).selected_skills:
                 skill = by_name.get(name)
@@ -35,7 +35,7 @@ def validate_registry(registry: dict, router_report: dict) -> None:
 
     alternating = by_name.get("alternating_skill", {})
     if alternating:
-        router = SkillCortexRouterV1()
+        router = SLMCortexRouterV1()
         if alternating.get("activation_scope") != "strict_gate":
             errors.append("alternating_skill must use strict_gate activation")
         if any(

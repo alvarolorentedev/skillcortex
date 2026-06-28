@@ -164,7 +164,7 @@ def evaluate_skill_adapter(
 
 def evaluation_report(skill: str, summary: dict, tasks: dict) -> str:
     lines = [
-        f"# SkillCortex Single Skill Evaluation: {skill}",
+        f"# SLMCortex Single Skill Evaluation: {skill}",
         "",
         "| Mode | Count | Fuzzy | Exact | Syntax | Execution | Active params |",
         "|---|---:|---:|---:|---:|---:|---:|",

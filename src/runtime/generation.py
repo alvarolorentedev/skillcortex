@@ -15,7 +15,7 @@ from .router_rules import (
     ProtectedSkillRouter,
     RouteDecision,
     RuleRouter,
-    SlmCortexRouterV1,
+    SLMCortexRouterV1,
 )
 
 
@@ -153,7 +153,7 @@ def infer(
         if router_policy == "legacy_rule_router":
             route = RuleRouter().route(prompt)
         elif router_policy in (None, "slmcortex_router_v1"):
-            route = SlmCortexRouterV1().route(task_type, semantic_family)
+            route = SLMCortexRouterV1().route(task_type, semantic_family)
         elif router_policy == "protected_router_plus_alternating_skill":
             route = ProtectedRouterPlusAlternatingSkill().route(task_type, semantic_family)
         elif router_policy in (

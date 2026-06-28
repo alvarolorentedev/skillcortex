@@ -124,7 +124,7 @@ def write_checksums(staging: Path, files: dict[str, str], loaded: list[dict], en
 
 def build_readme(bundle: dict, compatibility: dict, budget: dict) -> str:
     lines = [
-        "# SkillCortex Runtime Bundle",
+        "# SLMCortex Runtime Bundle",
         "",
         f"- Strategy: `{bundle['strategy']}`",
         f"- Skills: {', '.join(item['skill_id'] for item in bundle['skills'])}",

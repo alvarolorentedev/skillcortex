@@ -35,10 +35,12 @@ def run_benchmark(skills_dir: Path) -> dict:
                 actual = runtime._route_branch(decision)
                 rows.append({"prompt": prompt, "expected": expected, "actual": actual, "passed": actual == expected})
     finally:
+        # Restore the SLMCORTEX env var we modified. Previous held the
+        # original value of `SLMCORTEX_BASE_CONFIG`.
         if previous is None:
-            os.environ.pop("SKILLCORTEX_BASE_CONFIG", None)
+            os.environ.pop("SLMCORTEX_BASE_CONFIG", None)
         else:
-            os.environ["SKILLCORTEX_BASE_CONFIG"] = previous
+            os.environ["SLMCORTEX_BASE_CONFIG"] = previous
     return {
         "total": len(rows),
         "passed": sum(row["passed"] for row in rows),

@@ -1,6 +1,6 @@
 def evaluation_report(skill_id: str, summary: dict, tasks: dict) -> str:
     lines = [
-        f"# SkillCortex Single Skill Evaluation: {skill_id}",
+        f"# SLMCortex Single Skill Evaluation: {skill_id}",
         "",
         "| Mode | Count | Fuzzy | Exact | Syntax | Execution | Active params |",
         "|---|---:|---:|---:|---:|---:|---:|",

@@ -1,1 +1,0 @@
-from tests.cli.test_skillcortex_demo import *

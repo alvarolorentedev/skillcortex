@@ -1,0 +1,1 @@
+from tests.cli.test_slmcortex_demo import *

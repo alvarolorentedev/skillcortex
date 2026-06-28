@@ -1,1 +1,1 @@
-"""SkillCortex training package."""
+"""SLMCortex training package."""

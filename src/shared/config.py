@@ -14,10 +14,9 @@ ARTIFACT_DIR = ROOT / "artifacts"
 
 
 def base_config() -> dict:
-    # Support both the new `SLMCORTEX_BASE_CONFIG` and the legacy
-    # `SKILLCORTEX_BASE_CONFIG` environment variables during the
-    # rebranding transition.
-    env_path = os.environ.get("SLMCORTEX_BASE_CONFIG") or os.environ.get("SKILLCORTEX_BASE_CONFIG")
+    # Use the new `SLMCORTEX_BASE_CONFIG` environment variable.
+    # Backward-compatibility with `SLMCORTEX_BASE_CONFIG` has been removed.
+    env_path = os.environ.get("SLMCORTEX_BASE_CONFIG")
     config = read_yaml(Path(env_path) if env_path else CONFIG_DIR / "base.yaml")
     config.setdefault("backend", "auto")
     return config

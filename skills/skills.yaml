@@ -6,4 +6,4 @@ skills:
   test_generation_skill:
     description: Generating pytest-style tests
   alternating_skill:
-    description: Even-index selection skill; promoted behind the SkillCortex V1 semantic gate
+    description: Even-index selection skill; promoted behind the SLMCortex V1 semantic gate
