@@ -33,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     root.add_argument("--product-mode", choices=PRODUCT_MODES, default="composer")
     commands = root.add_subparsers(dest="command", required=True, title="product commands")
     _add_doctor_parser(commands)
+    _add_provision_backend_parser(commands)
     _add_composer_app_parser(commands)
     _add_compose_from_folder_parser(commands)
     _add_validate_runtime_parser(commands)
@@ -62,6 +63,22 @@ def _add_doctor_parser(commands) -> None:
         ),
     )
     doctor.add_argument("--workspace")
+    doctor.add_argument("--export-support-bundle", action="store_true")
+    doctor.add_argument("--support-bundle-path")
+
+
+def _add_provision_backend_parser(commands) -> None:
+    provision = commands.add_parser(
+        "provision-backend",
+        **parser_kwargs(
+            "Install optional runtime backend dependencies without changing the base Composer install.",
+            "slmcortex provision-backend --backend mlx --dry-run\nslmcortex provision-backend --backend gguf",
+            summary="Composer: install optional backend dependencies on demand.",
+        ),
+    )
+    provision.add_argument("--backend", required=True, choices=("mlx", "gguf"))
+    provision.add_argument("--workspace")
+    provision.add_argument("--dry-run", action="store_true")
 
 
 def _add_composer_app_parser(commands) -> None:

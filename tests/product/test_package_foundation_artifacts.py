@@ -26,7 +26,21 @@ def test_packaged_install_doc_lists_workspace_contract_and_smokes():
     assert "App Workspace Contract" in text
     assert "run_package_product_smoke.py" in text
     assert "run_packaged_install_smoke.py" in text
+    assert "slmcortex doctor --export-support-bundle" in text
+    assert "slmcortex provision-backend --backend gguf" in text
+    assert "install, compose, and export" in text
     assert "install-slmcortex-macos.sh" in text
     assert "install-slmcortex-linux.sh" in text
     assert "install-slmcortex-windows.ps1" in text
     assert "slmcortex-composer" in text
+
+
+def test_distribution_workflow_runs_packaged_smokes_on_supported_targets():
+    text = ROOT.joinpath(".github", "workflows", "distribution.yml").read_text()
+
+    assert "matrix:" in text
+    assert "macos-latest" in text
+    assert "ubuntu-latest" in text
+    assert "windows-latest" in text
+    assert "run_packaged_install_smoke.py" in text
+    assert "run_package_product_smoke.py" in text

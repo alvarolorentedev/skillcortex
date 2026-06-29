@@ -3,13 +3,18 @@ from __future__ import annotations
 import importlib.util
 import os
 import platform
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import mlx_supported
+from .. import __version__
+from .config import BACKEND_DEPENDENCIES, backend_supported_on_platform, mlx_supported
+from .provisioning import backend_provisioning_command
 
 
 PRODUCT_MODES = ("composer", "factory")
+APP_WORKSPACE_SCHEMA_VERSION = "2"
+APP_STATE_FILE = "composer-app-state.json"
 
 
 @dataclass(slots=True)
@@ -88,6 +93,7 @@ def environment_diagnostics(
     *,
     workspace_root: Path | None = None,
     product_mode: str = "composer",
+    include_support_bundle: bool = False,
 ) -> dict:
     if product_mode not in PRODUCT_MODES:
         raise ValueError(f"unknown product mode: {product_mode}")
@@ -117,6 +123,22 @@ def environment_diagnostics(
     ]
     available_runtime_backends = [row["backend"] for row in backend_rows if row["available"]]
     default_backend = "mlx" if mlx_supported() else "gguf"
+    optional_backend_provisioning = []
+    for row in backend_rows:
+        status = "available" if row["available"] else "not_installed"
+        if not row["supported_platform"]:
+            status = "unsupported_platform"
+        optional_backend_provisioning.append(
+            {
+                "backend": row["backend"],
+                "status": status,
+                "capability": "local_run" if row["available"] else "dry_run_only",
+                "install_extra": row["backend"],
+                "dependencies": list(BACKEND_DEPENDENCIES[row["backend"]]),
+                "supported_platform": backend_supported_on_platform(row["backend"]),
+                "provision_command": backend_provisioning_command(row["backend"]),
+            }
+        )
     composer_ready = True
     summary_lines = [
         f"Product mode: {product_mode}",
@@ -147,21 +169,40 @@ def environment_diagnostics(
         )
     return {
         "status": "complete",
+        "schema_version": "1",
         "product_mode": product_mode,
+        "tool": {"name": "slmcortex", "version": __version__},
         "platform": {
             "system": system,
             "machine": machine,
             "python_version": python_version,
+            "python_executable": sys.executable,
         },
         "workspace": workspace.as_dict(),
+        "workspace_schema_version": APP_WORKSPACE_SCHEMA_VERSION,
         "default_runtime_backend": default_backend,
         "available_runtime_backends": available_runtime_backends,
         "composer_ready": composer_ready,
         "backends": backend_rows,
+        "optional_backend_provisioning": optional_backend_provisioning,
         "optional_factory_dependencies": optional_factory_dependencies,
         "summary": "\n".join(summary_lines),
         "summary_lines": summary_lines,
         "warnings": warnings,
+        "recovery_guidance": [
+            "Export a doctor support bundle before manual recovery or upgrade retries.",
+            "If app state migration fails, restore the latest backup from the state directory and retry on a clean workspace root.",
+        ],
+        **(
+            {
+                "support_bundle": {
+                    "available": True,
+                    "default_export_dir": str((workspace.diagnostics_dir / "support").resolve()),
+                }
+            }
+            if include_support_bundle
+            else {}
+        ),
     }
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from ..agent import run_agent
+from ..composer_app import write_support_bundle
 from ..catalog import compose_from_folder, compose_from_route, route_task
 from ..composer_app import run_composer_app
 from ..composer import compose_slm_packages
@@ -18,6 +19,7 @@ from ..packaging import package_slm, train_slm_package, validate_slm_package
 from ..packaging.importers import import_lora
 from ..runtime import DynamicRuntime, SlmRuntime, serve_runtime, validate_runtime_bundle
 from ..shared.product import environment_diagnostics
+from ..shared.provisioning import provision_backend
 from .common import csv_paths, default_dataset_outputs, infer_payload, package_composition, resolve_train_slm
 
 
@@ -31,9 +33,32 @@ def execute_command(
     stream_agent_tasks: TaskProviderFactory,
 ) -> dict:
     if parsed.command == "doctor":
-        return environment_diagnostics(
+        diagnostics = environment_diagnostics(
             workspace_root=Path(parsed.workspace) if parsed.workspace else None,
             product_mode=parsed.product_mode,
+            include_support_bundle=parsed.export_support_bundle,
+        )
+        if parsed.export_support_bundle:
+            support_bundle = write_support_bundle(
+                workspace_root=Path(parsed.workspace) if parsed.workspace else None,
+                runtime_name="doctor",
+                compose_result=None,
+                state=None,
+                diagnostics=diagnostics,
+                scan_summary=None,
+                product_error=None,
+                bundle_path=Path(parsed.support_bundle_path) if parsed.support_bundle_path else None,
+            )
+            diagnostics["support_bundle"] = {
+                "available": True,
+                "path": support_bundle,
+            }
+        return diagnostics
+    if parsed.command == "provision-backend":
+        return provision_backend(
+            backend=parsed.backend,
+            workspace_root=Path(parsed.workspace) if parsed.workspace else None,
+            dry_run=parsed.dry_run,
         )
     if parsed.command == "composer-app":
         return run_composer_app(

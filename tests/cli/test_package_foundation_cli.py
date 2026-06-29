@@ -72,6 +72,57 @@ def test_doctor_reports_external_workspace_contract(tmp_path, capsys):
     assert result["workspace"]["root"] == str(workspace.resolve())
     assert result["workspace"]["packages_dir"].endswith("/packages")
     assert result["summary_lines"]
+    assert result["workspace_schema_version"] == "2"
+    assert result["optional_backend_provisioning"]
+
+
+def test_doctor_can_export_support_bundle(tmp_path, capsys):
+    workspace = tmp_path / "workspace"
+    support_bundle = tmp_path / "doctor-support.json"
+
+    assert (
+        main(
+            [
+                "doctor",
+                "--workspace",
+                str(workspace),
+                "--export-support-bundle",
+                "--support-bundle-path",
+                str(support_bundle),
+            ]
+        )
+        == 0
+    )
+
+    result = json.loads(capsys.readouterr().out)
+    payload = json.loads(support_bundle.read_text())
+    assert result["support_bundle"]["path"] == str(support_bundle.resolve())
+    assert payload["diagnostics"]["workspace"]["root"] == str(workspace.resolve())
+    assert payload["redactions"]["env_vars"] == "excluded"
+
+
+def test_provision_backend_dry_run_reports_install_plan(tmp_path, capsys):
+    workspace = tmp_path / "workspace"
+
+    assert (
+        main(
+            [
+                "provision-backend",
+                "--backend",
+                "gguf",
+                "--workspace",
+                str(workspace),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "dry-run"
+    assert result["backend"] == "gguf"
+    assert result["command"][1:4] == ["-m", "pip", "install"]
+    assert "llama-cpp-python>=0.3,<0.4" in result["dependencies"]
 
 
 def test_compose_folder_uses_workspace_layout_and_writes_export_descriptor(tmp_path, capsys):

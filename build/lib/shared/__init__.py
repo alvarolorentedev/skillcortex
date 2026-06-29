@@ -10,6 +10,7 @@ from .product import (
     resolve_app_workspace,
     runtime_name_for_folder,
 )
+from .provisioning import provision_backend
 
 __all__ = [
     "ARTIFACT_DIR",
@@ -24,6 +25,7 @@ __all__ = [
     "environment_diagnostics",
     "load_json_if_exists",
     "package_fingerprint",
+    "provision_backend",
     "read_json",
     "read_yaml",
     "resolve_app_workspace",

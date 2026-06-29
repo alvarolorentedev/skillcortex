@@ -291,3 +291,57 @@ def test_composer_app_translates_missing_packages_into_repair_guidance(tmp_path,
     assert result["product_error"]["code"] in {"missing_package_metadata", "incompatible_selection"}
     assert result["product_error"]["recommended_next_action"]
     assert result["support"]["support_bundle"] is not None
+
+
+def test_composer_app_migrates_v1_state_and_tracks_runtime_provenance(tmp_path, capsys):
+    workspace = tmp_path / "workspace"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "app.py").write_text("from fastapi import FastAPI\nfrom pydantic import BaseModel\n")
+    _package_fastapi_contract(workspace, tmp_path)
+    state_path = workspace / "state" / "composer-app-state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "onboarding_completed": True,
+                "projects": {
+                    str(repo.resolve()): {
+                        "runtime_name": "repo",
+                        "task": "Create a FastAPI endpoint",
+                    }
+                },
+            }
+        )
+        + "\n"
+    )
+    capsys.readouterr()
+
+    assert main(["composer-app", "--workspace", str(workspace), "--folder", str(repo), "--outcome", "export_bundle"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    state = json.loads(state_path.read_text())
+
+    assert result["status"] == "complete"
+    assert state["schema_version"] == "2"
+    assert state["migrations"]
+    assert state["migrations"][0]["backup_path"]
+    project = state["projects"][str(repo.resolve())]
+    assert project["selected_packages"]
+    assert project["selected_packages"][0]["fingerprint"]
+    assert project["runtime_bundle"]["checksums_sha256"]
+
+
+def test_composer_app_rejects_future_state_schema_with_recovery_guidance(tmp_path):
+    workspace = tmp_path / "workspace"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    state_path = workspace / "state" / "composer-app-state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps({"schema_version": "99", "projects": {}}) + "\n")
+
+    result = run_composer_app(folder=repo, workspace_root=workspace, export_logs=True)
+
+    assert result["status"] == "failed"
+    assert result["product_error"]["code"] == "state_schema_incompatible"
+    assert "clean workspace root" in result["product_error"]["recommended_next_action"]
+    assert result["support"]["support_bundle"] is not None

@@ -8,11 +8,17 @@ from typing import Any
 from .agent import run_agent
 from .catalog import MAX_REPO_FILES, MAX_TOTAL_BYTES, compose_from_folder, infer_task_hints, scan_repo_context
 from .runtime import SlmRuntime, serve_runtime
+from .shared.hashing import package_fingerprint, sha256
 from .shared.io import load_json_if_exists
-from .shared.product import ensure_app_workspace, environment_diagnostics, runtime_name_for_folder
+from .shared.product import (
+    APP_STATE_FILE,
+    APP_WORKSPACE_SCHEMA_VERSION,
+    ensure_app_workspace,
+    environment_diagnostics,
+    runtime_name_for_folder,
+)
 
 
-STATE_FILE = "composer-app-state.json"
 ONBOARDING_MESSAGE = (
     "Start by selecting a local folder. Slm Cortex scans the codebase, recommends the right "
     "packages, composes a runtime, and then lets you run locally or export the bundle. "
@@ -46,8 +52,66 @@ def run_composer_app(
     repo = folder.resolve()
     diagnostics = environment_diagnostics(workspace_root=workspace.root, product_mode="composer")
     capabilities = _capability_summary(diagnostics)
-    state_path = workspace.state_dir / STATE_FILE
-    state = _load_state(state_path)
+    state_path = workspace.state_dir / APP_STATE_FILE
+    try:
+        state = _load_state(state_path)
+    except ValueError as error:
+        runtime_slug = runtime_name_for_folder(repo, runtime_name)
+        product_error = {
+            "code": "state_schema_incompatible",
+            "summary": "Composer App could not load the existing workspace state.",
+            "likely_cause": str(error),
+            "recommended_next_action": "Restore the latest state backup from the workspace state directory or retry with a clean workspace root after exporting a doctor support bundle.",
+        }
+        support_bundle = write_support_bundle(
+            workspace_root=workspace.root,
+            runtime_name="state-schema-error",
+            compose_result=None,
+            state=None,
+            diagnostics=diagnostics,
+            scan_summary=None,
+            product_error=product_error,
+        )
+        return {
+            "schema_version": "1",
+            "status": "failed",
+            "exit_code": 2,
+            "operation": "composer_app",
+            "product_mode": "composer",
+            "onboarding": {
+                "first_run": False,
+                "completed": False,
+                "message": ONBOARDING_MESSAGE,
+                "capabilities": capabilities,
+                "state_path": str(state_path.resolve()),
+            },
+            "project": {
+                "folder": str(repo),
+                "reopened": False,
+                "task": task,
+                "task_hints": [],
+                "scan_summary": {},
+                "scan_warnings": [],
+            },
+            "workspace": workspace.as_dict(),
+            "composition": {
+                "runtime_name": runtime_slug,
+                "runtime": None,
+                "routing_decision": None,
+                "selected_slms": [],
+                "export_bundle": None,
+            },
+            "outcome": {"requested": outcome, "status": "blocked", "run_target": None},
+            "product_error": product_error,
+            "support": {
+                "logs_dir": str(workspace.logs_dir.resolve()),
+                "compose_log_path": str((workspace.logs_dir / f"compose-{runtime_slug}.json").resolve()),
+                "support_bundle": support_bundle,
+            },
+            "diagnostics": diagnostics,
+            "warnings": diagnostics.get("warnings", []),
+            "errors": [str(error)],
+        }
     first_run = not bool(state.get("onboarding_completed"))
     runtime_slug = runtime_name_for_folder(repo, runtime_name)
     scan_summary = scan_repo_context(repo)
@@ -189,6 +253,9 @@ def run_composer_app(
 
 def _load_state(path: Path) -> dict[str, Any]:
     state = load_json_if_exists(path)
+    if not state:
+        return _new_state()
+    state = _migrate_state(path, state)
     projects = state.get("projects")
     if not isinstance(projects, dict):
         state["projects"] = {}
@@ -198,6 +265,56 @@ def _load_state(path: Path) -> dict[str, Any]:
 def _write_state(path: Path, state: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+
+
+def _new_state() -> dict[str, Any]:
+    return {
+        "schema_version": APP_WORKSPACE_SCHEMA_VERSION,
+        "projects": {},
+        "migrations": [],
+    }
+
+
+def _migrate_state(path: Path, state: dict[str, Any]) -> dict[str, Any]:
+    version = str(state.get("schema_version") or "1")
+    if version == APP_WORKSPACE_SCHEMA_VERSION:
+        state.setdefault("migrations", [])
+        return state
+    migrated = dict(state)
+    migrations = list(migrated.get("migrations") or [])
+    if version == "1":
+        backup_path = _backup_state_file(path, state, version)
+        migrated["schema_version"] = APP_WORKSPACE_SCHEMA_VERSION
+        migrated.setdefault("projects", {})
+        for project in migrated["projects"].values():
+            if not isinstance(project, dict):
+                continue
+            project.setdefault("selected_packages", [])
+            project.setdefault("runtime_bundle", {})
+        migrations.append(
+            {
+                "from": "1",
+                "to": APP_WORKSPACE_SCHEMA_VERSION,
+                "applied_at": _utc_now(),
+                "status": "complete",
+                "backup_path": backup_path,
+            }
+        )
+        migrated["migrations"] = migrations
+        return migrated
+    raise ValueError(
+        f"unsupported app workspace state schema_version: {version}; expected {APP_WORKSPACE_SCHEMA_VERSION}. Restore a known-good backup or use a clean workspace root."
+    )
+
+
+def _backup_state_file(path: Path, state: dict[str, Any], version: str) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    target = path.with_name(f"{path.stem}.schema-v{version}.bak.json")
+    if target.exists():
+        stamp = _utc_now().replace(":", "").replace("-", "")
+        target = path.with_name(f"{path.stem}.schema-v{version}-{stamp}.bak.json")
+    target.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    return str(target.resolve())
 
 
 def _record_project_state(
@@ -211,14 +328,19 @@ def _record_project_state(
     first_run: bool,
 ) -> dict[str, Any]:
     projects = state.setdefault("projects", {})
+    selected_packages = _selected_package_records(compose_result)
+    runtime_bundle = _runtime_bundle_record(compose_result)
     projects[str(repo)] = {
         "runtime_name": runtime_name,
         "task": task,
         "scan_summary": scan_summary,
         "last_status": compose_result.get("status"),
         "runtime_path": (compose_result.get("runtime") or {}).get("path"),
+        "selected_packages": selected_packages,
+        "runtime_bundle": runtime_bundle,
         "updated_at": _utc_now(),
     }
+    state["schema_version"] = APP_WORKSPACE_SCHEMA_VERSION
     state["onboarding_completed"] = True
     state["last_opened_project"] = str(repo)
     state["updated_at"] = _utc_now()
@@ -388,26 +510,101 @@ def _write_support_bundle(
     *,
     workspace,
     runtime_name: str,
-    compose_result: dict[str, Any],
-    state: dict[str, Any],
+    compose_result: dict[str, Any] | None,
+    state: dict[str, Any] | None,
     diagnostics: dict[str, Any],
-    scan_summary: dict[str, Any],
+    scan_summary: dict[str, Any] | None,
     product_error: dict[str, Any] | None,
+    bundle_path: Path | None = None,
 ) -> str:
-    support_dir = workspace.exports_dir / "support"
+    support_dir = bundle_path.parent if bundle_path else workspace.diagnostics_dir / "support"
     support_dir.mkdir(parents=True, exist_ok=True)
-    target = support_dir / f"{runtime_name}-support.json"
+    target = bundle_path or support_dir / f"{runtime_name}-support.json"
     payload = {
         "schema_version": "1",
         "generated_at": _utc_now(),
+        "tool": diagnostics.get("tool"),
+        "workspace_schema_version": diagnostics.get("workspace_schema_version"),
         "product_error": product_error,
         "compose_result": compose_result,
         "diagnostics": diagnostics,
         "scan_summary": scan_summary,
         "state": state,
+        "recent_errors": (compose_result or {}).get("errors") or diagnostics.get("warnings") or [],
+        "redactions": {
+            "env_vars": "excluded",
+            "file_contents": "excluded",
+        },
     }
     target.write_text(json.dumps(payload, indent=2) + "\n")
     return str(target.resolve())
+
+
+def write_support_bundle(
+    *,
+    workspace_root: Path | None,
+    runtime_name: str,
+    compose_result: dict[str, Any] | None,
+    state: dict[str, Any] | None,
+    diagnostics: dict[str, Any],
+    scan_summary: dict[str, Any] | None,
+    product_error: dict[str, Any] | None,
+    bundle_path: Path | None = None,
+) -> str:
+    workspace = ensure_app_workspace(workspace_root)
+    return _write_support_bundle(
+        workspace=workspace,
+        runtime_name=runtime_name,
+        compose_result=compose_result,
+        state=state,
+        diagnostics=diagnostics,
+        scan_summary=scan_summary,
+        product_error=product_error,
+        bundle_path=bundle_path,
+    )
+
+
+def _selected_package_records(compose_result: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for item in compose_result.get("selected_slms") or []:
+        path = Path(item)
+        try:
+            manifest = json.loads((path / "slm.yaml").read_text()) if False else None
+        except Exception:
+            manifest = None
+        try:
+            from .shared.io import read_json, read_yaml
+
+            slm_manifest = read_yaml(path / "slm.yaml")
+            metadata = read_json(path / "metadata.json")
+            records.append(
+                {
+                    "path": str(path.resolve()),
+                    "slm_id": slm_manifest.get("slm_id"),
+                    "version": slm_manifest.get("version"),
+                    "fingerprint": package_fingerprint(slm_manifest, metadata),
+                }
+            )
+        except (FileNotFoundError, ValueError, KeyError):
+            records.append({"path": str(path.resolve())})
+    return records
+
+
+def _runtime_bundle_record(compose_result: dict[str, Any]) -> dict[str, Any]:
+    runtime = compose_result.get("runtime") or {}
+    runtime_path_value = runtime.get("path")
+    if not runtime_path_value:
+        return {}
+    runtime_path = Path(runtime_path_value)
+    record = {
+        "path": str(runtime_path.resolve()),
+        "validation_status": runtime.get("validation_status"),
+        "composition_status": runtime.get("composition_status"),
+    }
+    checksums_path = runtime_path / "checksums.json"
+    if checksums_path.exists():
+        record["checksums_sha256"] = sha256(checksums_path)
+    return record
 
 
 def _utc_now() -> str:

@@ -12,6 +12,17 @@ CONFIG_DIR = ROOT / "configs"
 DATA_DIR = ROOT / "data"
 ARTIFACT_DIR = ROOT / "artifacts"
 
+BACKEND_DEPENDENCIES = {
+    "mlx": ["mlx-lm>=0.31,<0.32"],
+    "gguf": [
+        "llama-cpp-python>=0.3,<0.4",
+        "peft>=0.18,<0.19",
+        "safetensors>=0.6,<0.7",
+        "torch>=2.7,<3",
+        "transformers>=5,<6",
+    ],
+}
+
 
 def base_config() -> dict:
     # Use the new `SLMCORTEX_BASE_CONFIG` environment variable.
@@ -31,6 +42,14 @@ def mlx_supported() -> bool:
         "arm64",
         "aarch64",
     }
+
+
+def backend_supported_on_platform(backend: str) -> bool:
+    if backend == "mlx":
+        return mlx_supported()
+    if backend == "gguf":
+        return True
+    raise ValueError(f"unknown backend: {backend}")
 
 
 def resolve_backend(config: dict | None = None) -> str:

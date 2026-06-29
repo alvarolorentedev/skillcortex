@@ -42,6 +42,8 @@ def test_environment_diagnostics_reports_machine_and_workspace(tmp_path):
     assert diagnostics["default_runtime_backend"] in {"mlx", "gguf"}
     assert isinstance(diagnostics["backends"], list)
     assert diagnostics["summary_lines"]
+    assert diagnostics["optional_backend_provisioning"]
+    assert diagnostics["recovery_guidance"]
 
 
 def test_resolve_app_workspace_is_stable_for_given_root(tmp_path):

@@ -28,6 +28,7 @@ def test_slmcortex_root_help_lists_product_commands_and_examples():
     assert completed.returncode == 0
     assert "Compose, validate, run, and optionally author Slm Cortex packages." in completed.stdout
     assert "doctor" in completed.stdout
+    assert "provision-backend" in completed.stdout
     assert "composer-app" in completed.stdout
     assert "compose-folder" in completed.stdout
     assert "package-slm" in completed.stdout
@@ -40,6 +41,7 @@ def test_slmcortex_root_help_lists_product_commands_and_examples():
 def test_slmcortex_product_help_examples_cover_every_command():
     commands = {
         ("doctor", "--help"): "slmcortex doctor --workspace",
+        ("provision-backend", "--help"): "slmcortex provision-backend --backend mlx --dry-run",
         ("composer-app", "--help"): "slmcortex composer-app --folder . --task",
         ("compose-folder", "--help"): "slmcortex compose-folder --folder . --task",
         ("train-slm", "--help"): "slmcortex train-slm --slm-id fastapi_contract",
@@ -177,7 +179,13 @@ def test_packaged_install_smoke_script_launches_composer_launcher(tmp_path):
         "launch_help",
         "composer_launcher_help",
         "doctor",
+        "doctor_support_bundle",
+        "package_fastapi_contract",
+        "compose_folder",
+        "composer_app_export",
     ]
+    assert workspace_root.joinpath("exports", "repo.json").exists()
+    assert workspace_root.joinpath("diagnostics", "support", "doctor-support.json").exists()
 
 
 def test_dynamic_adaptive_smoke_script_runs_mock_loop(tmp_path):
