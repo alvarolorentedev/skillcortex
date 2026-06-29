@@ -206,19 +206,49 @@ def _resolve_smoke_adapter_dir(workspace_root: Path) -> Path:
         return adapter_dir
     except FileNotFoundError:
         fallback = workspace_root / ".smoke-adapter"
-        backend = resolve_backend(base_config())
+        config = base_config()
+        training = training_config()
+        backend = resolve_backend(config)
         adapter_format = adapter_format_for_backend(backend)
+        runtime_model = str(config.get("model") or config.get("default_runtime_model") or "")
+        if backend == "gguf" and not runtime_model.endswith(".gguf"):
+            runtime_model = "smoke-test.gguf"
         fallback.mkdir(parents=True, exist_ok=True)
         fallback.joinpath(adapter_weight_name_for_format(adapter_format)).write_bytes(
             b"slmcortex smoke adapter\n"
         )
-        fallback.joinpath("adapter_config.json").write_text("{}\n")
+        fallback.joinpath("adapter_config.json").write_text(
+            json.dumps(
+                {
+                    "fine_tune_type": "lora",
+                    "lora_parameters": {
+                        "dropout": 0.0,
+                        "keys": list(training["target_modules"]),
+                        "rank": int(training["slm_rank"]),
+                        "scale": 20.0,
+                    },
+                    "model": runtime_model,
+                    "num_layers": int(training["lora_layers"]),
+                    "seed": int(training["seed"]),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        )
         fallback.joinpath("metadata.json").write_text(
             json.dumps(
                 {
                     "backend": backend,
+                    "base_model": runtime_model,
+                    "config": training,
                     "format": adapter_format,
+                    "quantization": "4bit",
+                    "rank": int(training["slm_rank"]),
                     "seed": int(training_config()["seed"]),
+                    "source_model": str(config.get("source_model") or "synthetic-smoke-source"),
+                    "target_modules": list(training["target_modules"]),
+                    "trainable_parameters": 1,
                 },
                 indent=2,
                 sort_keys=True,
