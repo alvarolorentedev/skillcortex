@@ -62,7 +62,10 @@ def main(argv: list[str] | None = None) -> int:
     support_bundle = workspace_root / "diagnostics" / "support" / "doctor-support.json"
 
     steps = []
-    steps.append(_run("install_package", installer_path + [parsed.package_source], cwd=ROOT, env=env))
+    install_command = installer_path + [parsed.package_source]
+    if len(installer_path) > 1 and not Path(installer_path[1]).exists():
+        install_command = ["python", "-m", "pip", "install", parsed.package_source]
+    steps.append(_run("install_package", install_command, cwd=ROOT, env=env))
     steps.append(_run("launch_help", [str(launcher_path), "--help"]))
     steps.append(_run("composer_launcher_help", [str(composer_launcher_path), "--help"]))
     steps.append(
