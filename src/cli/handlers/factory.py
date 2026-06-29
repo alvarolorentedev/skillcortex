@@ -15,8 +15,8 @@ from ..common import default_dataset_outputs, package_composition, resolve_train
 FACTORY_DEPENDENCY_GUARDED_COMMANDS = {"train-slm", "train-plasticity-lora"}
 
 
-def ensure_factory_prerequisites(parsed) -> None:
-    diagnostics = environment_diagnostics(
+def ensure_factory_prerequisites(parsed, *, environment_diagnostics_fn=environment_diagnostics) -> None:
+    diagnostics = environment_diagnostics_fn(
         workspace_root=Path(parsed.workspace) if getattr(parsed, "workspace", None) else None,
         product_mode="factory",
     )
@@ -32,7 +32,14 @@ def ensure_factory_prerequisites(parsed) -> None:
     )
 
 
-def execute_factory_command(command: str, parsed) -> dict | None:
+def execute_factory_command(
+    command: str,
+    parsed,
+    *,
+    environment_diagnostics_fn=environment_diagnostics,
+    train_slm_package_fn=train_slm_package,
+    validate_slm_package_fn=validate_slm_package,
+) -> dict | None:
     if command == "generate-dataset":
         default_output, default_eval_output = default_dataset_outputs(parsed.slm_id)
         return generate_dataset_bundle(
@@ -54,9 +61,13 @@ def execute_factory_command(command: str, parsed) -> dict | None:
             report_output=Path(parsed.report_output) if parsed.report_output else None,
         )
     if command == "train-slm":
-        return _train_slm(parsed)
+        return _train_slm(parsed, train_slm_package_fn=train_slm_package_fn)
     if command == "train-plasticity-lora":
-        return _train_plasticity_lora(parsed)
+        return _train_plasticity_lora(
+            parsed,
+            train_slm_package_fn=train_slm_package_fn,
+            validate_slm_package_fn=validate_slm_package_fn,
+        )
     if command == "import-lora":
         return import_lora(
             source=parsed.source,
@@ -87,12 +98,12 @@ def execute_factory_command(command: str, parsed) -> dict | None:
             force=parsed.force,
             dry_run=parsed.dry_run,
         )
-    return validate_slm_package(Path(parsed.path)) if command == "validate-slm-package" else None
+    return validate_slm_package_fn(Path(parsed.path)) if command == "validate-slm-package" else None
 
 
-def _train_slm(parsed) -> dict:
+def _train_slm(parsed, *, train_slm_package_fn=train_slm_package) -> dict:
     mode, slm_id, composition, defaults_applied = resolve_train_slm(parsed)
-    result = train_slm_package(
+    result = train_slm_package_fn(
         slm=slm_id,
         mode=mode,
         output=Path(parsed.output),
@@ -113,7 +124,12 @@ def _train_slm(parsed) -> dict:
     return result
 
 
-def _train_plasticity_lora(parsed) -> dict:
+def _train_plasticity_lora(
+    parsed,
+    *,
+    train_slm_package_fn=train_slm_package,
+    validate_slm_package_fn=validate_slm_package,
+) -> dict:
     output = _plasticity_output(parsed)
     if parsed.dry_run:
         return {
@@ -124,7 +140,7 @@ def _train_plasticity_lora(parsed) -> dict:
         }
     with tempfile.TemporaryDirectory(prefix=f"slmcortex-{parsed.slm_id}-publish-") as directory:
         staging = Path(directory) / parsed.slm_id
-        result = train_slm_package(
+        result = train_slm_package_fn(
             slm=parsed.slm_id,
             mode="generic",
             output=staging,
@@ -147,7 +163,7 @@ def _train_plasticity_lora(parsed) -> dict:
             force=True,
             dry_run=False,
         )
-        validate_slm_package(staging)
+        validate_slm_package_fn(staging)
         if output.exists():
             if not parsed.force:
                 raise FileExistsError(f"{output} exists; pass --force to replace it")

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from ..catalog import compose_from_folder, infer_task_hints, scan_repo_context
+from ..runtime import serve_runtime
 from ..shared.product import APP_STATE_FILE, ensure_app_workspace, environment_diagnostics, runtime_name_for_folder
 from .outcomes import capability_summary, resolve_outcome, scan_warnings, translate_product_error
 from .state import load_state, record_project_state, write_state
@@ -108,6 +109,7 @@ def run_composer_app(
             trace_out=trace_out,
             dry_run=dry_run,
             dry_run_only=capabilities["dry_run_only"],
+            serve_runtime_fn=serve_runtime,
         )
         warnings = [*warnings_from_scan, *compose_result.get("warnings", [])]
         if outcome == "local_run" and capabilities["dry_run_only"]:

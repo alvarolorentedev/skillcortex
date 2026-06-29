@@ -8,6 +8,7 @@ from ...agent import run_agent
 from ...catalog import compose_from_folder, compose_from_route, route_task
 from ...composer import compose_slm_packages
 from ...composer_app import run_composer_app, write_support_bundle
+from ...packaging import train_slm_package, validate_slm_package
 from ...runtime import DynamicRuntime, SlmRuntime, serve_runtime, validate_runtime_bundle
 from ...shared.product import environment_diagnostics
 from ...shared.provisioning import provision_backend
@@ -31,7 +32,7 @@ def execute_command(
 ) -> dict:
     command = _resolved_command(parsed)
     if parsed.command == "factory" and command in FACTORY_DEPENDENCY_GUARDED_COMMANDS:
-        ensure_factory_prerequisites(parsed)
+        ensure_factory_prerequisites(parsed, environment_diagnostics_fn=environment_diagnostics)
     if command == "doctor":
         return _doctor(parsed)
     if command == "provision-backend":
@@ -54,7 +55,13 @@ def execute_command(
             overwrite=parsed.overwrite,
             product_mode=parsed.product_mode,
         )
-    factory_result = execute_factory_command(command, parsed)
+    factory_result = execute_factory_command(
+        command,
+        parsed,
+        environment_diagnostics_fn=environment_diagnostics,
+        train_slm_package_fn=train_slm_package,
+        validate_slm_package_fn=validate_slm_package,
+    )
     if factory_result is not None:
         return factory_result
     if command == "compose-slms":
@@ -227,4 +234,6 @@ def _dynamic_agent(parsed, collect_agent_tasks) -> dict:
         trace_out=Path(parsed.trace_out) if parsed.trace_out else None,
         dry_run=parsed.dry_run,
         overwrite=parsed.overwrite,
+        compose_from_route_fn=compose_from_route,
+        run_agent_fn=run_agent,
     )

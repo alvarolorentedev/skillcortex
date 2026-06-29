@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 from ..composer import compose_slm_packages
-from ..runtime import validate_runtime_bundle
 from ..shared.product import (
     PRODUCT_MODES,
     ensure_app_workspace,
@@ -65,6 +64,8 @@ def compose_from_route(
             f"{item['slm_id']}={path}" for item, path in zip(selected, selected_paths, strict=True)
         )
         raise ValueError(f"selected slm package is not composable ({context}): {error}") from error
+
+    from . import validate_runtime_bundle
 
     validation_status = validate_runtime_bundle(runtime_out).get("status")
     if validation_status not in {"valid", "passed"}:

@@ -8,6 +8,7 @@ from .discovery import SlmCatalog
 from .scanning import MAX_REPO_FILES, MAX_TOTAL_BYTES, infer_task_hints, scan_repo_context
 from .scoring import ROUTE_THRESHOLD, candidate
 from .types import CatalogResult, RoutingCard, SlmRecord
+from ..runtime import validate_runtime_bundle
 
 
 def route_task(
@@ -70,4 +71,5 @@ __all__ = [
     "infer_task_hints",
     "route_task",
     "scan_repo_context",
+    "validate_runtime_bundle",
 ]

@@ -58,6 +58,7 @@ def resolve_outcome(
     trace_out: Path | None,
     dry_run: bool,
     dry_run_only: bool,
+    serve_runtime_fn=serve_runtime,
 ) -> dict[str, Any]:
     runtime_path = Path(compose_result["runtime"]["path"])
     if outcome == "export_bundle":
@@ -82,7 +83,7 @@ def resolve_outcome(
         )
         return _run_result(outcome, run_target, runtime_path, {"agent": agent_result}, agent_result["status"], dry_run_only)
     if run_target == "compatibility_server":
-        server_result = serve_runtime(
+        server_result = serve_runtime_fn(
             runtime_path=runtime_path,
             slms_dir=None,
             host=host,

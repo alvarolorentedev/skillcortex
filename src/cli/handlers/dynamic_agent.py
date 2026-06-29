@@ -26,8 +26,10 @@ def run_dynamic_agent(
     trace_out: Path | None,
     dry_run: bool,
     overwrite: bool,
+    compose_from_route_fn=compose_from_route,
+    run_agent_fn=run_agent,
 ) -> dict:
-    composition = compose_from_route(
+    composition = compose_from_route_fn(
         slms_dir=slms_dir,
         repo=repo,
         task=task,
@@ -37,7 +39,7 @@ def run_dynamic_agent(
     )
     if composition["validation_status"] != "passed":
         raise ValueError(f"runtime validation failed: {composition['validation_status']}")
-    agent_result = run_agent(
+    agent_result = run_agent_fn(
         runtime_path=runtime_out,
         repo=repo,
         task=[task],

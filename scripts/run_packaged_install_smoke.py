@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         if parsed.workspace_root
         else Path(tempfile.mkdtemp(prefix="slmcortex-installed-workspace-"))
     )
+    adapter_dir = ROOT / "artifacts" / "adapters" / "python_slm"
     installer_path, launcher_path, composer_launcher_path = _installer_contract(install_root)
     env = dict(os.environ)
     env["SLMCORTEX_INSTALL_ROOT"] = str(install_root)
@@ -94,35 +95,41 @@ def main(argv: list[str] | None = None) -> int:
             ],
         )
     )
-    steps.append(
-        _run(
-            "package_fastapi_contract",
-            [
-                str(launcher_path),
-                "package-slm",
-                "--slm-id",
-                "fastapi_contract",
-                "--name",
-                "FastAPI Contract Slm",
-                "--adapter-dir",
-                str(ROOT / "artifacts" / "adapters" / "python_slm"),
-                "--output",
-                str(package_path),
-                "--train-dataset",
-                str(ROOT / "data" / "train.jsonl"),
-                "--eval-dataset",
-                str(ROOT / "data" / "eval.jsonl"),
-                "--eval-summary",
-                str(FIXTURES / "eval-summary.json"),
-                "--description",
-                "FastAPI endpoints with Pydantic validation.",
-                "--allowed-task-types",
-                "python_generation",
-                "--activation-scope",
-                "task",
-            ],
+    if adapter_dir.exists():
+        steps.append(
+            _run(
+                "package_fastapi_contract",
+                [
+                    str(launcher_path),
+                    "package-slm",
+                    "--slm-id",
+                    "fastapi_contract",
+                    "--name",
+                    "FastAPI Contract Slm",
+                    "--adapter-dir",
+                    str(adapter_dir),
+                    "--output",
+                    str(package_path),
+                    "--train-dataset",
+                    str(ROOT / "data" / "train.jsonl"),
+                    "--eval-dataset",
+                    str(ROOT / "data" / "eval.jsonl"),
+                    "--eval-summary",
+                    str(FIXTURES / "eval-summary.json"),
+                    "--description",
+                    "FastAPI endpoints with Pydantic validation.",
+                    "--allowed-task-types",
+                    "python_generation",
+                    "--activation-scope",
+                    "task",
+                ],
+            )
         )
-    )
+    else:
+        print(
+            f"Skipping package_fastapi_contract smoke case; adapter weights not found at {adapter_dir}",
+            file=sys.stderr,
+        )
     _enrich_fastapi_package(package_path)
     steps.append(
         _run(
@@ -208,7 +215,7 @@ def _enrich_fastapi_package(package_path: Path) -> None:
 
 def _installer_contract(install_root: Path) -> tuple[list[str], Path, Path]:
     if os.name == "nt":
-        script = ROOT / "scripts" / "installers" / "install-slmcortex-windows.ps1"
+        script = ROOT / "artifacts" / "installers" / "install-slmcortex-windows.ps1"
         return (
             ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script)],
             install_root / "slmcortex.cmd",
@@ -216,9 +223,9 @@ def _installer_contract(install_root: Path) -> tuple[list[str], Path, Path]:
         )
     system = os.uname().sysname
     if system == "Darwin":
-        script = ROOT / "scripts" / "installers" / "install-slmcortex-macos.sh"
+        script = ROOT / "artifacts" / "installers" / "install-slmcortex-macos.sh"
     else:
-        script = ROOT / "scripts" / "installers" / "install-slmcortex-linux.sh"
+        script = ROOT / "artifacts" / "installers" / "install-slmcortex-linux.sh"
     return (["sh", str(script)], install_root / "slmcortex", install_root / "slmcortex-composer")
 
 
