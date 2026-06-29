@@ -97,6 +97,12 @@ python scripts/run_slmcortex_arbitrary_slm_smoke.py --real-training
 For GGUF training/import conversion, set `gguf_converter` in the selected base
 config to llama.cpp's `convert_lora_to_gguf.py`.
 
-## 5. Read the command reference
+## 5. Set up the adaptive local coding agent
+
+If you want Slm Cortex to act as your local coding agent instead of only
+running the static runtime demo, continue with the
+[local coding agent setup](local-coding-agent-setup.md).
+
+## 6. Read the command reference
 
 Once the quickstart works, move to the [command reference](command-reference.md) for the full flag-by-flag guide.

@@ -52,6 +52,7 @@ flowchart TD
 Deep-dive docs:
 
 - [User Quickstart](docs/user-guide/quickstart.md)
+- [Local Coding Agent Setup](docs/user-guide/local-coding-agent-setup.md)
 - [Command Reference](docs/user-guide/command-reference.md)
 - [Slm Factory](docs/architecture/slm-factory.md)
 - [Slm Composer](docs/architecture/slm-composer.md)
