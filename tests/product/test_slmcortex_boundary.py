@@ -43,7 +43,7 @@ def test_console_scripts_expose_only_slmcortex_product_entrypoint():
 
 
 def test_packaged_configs_match_repo_configs():
-    for path in sorted((ROOT / "configs").iterdir()):
+    for path in sorted((ROOT / "src" / "slmcortex_resources" / "configs").iterdir()):
         if path.suffix not in {".yaml", ".json"}:
             continue
         packaged = ROOT / "src" / "slmcortex_resources" / "configs" / path.name
