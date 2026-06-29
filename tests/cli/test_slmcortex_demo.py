@@ -26,7 +26,9 @@ def _run_slmcortex(*args: str) -> subprocess.CompletedProcess[str]:
 def test_slmcortex_root_help_lists_product_commands_and_examples():
     completed = _run_slmcortex("--help")
     assert completed.returncode == 0
-    assert "Package, compose, validate, and run Slm Cortex runtime bundles." in completed.stdout
+    assert "Compose, validate, run, and optionally author Slm Cortex packages." in completed.stdout
+    assert "doctor" in completed.stdout
+    assert "compose-folder" in completed.stdout
     assert "package-slm" in completed.stdout
     assert "compose-slms" in completed.stdout
     assert "validate-runtime" in completed.stdout
@@ -36,6 +38,8 @@ def test_slmcortex_root_help_lists_product_commands_and_examples():
 
 def test_slmcortex_product_help_examples_cover_every_command():
     commands = {
+        ("doctor", "--help"): "slmcortex doctor --workspace",
+        ("compose-folder", "--help"): "slmcortex compose-folder --folder . --task",
         ("train-slm", "--help"): "slmcortex train-slm --slm-id fastapi_contract",
         ("package-slm", "--help"): "slmcortex package-slm --slm-id python_slm",
         ("validate-slm-package", "--help"): "slmcortex validate-slm-package --path",
@@ -111,6 +115,37 @@ def test_arbitrary_slm_smoke_script_runs_default_no_model_loop(tmp_path):
     assert output_root.joinpath("fastapi_contract", "slm.yaml").exists()
     assert output_root.joinpath("runtime", "composition.yaml").exists()
     assert output_root.joinpath("agent-trace.json").exists()
+
+
+def test_package_product_smoke_script_runs_external_workspace_loop(tmp_path):
+    workspace_root = tmp_path / "workspace"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/run_package_product_smoke.py",
+            "--workspace-root",
+            str(workspace_root),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    summary = json.loads(completed.stdout)
+    assert summary["status"] == "complete"
+    assert summary["mode"] == "external-workspace-compose"
+    assert [step["name"] for step in summary["steps"]] == [
+        "doctor",
+        "package_fastapi_contract",
+        "compose_folder",
+        "validate_runtime",
+        "infer_dry_run",
+    ]
+    assert workspace_root.joinpath("packages", "fastapi_contract", "slm.yaml").exists()
+    assert workspace_root.joinpath("runtimes", "toy-repo", "composition.yaml").exists()
+    assert workspace_root.joinpath("exports", "toy-repo.json").exists()
+    assert workspace_root.joinpath("logs", "compose-toy-repo.json").exists()
 
 
 def test_dynamic_adaptive_smoke_script_runs_mock_loop(tmp_path):

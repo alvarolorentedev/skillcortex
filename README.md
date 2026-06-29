@@ -52,6 +52,7 @@ flowchart TD
 Deep-dive docs:
 
 - [User Quickstart](docs/user-guide/quickstart.md)
+- [Packaged Install](docs/user-guide/packaged-install.md)
 - [Local Coding Agent Setup](docs/user-guide/local-coding-agent-setup.md)
 - [Command Reference](docs/user-guide/command-reference.md)
 - [Slm Factory](docs/architecture/slm-factory.md)
@@ -93,6 +94,7 @@ Check the canonical public CLI:
 
 ```bash
 python -m slmcortex --help
+python -m slmcortex doctor
 ```
 
 ### Platform guidance
@@ -109,6 +111,8 @@ python -m slmcortex --help
 
 A first-time developer should start here. This flow uses checked-in fixtures,
 checked-in adapter artifacts, and dry-run runtime/agent steps.
+
+For the packaged Composer-first contract, use [docs/user-guide/packaged-install.md](docs/user-guide/packaged-install.md) and start with `slmcortex doctor` plus `slmcortex compose-folder`.
 
 ```bash
 DEMO_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/slmcortex-demo.XXXXXX")"
@@ -197,6 +201,8 @@ Slm Cortex ships one public CLI with command-specific help and examples.
 
 | Command | Purpose |
 | --- | --- |
+| `slmcortex doctor` | inspect packaged-app readiness, workspace layout, and backend availability |
+| `slmcortex compose-folder` | scan one folder, route the best packages, compose a runtime, and optionally export it |
 | `slmcortex generate-dataset` | generate deterministic train/eval JSONL datasets for product `train-slm` |
 | `slmcortex validate-dataset` | validate product train/eval datasets and write a report JSON |
 | `slmcortex train-slm` | train a new LoRA slm from datasets and package it as a Slm Cortex artifact |
@@ -210,6 +216,8 @@ Slm Cortex ships one public CLI with command-specific help and examples.
 | `slmcortex agent run` | run the bounded local agent workflow against a local repository |
 
 Use `slmcortex <command> --help` for command-specific examples.
+
+Advanced Factory commands remain available for dataset generation, training, packaging, and import, but they are not required for the normal Composer install path.
 
 ## Common Workflows
 

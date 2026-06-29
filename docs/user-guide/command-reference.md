@@ -8,10 +8,10 @@ follow-up to the [quickstart](quickstart.md).
 - Use `slmcortex` or `python -m slmcortex`.
 - Prefer `--dry-run` when you only want to inspect routing, composition, or
   agent behavior.
-- `generate-dataset`, `train-slm`, `package-slm`, and `compose-slms`
-  are the packaging pipeline.
-- `route`, `compose-from-route`, `infer`, `serve`, and `agent run` are the
-  runtime pipeline.
+- `doctor`, `compose-folder`, `route`, `compose-from-route`, `infer`, `serve`,
+  and `agent run` are the Composer-first product path.
+- `generate-dataset`, `train-slm`, `package-slm`, and related authoring
+  commands are advanced Factory commands.
 - `train-slm` accepts either a preset positional slm name or an explicit
   `--slm-id`.
 - `infer` requires exactly one of `--runtime` or `--slms-dir`.
@@ -27,6 +27,8 @@ follow-up to the [quickstart](quickstart.md).
 
 | Command | Reads | Writes | Best For |
 | --- | --- | --- | --- |
+| `doctor` | platform, optional deps | diagnostics result | checking packaged-app readiness |
+| `compose-folder` | folder, workspace, task | runtime bundle, export descriptor, logs | one-step folder-to-runtime composition |
 | `generate-dataset` | slm id, domain | train/eval JSONL, report | bootstrapping training data |
 | `validate-dataset` | dataset paths | validation report | checking schema and leakage |
 | `train-slm` | datasets, adapter config | slm package | turning datasets into a packaged slm |
@@ -41,6 +43,63 @@ follow-up to the [quickstart](quickstart.md).
 | `infer` | runtime or slms dir, prompt or request file | inference result or dry-run route | running model-backed or dry-run inference |
 | `serve` | runtime bundle | server process | exposing the OpenAI-compatible API |
 | `agent run` | runtime or slms dir, repo, task | trace, diffs, optional writes | bounded repo work on a local checkout |
+
+## `doctor`
+
+Report the packaged product contract for the current machine.
+
+Optional flags:
+
+- `--workspace` overrides the default external app workspace root
+
+Writes:
+
+- diagnostics output only
+
+Example:
+
+```bash
+slmcortex doctor
+slmcortex doctor --workspace /tmp/slmcortex-app
+```
+
+Use this first when validating a packaged install or when you need to confirm backend and optional Factory dependency availability.
+
+## `compose-folder`
+
+Compose a runtime from one local folder and the external app workspace contract.
+
+Required flags:
+
+- `--folder`
+- `--task`
+
+Optional flags:
+
+- `--workspace`
+- `--slms-dir`
+- `--runtime-name`
+- `--export-descriptor`
+- `--allow-base`
+- `--overwrite`
+
+Writes:
+
+- a runtime under `runtimes/`
+- an optional export descriptor under `exports/`
+- a compose log under `logs/`
+
+Example:
+
+```bash
+slmcortex compose-folder \
+  --workspace /tmp/slmcortex-app \
+  --folder /path/to/repo \
+  --task "Create a FastAPI endpoint with request validation" \
+  --export-descriptor /tmp/slmcortex-app/exports/repo.json
+```
+
+Use this as the default packaged-product entry point when you want folder scan, routing, composition, validation, and export metadata in one call.
 
 ## `generate-dataset`
 

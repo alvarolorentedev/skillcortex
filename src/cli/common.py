@@ -9,13 +9,15 @@ from ..contracts import PRESET_SLMS
 COMPOSITION_SCOPES = ("task", "semantic_family")
 
 
-def parser_kwargs(description: str, examples: str | None = None) -> dict:
+def parser_kwargs(description: str, examples: str | None = None, summary: str | None = None) -> dict:
     kwargs = {
         "description": description,
         "formatter_class": argparse.RawDescriptionHelpFormatter,
     }
     if examples:
         kwargs["epilog"] = f"Examples:\n{examples}"
+    if summary:
+        kwargs["help"] = summary
     return kwargs
 
 

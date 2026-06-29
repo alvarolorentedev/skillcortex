@@ -7,6 +7,7 @@ from ..agent import WRITE_MODES
 from ..contracts import TASK_TYPES
 from ..dataset_factory import DEFAULT_DATASET_SEED
 from ..datasets import DEFAULT_MIN_TARGET_LENGTH
+from ..shared.product import PRODUCT_MODES
 from .common import COMPOSITION_SCOPES, parser_kwargs
 
 
@@ -14,9 +15,11 @@ def build_parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
         prog="slmcortex",
         **parser_kwargs(
-            "Package, compose, validate, and run Slm Cortex runtime bundles.",
+            "Compose, validate, run, and optionally author Slm Cortex packages.",
             dedent(
                 """
+                slmcortex doctor
+                slmcortex compose-folder --folder . --task "Create a FastAPI endpoint with request validation"
                 slmcortex package-slm --slm-id python_slm --name \"Python Slm\" --adapter-dir artifacts/adapters/python_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_slm
                 slmcortex compose-slms --slms /tmp/slmcortex-demo/python_slm,/tmp/slmcortex-demo/debugging_slm --strategy routed --output /tmp/slmcortex-demo/runtime
                 slmcortex compose-from-route --slms-dir slms --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/slmcortex-demo/runtime
@@ -27,7 +30,16 @@ def build_parser() -> argparse.ArgumentParser:
             ).strip(),
         ),
     )
+    root.add_argument("--product-mode", choices=PRODUCT_MODES, default="composer")
     commands = root.add_subparsers(dest="command", required=True, title="product commands")
+    _add_doctor_parser(commands)
+    _add_compose_from_folder_parser(commands)
+    _add_validate_runtime_parser(commands)
+    _add_route_parser(commands)
+    _add_compose_from_route_parser(commands)
+    _add_infer_parser(commands)
+    _add_serve_parser(commands)
+    _add_agent_parser(commands)
     _add_generate_dataset_parser(commands)
     _add_validate_dataset_parser(commands)
     _add_train_slm_parser(commands)
@@ -35,14 +47,40 @@ def build_parser() -> argparse.ArgumentParser:
     _add_import_lora_parser(commands)
     _add_package_slm_parser(commands)
     _add_validate_slm_package_parser(commands)
-    _add_validate_runtime_parser(commands)
     _add_compose_slms_parser(commands)
-    _add_route_parser(commands)
-    _add_compose_from_route_parser(commands)
-    _add_infer_parser(commands)
-    _add_serve_parser(commands)
-    _add_agent_parser(commands)
     return root
+
+
+def _add_doctor_parser(commands) -> None:
+    doctor = commands.add_parser(
+        "doctor",
+        **parser_kwargs(
+            "Report platform, backend, and workspace diagnostics for the Composer-first product path.",
+            "slmcortex doctor\nslmcortex doctor --workspace /tmp/slmcortex-app",
+            summary="Composer: inspect packaged-app readiness and workspace layout.",
+        ),
+    )
+    doctor.add_argument("--workspace")
+
+
+def _add_compose_from_folder_parser(commands) -> None:
+    compose = commands.add_parser(
+        "compose-folder",
+        **parser_kwargs(
+            "Compose a runtime from a local folder using the packaged app workspace contract.",
+            "slmcortex compose-folder --folder . --task \"Create a FastAPI endpoint with request validation\"\n"
+            "slmcortex compose-folder --folder . --workspace /tmp/slmcortex-app --task \"Fix the failing Python test\" --export-descriptor /tmp/slmcortex-app/exports/repo.json",
+            summary="Composer: scan a folder, select packages, compose, and validate.",
+        ),
+    )
+    compose.add_argument("--folder", required=True)
+    compose.add_argument("--task", required=True)
+    compose.add_argument("--workspace")
+    compose.add_argument("--slms-dir", dest="slms_dir")
+    compose.add_argument("--runtime-name")
+    compose.add_argument("--export-descriptor")
+    compose.add_argument("--allow-base", action="store_true")
+    compose.add_argument("--overwrite", action="store_true")
 
 
 def _add_generate_dataset_parser(commands) -> None:
@@ -52,6 +90,7 @@ def _add_generate_dataset_parser(commands) -> None:
             "Generate a deterministic train/eval JSONL dataset for product train-slm.",
             "slmcortex generate-dataset --slm-id fastapi_contract --domain fastapi\n"
             "slmcortex generate-dataset --slm-id fastapi_contract --domain fastapi --task-type python_generation --num-examples 120 --output custom/train.jsonl --eval-output custom/eval.jsonl --seed 99",
+            summary="Advanced Factory: generate datasets for training and packaging.",
         ),
     )
     generate.add_argument("--slm-id", required=True)
@@ -71,6 +110,7 @@ def _add_validate_dataset_parser(commands) -> None:
         **parser_kwargs(
             "Validate product training datasets and emit a machine-readable report.",
             "slmcortex validate-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl",
+            summary="Advanced Factory: validate training datasets before authoring.",
         ),
     )
     validate_dataset.add_argument("dataset")
@@ -86,6 +126,7 @@ def _add_train_slm_parser(commands) -> None:
             "Train a LoRA slm from datasets and package it as a Slm Cortex artifact.",
             "slmcortex train-slm --slm-id fastapi_contract --name \"FastAPI Contract Slm\" --train-dataset datasets/fastapi_contract/train.jsonl --eval-dataset datasets/fastapi_contract/eval.jsonl --output slms/fastapi_contract\n"
             "slmcortex train-slm python_slm --output slms/python_slm_run --force",
+            summary="Advanced Factory: train and package a new slm.",
         ),
     )
     train.add_argument("slm", nargs="?")
@@ -113,6 +154,7 @@ def _add_train_plasticity_lora_parser(commands) -> None:
         **parser_kwargs(
             "Train an explicit on-demand LoRA from a JSONL prompt/target dataset.",
             "slmcortex train-plasticity-lora --slm-id local_fix --name \"Local Fix\" --prompt-file data/train.jsonl --output slms/local_fix --dry-run",
+            summary="Advanced Factory: author an on-demand plasticity LoRA package.",
         ),
     )
     train.add_argument("--slm-id", required=True)
@@ -134,6 +176,7 @@ def _add_import_lora_parser(commands) -> None:
         **parser_kwargs(
             "Import a public Hugging Face LoRA into a local SlmCortex package.",
             "slmcortex import-lora --source hf://owner/repo --slm-id fastapi_slm --name \"FastAPI Slm\" --output slms/fastapi_slm --train-dataset data/train.jsonl --eval-dataset data/eval.jsonl",
+            summary="Advanced Factory: wrap a remote LoRA into a local package.",
         ),
     )
     import_lora.add_argument("--source", required=True)
@@ -156,6 +199,7 @@ def _add_package_slm_parser(commands) -> None:
             "Package an existing LoRA adapter into a self-describing slm artifact.",
             "slmcortex package-slm --slm-id python_slm --name \"Python Slm\" --adapter-dir artifacts/adapters/python_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/python_slm\n"
             "slmcortex package-slm --slm-id debugging_slm --name \"Debugging Slm\" --adapter-dir artifacts/adapters/debugging_slm --train-dataset tests/fixtures/slmcortex_demo/train.jsonl --eval-dataset tests/fixtures/slmcortex_demo/eval.jsonl --eval-summary tests/fixtures/slmcortex_demo/eval-summary.json --output /tmp/slmcortex-demo/debugging_slm",
+            summary="Advanced Factory: package an existing adapter for Composer use.",
         ),
     )
     package.add_argument("--slm-id", required=True)
@@ -183,6 +227,7 @@ def _add_validate_slm_package_parser(commands) -> None:
         **parser_kwargs(
             "Validate a packaged slm artifact and its recorded fingerprints.",
             "slmcortex validate-slm-package --path /tmp/slmcortex-demo/python_slm",
+            summary="Advanced Factory: verify authored package integrity.",
         ),
     )
     validate.add_argument("--path", required=True)
@@ -194,6 +239,7 @@ def _add_validate_runtime_parser(commands) -> None:
         **parser_kwargs(
             "Validate a composed runtime bundle before inference or serving.",
             "slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime",
+            summary="Composer: verify a runtime bundle before use.",
         ),
     )
     validate_runtime.add_argument("--runtime", required=True)
@@ -205,6 +251,7 @@ def _add_compose_slms_parser(commands) -> None:
         **parser_kwargs(
             "Compose validated slm packages into a deterministic runtime bundle.",
             "slmcortex compose-slms --slms /tmp/slmcortex-demo/python_slm,/tmp/slmcortex-demo/debugging_slm --output /tmp/slmcortex-demo/runtime",
+            summary="Composer: compose selected packages into one runtime bundle.",
         ),
     )
     compose.add_argument("--slms", required=True)
@@ -221,6 +268,7 @@ def _add_route_parser(commands) -> None:
         **parser_kwargs(
             "Route a task against discovered slm packages without loading adapters.",
             "slmcortex route --slms-dir slms --repo . --task \"Create a FastAPI endpoint\" --explain",
+            summary="Composer: preview which packages match a folder and task.",
         ),
     )
     route.add_argument("--slms-dir", required=True, dest="slms_dir")
@@ -236,6 +284,7 @@ def _add_compose_from_route_parser(commands) -> None:
         **parser_kwargs(
             "Route a task and compose selected slm packages into a runtime bundle.",
             "slmcortex compose-from-route --slms-dir slms --repo . --task \"Create a FastAPI endpoint\" --runtime-out runtime/generated",
+            summary="Composer: route a task and write a runtime bundle.",
         ),
     )
     compose.add_argument("--slms-dir", required=True, dest="slms_dir")
@@ -254,6 +303,7 @@ def _add_infer_parser(commands) -> None:
             "Run local inference against a Slm Cortex runtime bundle.",
             "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt \"Fix this Python traceback\" --dry-run\n"
             "slmcortex infer --runtime /tmp/slmcortex-demo/runtime --request-file tests/fixtures/slmcortex_demo/request.json --dry-run",
+            summary="Composer: run or dry-run inference against a runtime.",
         ),
     )
     infer.add_argument("--runtime")
@@ -279,6 +329,7 @@ def _add_serve_parser(commands) -> None:
             "slmcortex serve --runtime /tmp/slmcortex-demo/runtime --host 127.0.0.1 --port 8000\n"
             "slmcortex serve --slms-dir slms --host 127.0.0.1 --port 8000 --dry-run\n"
             "slmcortex serve --runtime /tmp/slmcortex-demo/runtime --dry-run",
+            summary="Composer: expose a runtime through the local compatibility API.",
         ),
     )
     serve.add_argument("--runtime")
@@ -297,6 +348,7 @@ def _add_agent_parser(commands) -> None:
             "Run the bounded local agent on top of a runtime bundle.",
             "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
             "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode on --test-command \"pytest -q\"",
+            summary="Composer: run the bounded local agent on a composed runtime.",
         ),
     )
     agent_commands = agent.add_subparsers(dest="agent_command", required=True)

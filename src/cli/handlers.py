@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import Callable
 
 from ..agent import run_agent
-from ..catalog import compose_from_route, route_task
+from ..catalog import compose_from_folder, compose_from_route, route_task
 from ..composer import compose_slm_packages
 from ..dataset_factory import generate_dataset_bundle
 from ..datasets import validate_dataset_command
 from ..packaging import package_slm, train_slm_package, validate_slm_package
 from ..packaging.importers import import_lora
 from ..runtime import DynamicRuntime, SlmRuntime, serve_runtime, validate_runtime_bundle
+from ..shared.product import environment_diagnostics
 from .common import csv_paths, default_dataset_outputs, infer_payload, package_composition, resolve_train_slm
 
 
@@ -28,6 +29,23 @@ def execute_command(
     collect_agent_tasks: Callable[[list[str] | None], list[str] | None],
     stream_agent_tasks: TaskProviderFactory,
 ) -> dict:
+    if parsed.command == "doctor":
+        return environment_diagnostics(
+            workspace_root=Path(parsed.workspace) if parsed.workspace else None,
+            product_mode=parsed.product_mode,
+        )
+    if parsed.command == "compose-folder":
+        return compose_from_folder(
+            folder=Path(parsed.folder),
+            task=parsed.task,
+            workspace_root=Path(parsed.workspace) if parsed.workspace else None,
+            slms_dir=Path(parsed.slms_dir) if parsed.slms_dir else None,
+            runtime_name=parsed.runtime_name,
+            export_descriptor=Path(parsed.export_descriptor) if parsed.export_descriptor else None,
+            allow_base=parsed.allow_base,
+            overwrite=parsed.overwrite,
+            product_mode=parsed.product_mode,
+        )
     if parsed.command == "generate-dataset":
         default_output, default_eval_output = default_dataset_outputs(parsed.slm_id)
         return generate_dataset_bundle(

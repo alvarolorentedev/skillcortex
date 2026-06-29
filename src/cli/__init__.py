@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
             stream_agent_tasks=_stream_agent_tasks,
         )
         print(json.dumps(result, indent=2))
-        return 0
+        return int(result.get("exit_code", 0))
     except (FileNotFoundError, FileExistsError, ValueError, RuntimeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

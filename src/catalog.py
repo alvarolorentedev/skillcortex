@@ -10,6 +10,12 @@ from typing import Any
 from .agent.sandbox import SKIP_DIRS
 from .composer import compose_slm_packages
 from .runtime import validate_runtime_bundle
+from .shared.product import (
+    PRODUCT_MODES,
+    ensure_app_workspace,
+    environment_diagnostics,
+    runtime_name_for_folder,
+)
 from .shared.io import read_json, read_yaml
 
 
@@ -216,6 +222,107 @@ def compose_from_route(
         "errors": errors,
     }
 
+
+def compose_from_folder(
+    *,
+    folder: Path,
+    task: str,
+    workspace_root: Path | None = None,
+    slms_dir: Path | None = None,
+    runtime_name: str | None = None,
+    export_descriptor: Path | None = None,
+    allow_base: bool = False,
+    overwrite: bool = False,
+    product_mode: str = "composer",
+) -> dict[str, Any]:
+    if product_mode not in PRODUCT_MODES:
+        raise ValueError(f"unknown product mode: {product_mode}")
+    workspace = ensure_app_workspace(workspace_root)
+    repo = folder.resolve()
+    packages_root = (slms_dir or workspace.packages_dir).resolve()
+    runtime_slug = runtime_name_for_folder(repo, runtime_name)
+    runtime_out = workspace.runtimes_dir / runtime_slug
+    diagnostics = environment_diagnostics(
+        workspace_root=workspace.root,
+        product_mode=product_mode,
+    )
+    task_hints: list[dict[str, str]] = []
+    routing_decision: dict[str, Any] | None = None
+    try:
+        repo_context = scan_repo_context(repo)
+        task_hints = infer_task_hints(repo_context)
+        composition = compose_from_route(
+            slms_dir=packages_root,
+            repo=repo,
+            task=task,
+            runtime_out=runtime_out,
+            explain=True,
+            allow_base=allow_base,
+            overwrite=overwrite,
+        )
+        routing_decision = composition["routing_decision"]
+        result = {
+            "schema_version": "1",
+            "status": "complete",
+            "exit_code": 0,
+            "operation": "compose_from_folder",
+            "product_mode": product_mode,
+            "folder": str(repo),
+            "task": task,
+            "workspace": workspace.as_dict(),
+            "slms_dir": str(packages_root),
+            "runtime_name": runtime_slug,
+            "task_hints": task_hints,
+            "diagnostics": diagnostics,
+            "routing_decision": routing_decision,
+            "selected_slms": composition["selected_slms"],
+            "runtime": {
+                "path": composition["runtime_out"],
+                "composition_strategy": composition["composition_strategy"],
+                "composition_status": composition["composition_status"],
+                "validation_status": composition["validation_status"],
+            },
+            "export_bundle": _write_export_descriptor(
+                export_descriptor=export_descriptor,
+                workspace_root=workspace.exports_dir,
+                runtime_name=runtime_slug,
+                task=task,
+                runtime_out=composition["runtime_out"],
+                selected_slms=composition["selected_slms"],
+                routing_decision=routing_decision,
+            ),
+            "warnings": composition["warnings"],
+            "errors": composition["errors"],
+        }
+    except (FileNotFoundError, FileExistsError, ValueError, RuntimeError) as error:
+        result = {
+            "schema_version": "1",
+            "status": "failed",
+            "exit_code": 2,
+            "operation": "compose_from_folder",
+            "product_mode": product_mode,
+            "folder": str(repo),
+            "task": task,
+            "workspace": workspace.as_dict(),
+            "slms_dir": str(packages_root),
+            "runtime_name": runtime_slug,
+            "task_hints": task_hints,
+            "diagnostics": diagnostics,
+            "routing_decision": routing_decision,
+            "runtime": {
+                "path": str(runtime_out.resolve()),
+                "composition_strategy": "routed",
+                "composition_status": "failed",
+                "validation_status": "not_run",
+            },
+            "export_bundle": None,
+            "warnings": diagnostics["warnings"],
+            "errors": [str(error)],
+            "error_code": _error_code(error),
+        }
+    _write_compose_log(workspace.logs_dir, runtime_slug, result)
+    return result
+
 def scan_repo_context(repo: Path) -> dict[str, Any]:
     language_signals: set[str] = set()
     framework_signals: set[str] = set()
@@ -255,6 +362,95 @@ def scan_repo_context(repo: Path) -> dict[str, Any]:
         },
         "scanned_files": scanned_files,
     }
+
+
+def infer_task_hints(repo_context: dict[str, Any]) -> list[dict[str, str]]:
+    frameworks = set(repo_context.get("framework_signals") or [])
+    languages = set(repo_context.get("language_signals") or [])
+    hints: list[dict[str, str]] = []
+    if "fastapi" in frameworks:
+        hints.append(
+            {
+                "label": "api-backend",
+                "task_type": "python_generation",
+                "suggested_task": "Create or update a FastAPI endpoint with request validation.",
+            }
+        )
+    if "react" in frameworks or "next" in frameworks:
+        hints.append(
+            {
+                "label": "frontend-ui",
+                "task_type": "python_generation",
+                "suggested_task": "Update the UI flow while preserving the existing component contract.",
+            }
+        )
+    if "python" in languages and not hints:
+        hints.append(
+            {
+                "label": "python-general",
+                "task_type": "python_generation",
+                "suggested_task": "Inspect the folder and compose the best available Python coding runtime.",
+            }
+        )
+    if not hints:
+        hints.append(
+            {
+                "label": "generic",
+                "task_type": "python_generation",
+                "suggested_task": "Inspect the folder and compose the best available coding runtime.",
+            }
+        )
+    return hints
+
+
+def _write_export_descriptor(
+    *,
+    export_descriptor: Path | None,
+    workspace_root: Path,
+    runtime_name: str,
+    task: str,
+    runtime_out: str | None,
+    selected_slms: list[str],
+    routing_decision: dict[str, Any],
+) -> dict[str, Any] | None:
+    if export_descriptor is None and runtime_out is None:
+        return None
+    target = (
+        export_descriptor.resolve()
+        if export_descriptor is not None
+        else (workspace_root / f"{runtime_name}.json").resolve()
+    )
+    descriptor = {
+        "schema_version": "1",
+        "runtime_name": runtime_name,
+        "task": task,
+        "runtime_out": runtime_out,
+        "selected_slms": selected_slms,
+        "routing_mode": routing_decision.get("routing_mode"),
+        "fallback": routing_decision.get("fallback"),
+    }
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(descriptor, indent=2) + "\n")
+    return {
+        "status": "written",
+        "descriptor_path": str(target),
+    }
+
+
+def _write_compose_log(logs_dir: Path, runtime_name: str, result: dict[str, Any]) -> None:
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_path = logs_dir / f"compose-{runtime_name}.json"
+    log_path.write_text(json.dumps(result, indent=2) + "\n")
+
+
+def _error_code(error: Exception) -> str:
+    if isinstance(error, FileNotFoundError):
+        return "not_found"
+    if isinstance(error, FileExistsError):
+        return "already_exists"
+    if isinstance(error, RuntimeError):
+        return "runtime_error"
+    return "invalid_request"
 
 
 def _slm_from_manifest(package: Path, manifest: dict[str, Any], warnings: list[str]) -> SlmRecord:

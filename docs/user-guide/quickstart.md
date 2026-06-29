@@ -2,6 +2,8 @@
 
 Use this path if you want the first successful end-to-end run with the fewest moving parts.
 
+For the packaged Composer-first contract and installer artifacts, see [Packaged Install](packaged-install.md).
+
 ## 1. Install
 
 ```bash
@@ -21,7 +23,16 @@ pip install -e '.[gguf]'  # Linux, Windows, or GGUF on any supported OS
 `backend: auto` uses MLX on macOS arm64/aarch64 and GGUF everywhere else.
 GGUF configs must use a `.gguf` runtime model path.
 
-## 2. Run the no-model demo
+## 2. Inspect the Composer-first workspace contract
+
+```bash
+slmcortex doctor
+slmcortex compose-folder --help
+```
+
+This confirms the packaged workspace layout, backend availability, and the folder-first composition entry point before you touch any advanced Factory commands.
+
+## 3. Run the no-model demo
 
 ```bash
 python scripts/run_slmcortex_demo.py
@@ -37,7 +48,7 @@ This exercises the full public flow without loading a real model:
 
 The script prints or writes outputs under a temporary directory and is the fastest way to verify the repo is healthy.
 
-## 3. Run the same flow by hand
+## 4. Run the same flow by hand
 
 If you want the command-by-command version, use the same sequence the demo script wraps:
 
@@ -80,12 +91,13 @@ slmcortex agent run \
   --dry-run
 ```
 
-## 4. Try the built-in smoke checks
+## 5. Try the built-in smoke checks
 
 The default arbitrary-slm smoke stays no-model:
 
 ```bash
 python scripts/run_slmcortex_arbitrary_slm_smoke.py
+python scripts/run_package_product_smoke.py
 ```
 
 If you explicitly want the slower local training path:
@@ -97,12 +109,12 @@ python scripts/run_slmcortex_arbitrary_slm_smoke.py --real-training
 For GGUF training/import conversion, set `gguf_converter` in the selected base
 config to llama.cpp's `convert_lora_to_gguf.py`.
 
-## 5. Set up the adaptive local coding agent
+## 6. Set up the adaptive local coding agent
 
 If you want Slm Cortex to act as your local coding agent instead of only
 running the static runtime demo, continue with the
 [local coding agent setup](local-coding-agent-setup.md).
 
-## 6. Read the command reference
+## 7. Read the command reference
 
 Once the quickstart works, move to the [command reference](command-reference.md) for the full flag-by-flag guide.

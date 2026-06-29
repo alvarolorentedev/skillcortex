@@ -5,6 +5,7 @@ Start here if you want the shortest path to using SLMCortex from the command lin
 ## Entry Points
 
 - [Quickstart](user-guide/quickstart.md)
+- [Packaged Install](user-guide/packaged-install.md)
 - [Command Reference](user-guide/command-reference.md)
 
 ## Also Useful
