@@ -27,7 +27,7 @@ def test_alternating_slm_is_promoted_and_historical_quarantine_is_preserved(tmp_
     assert "alternating_slm" in PROMOTED_SLMS
     assert "alternating_slm" not in QUARANTINED_SLMS
     assert "alternating_slm" in yaml.safe_load(
-        (ROOT / "configs/slms.yaml").read_text()
+        (ROOT / "src/slmcortex_resources/configs/slms.yaml").read_text()
     )["slms"]
 
     assert main(["--source", str(SOURCE), "--output", str(tmp_path)]) == 0

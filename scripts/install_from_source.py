@@ -103,16 +103,28 @@ def _write_runtime_helper(install_root: Path) -> None:
             for launcher_name in LAUNCHER_NAMES.get(mode, LAUNCHER_NAMES["default"]):
                 launcher_path = scripts_dir / launcher_name
                 if launcher_path.exists():
-                    raise SystemExit(subprocess.call([str(launcher_path), *args]))
+                    command = [str(launcher_path), *args]
+                    if mode == "composer" and launcher_name == "slmcortex":
+                        command = [str(launcher_path), "composer-app", *args]
+                    raise SystemExit(subprocess.call(command))
                 if os.name == "nt":
                     command_path = scripts_dir / f"{launcher_name}.exe"
                     if command_path.exists():
-                        raise SystemExit(subprocess.call([str(command_path), *args]))
+                        command = [str(command_path), *args]
+                        if mode == "composer" and launcher_name == "slmcortex":
+                            command = [str(command_path), "composer-app", *args]
+                        raise SystemExit(subprocess.call(command))
                     batch_path = scripts_dir / f"{launcher_name}.cmd"
                     if batch_path.exists():
-                        raise SystemExit(subprocess.call([str(batch_path), *args], shell=True))
+                        command = [str(batch_path), *args]
+                        if mode == "composer" and launcher_name == "slmcortex":
+                            command = [str(batch_path), "composer-app", *args]
+                        raise SystemExit(subprocess.call(command, shell=True))
 
-            raise SystemExit(subprocess.call([str(python_bin), "-m", "slmcortex", *args]))
+            command = [str(python_bin), "-m", "slmcortex"]
+            if mode == "composer":
+                command.append("composer-app")
+            raise SystemExit(subprocess.call([*command, *args]))
 
 
         if __name__ == "__main__":
@@ -182,7 +194,7 @@ def main() -> int:
     venv.EnvBuilder(with_pip=True, system_site_packages=True, clear=True).create(venv_root)
     scripts_dir, python_bin = _venv_paths(install_root)
 
-    _run([str(python_bin), "-m", "pip", "install", "--no-deps", "--force-reinstall", str(package_source)], cwd=ROOT)
+    _run([str(python_bin), "-m", "pip", "install", "--force-reinstall", str(package_source)], cwd=ROOT)
 
     _write_runtime_helper(install_root)
     _create_launchers(install_root)

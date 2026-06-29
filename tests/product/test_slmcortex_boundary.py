@@ -20,10 +20,10 @@ def test_src_tree_is_flat_product_layout():
     }
     assert entries == {
         "agent",
-        "catalog.py",
+        "catalog",
         "cli",
         "composer",
-        "composer_app.py",
+        "composer_app",
         "contracts.py",
         "dataset_factory",
         "datasets",
@@ -40,3 +40,11 @@ def test_console_scripts_expose_only_slmcortex_product_entrypoint():
     payload = tomllib.loads((ROOT / "pyproject.toml").read_text())
     scripts = payload["project"]["scripts"]
     assert scripts == {"slmcortex": "slmcortex:main"}
+
+
+def test_packaged_configs_match_repo_configs():
+    for path in sorted((ROOT / "configs").iterdir()):
+        if path.suffix not in {".yaml", ".json"}:
+            continue
+        packaged = ROOT / "src" / "slmcortex_resources" / "configs" / path.name
+        assert packaged.read_bytes() == path.read_bytes(), path.name

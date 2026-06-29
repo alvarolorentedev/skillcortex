@@ -18,10 +18,20 @@ def _bundled_root() -> Path | None:
         return None
 
 
+def _resource_root() -> Path | None:
+    bundled = _bundled_root()
+    if bundled is not None:
+        return bundled
+    candidate = (REPO_ROOT / "src" / "slmcortex_resources").resolve()
+    if candidate.exists():
+        return candidate
+    return None
+
+
 def _resolve_root() -> Path:
     if (REPO_ROOT / "pyproject.toml").exists():
         return REPO_ROOT
-    return _bundled_root() or REPO_ROOT
+    return _resource_root() or REPO_ROOT
 
 
 def _resolve_dir(env_var: str, relative: str, *, require_exists: bool = False) -> Path:
@@ -37,8 +47,18 @@ def _resolve_dir(env_var: str, relative: str, *, require_exists: bool = False) -
     return candidate
 
 
+def _resolve_config_dir() -> Path:
+    env_path = os.environ.get("SLMCORTEX_CONFIG_DIR")
+    if env_path:
+        return Path(env_path).expanduser().resolve()
+    resource_root = _resource_root()
+    if resource_root is not None:
+        return resource_root / "configs"
+    return REPO_ROOT / "src" / "slmcortex_resources" / "configs"
+
+
 ROOT = _resolve_root()
-CONFIG_DIR = _resolve_dir("SLMCORTEX_CONFIG_DIR", "configs", require_exists=True)
+CONFIG_DIR = _resolve_config_dir()
 DATA_DIR = _resolve_dir("SLMCORTEX_DATA_DIR", "data")
 ARTIFACT_DIR = _resolve_dir("SLMCORTEX_ARTIFACT_DIR", "artifacts")
 

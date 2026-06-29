@@ -27,8 +27,8 @@ Public documentation and runtime behavior should stay product-first.
 
 - Public CLI entry point: `slmcortex`
 - Product runtime/package implementation: `src/`
-- Slm registry: `configs/slm_registry.json`
-- Slm metadata: `configs/slms.yaml`
+- Slm registry: `src/slmcortex_resources/configs/slm_registry.json`
+- Slm metadata: `src/slmcortex_resources/configs/slms.yaml`
 - Slm mirror: `slms/slm_registry.json`, `slms/slms.yaml`
 - Datasets and benchmarks: `data/`
 - Checked-in adapters and validation fixtures: `artifacts/`

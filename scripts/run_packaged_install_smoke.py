@@ -64,7 +64,13 @@ def main(argv: list[str] | None = None) -> int:
     steps = []
     install_command = installer_path + [parsed.package_source]
     if len(installer_path) > 1 and not Path(installer_path[1]).exists():
-        install_command = ["python", "-m", "pip", "install", parsed.package_source]
+        install_command = [
+            sys.executable,
+            str(ROOT / "scripts" / "install_from_source.py"),
+            parsed.package_source,
+            "--install-root",
+            str(install_root),
+        ]
     steps.append(_run("install_package", install_command, cwd=ROOT, env=env))
     steps.append(_run("launch_help", [str(launcher_path), "--help"]))
     steps.append(_run("composer_launcher_help", [str(composer_launcher_path), "--help"]))
@@ -202,7 +208,7 @@ def _enrich_fastapi_package(package_path: Path) -> None:
 
 def _installer_contract(install_root: Path) -> tuple[list[str], Path, Path]:
     if os.name == "nt":
-        script = ROOT / "artifacts" / "installers" / "install-slmcortex-windows.ps1"
+        script = ROOT / "scripts" / "installers" / "install-slmcortex-windows.ps1"
         return (
             ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script)],
             install_root / "slmcortex.cmd",
@@ -210,9 +216,9 @@ def _installer_contract(install_root: Path) -> tuple[list[str], Path, Path]:
         )
     system = os.uname().sysname
     if system == "Darwin":
-        script = ROOT / "artifacts" / "installers" / "install-slmcortex-macos.sh"
+        script = ROOT / "scripts" / "installers" / "install-slmcortex-macos.sh"
     else:
-        script = ROOT / "artifacts" / "installers" / "install-slmcortex-linux.sh"
+        script = ROOT / "scripts" / "installers" / "install-slmcortex-linux.sh"
     return (["sh", str(script)], install_root / "slmcortex", install_root / "slmcortex-composer")
 
 

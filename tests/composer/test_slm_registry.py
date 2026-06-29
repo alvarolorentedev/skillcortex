@@ -15,7 +15,7 @@ def _repo_root() -> Path:
 
 
 ROOT = _repo_root()
-REGISTRY = ROOT / "configs/slm_registry.json"
+REGISTRY = ROOT / "src/slmcortex_resources/configs/slm_registry.json"
 ROUTER_REPORT = ROOT / "artifacts/governance-fixtures/slmcortex-router-v1/summary.json"
 
 

@@ -16,9 +16,9 @@ Advanced Factory commands remain available, but they are optional and are not pa
 
 | Target | Baseline artifact | Notes |
 | --- | --- | --- |
-| macOS | `artifacts/installers/install-slmcortex-macos.sh` | MLX is available on Apple Silicon; GGUF remains optional |
-| Linux | `artifacts/installers/install-slmcortex-linux.sh` | Composer-first path works without training extras |
-| Windows | `artifacts/installers/install-slmcortex-windows.ps1` | PowerShell installer creates a local launcher |
+| macOS | `scripts/installers/install-slmcortex-macos.sh` | MLX is available on Apple Silicon; GGUF remains optional |
+| Linux | `scripts/installers/install-slmcortex-linux.sh` | Composer-first path works without training extras |
+| Windows | `scripts/installers/install-slmcortex-windows.ps1` | PowerShell installer creates a local launcher |
 
 Each artifact expects a wheel, source distribution, or package source path and creates an isolated virtual environment plus two launchers:
 

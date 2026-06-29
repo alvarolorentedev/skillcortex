@@ -191,7 +191,7 @@ def markdown(report: dict) -> str:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--registry", default="configs/slm_registry.json")
+    parser.add_argument("--registry", default="src/slmcortex_resources/configs/slm_registry.json")
     parser.add_argument(
         "--router-report",
         default="artifacts/governance-fixtures/slmcortex-router-v1/summary.json",

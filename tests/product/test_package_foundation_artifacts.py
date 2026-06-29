@@ -13,9 +13,9 @@ ROOT = _repo_root()
 
 def test_installer_artifacts_exist_for_supported_targets():
     for relative in (
-        "artifacts/installers/install-slmcortex-macos.sh",
-        "artifacts/installers/install-slmcortex-linux.sh",
-        "artifacts/installers/install-slmcortex-windows.ps1",
+        "scripts/installers/install-slmcortex-macos.sh",
+        "scripts/installers/install-slmcortex-linux.sh",
+        "scripts/installers/install-slmcortex-windows.ps1",
     ):
         assert ROOT.joinpath(relative).exists()
 

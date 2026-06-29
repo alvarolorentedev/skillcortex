@@ -191,7 +191,7 @@ python scripts/benchmark_dynamic_router.py --slms-dir slms
 Manual real path, which may download models/LoRAs and run local training:
 
 ```bash
-SLMCORTEX_BASE_CONFIG=configs/prototype.yaml \
+SLMCORTEX_BASE_CONFIG=src/slmcortex_resources/configs/prototype.yaml \
 python scripts/run_dynamic_adaptive_smoke.py --real --output-root "$SMOKE_ROOT"
 ```
 

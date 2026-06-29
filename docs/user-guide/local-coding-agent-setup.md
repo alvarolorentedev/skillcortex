@@ -75,7 +75,7 @@ If this fails, fix the runtime or packaging path before trying real adaptive mod
 Use the shipped prototype config:
 
 ```bash
-export SLMCORTEX_BASE_CONFIG=configs/prototype.yaml
+export SLMCORTEX_BASE_CONFIG=src/slmcortex_resources/configs/prototype.yaml
 ```
 
 This profile already enables:
@@ -88,7 +88,7 @@ This profile already enables:
 
 Read it before using it:
 
-- [configs/prototype.yaml](../../configs/prototype.yaml)
+- [src/slmcortex_resources/configs/prototype.yaml](../../src/slmcortex_resources/configs/prototype.yaml)
 
 If you are using GGUF, make sure the runtime model path is a `.gguf` file and set `gguf_converter` in your selected config before real GGUF training or conversion.
 
@@ -190,7 +190,7 @@ pip install --upgrade pip
 pip install -e '.[test]'
 python scripts/run_slmcortex_demo.py
 python scripts/run_dynamic_adaptive_smoke.py
-export SLMCORTEX_BASE_CONFIG=configs/prototype.yaml
+export SLMCORTEX_BASE_CONFIG=src/slmcortex_resources/configs/prototype.yaml
 python scripts/run_dynamic_adaptive_smoke.py --real
 python -m slmcortex infer --slms-dir .slmcortex/prototype-slms --prompt "Fix a FastAPI validation bug" --allow-remote-loras --dry-run
 python -m slmcortex serve --slms-dir .slmcortex/prototype-slms --allow-remote-loras --dry-run

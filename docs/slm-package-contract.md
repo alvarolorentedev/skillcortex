@@ -177,10 +177,10 @@ Packaging and product training snapshot these inputs before and after work:
 
 - the requested train dataset
 - the requested eval dataset
-- `configs/base.yaml`
-- `configs/training.yaml`
-- `configs/slm_registry.json`
-- `configs/slms.yaml`
+- `src/slmcortex_resources/configs/base.yaml`
+- `src/slmcortex_resources/configs/training.yaml`
+- `src/slmcortex_resources/configs/slm_registry.json`
+- `src/slmcortex_resources/configs/slms.yaml`
 - files under `artifacts/adapters/`
 - files under `data/benchmarks/`
 

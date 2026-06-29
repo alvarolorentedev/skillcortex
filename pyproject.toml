@@ -44,7 +44,7 @@ test = [
 slmcortex = "slmcortex:main"
 
 [tool.setuptools]
-py-modules = ["slmcortex", "contracts", "catalog", "composer_app"]
+py-modules = ["slmcortex", "contracts"]
 
 [tool.setuptools.package-data]
 slmcortex_resources = ["configs/*.yaml", "configs/*.json"]

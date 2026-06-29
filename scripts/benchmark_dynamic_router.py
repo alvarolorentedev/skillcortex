@@ -24,7 +24,7 @@ CASES = [
 
 def run_benchmark(slms_dir: Path) -> dict:
     previous = os.environ.get("SLMCORTEX_BASE_CONFIG")
-    os.environ["SLMCORTEX_BASE_CONFIG"] = str(Path("configs/prototype.yaml").resolve())
+    os.environ["SLMCORTEX_BASE_CONFIG"] = str(Path("src/slmcortex_resources/configs/prototype.yaml").resolve())
     rows = []
     try:
         with tempfile.TemporaryDirectory(prefix="slmcortex-router-bench-") as directory:
