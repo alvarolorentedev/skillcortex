@@ -6,3 +6,4 @@ artifacts/
 .slmcortex/
 docs/tasks/
 build/
+.ruff_cache/
