@@ -190,7 +190,7 @@ Common flags:
 - `--train-dataset` defaults to `data/train.jsonl`
 - `--eval-dataset` defaults to `data/eval.jsonl`
 - `--name`
-- `--version` defaults to `0.1.0`
+- `--version` defaults to `0.1.1`
 - `--description`
 - `--examples`
 - `--allowed-task-types`

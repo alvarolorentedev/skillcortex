@@ -31,7 +31,7 @@ def train_slm_package(
     train_dataset: Path,
     eval_dataset: Path,
     name: str | None = None,
-    version: str = "0.1.0",
+    version: str = "0.1.1",
     description: str | None = None,
     examples: Path | None = None,
     composition: dict | None = None,

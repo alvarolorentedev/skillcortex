@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "slmcortex"
-version = "0.1.0"
+version = "0.1.1"
 description = "Package-first runtime for composable AI coding slms"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -42,6 +42,7 @@ test = [
 
 [project.scripts]
 slmcortex = "slmcortex:main"
+slmcortex-composer = "slmcortex:composer_main"
 
 [tool.setuptools]
 py-modules = ["slmcortex", "contracts"]

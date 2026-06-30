@@ -57,7 +57,7 @@ def ensure_plasticity_lora(
             train_dataset=train_dataset,
             eval_dataset=Path(config.get("plasticity_eval_dataset") or train_dataset),
             name=slm_id.replace("_", " ").title(),
-            version="0.1.0",
+            version="0.1.1",
             description=f"On-demand plasticity LoRA for {decision.reason}.",
             composition={
                 "capabilities": {"allowed_task_types": [decision.task_type or "python_generation"]},

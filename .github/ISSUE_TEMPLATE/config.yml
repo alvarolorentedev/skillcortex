@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: SLMCortex release notes
-    url: https://github.com/alvarolorentedev/crazy-coding-llm/blob/main/docs/releases/v0.1.0.md
+    url: https://github.com/alvarolorentedev/crazy-coding-llm/blob/main/docs/releases/v0.1.1.md
     about: Review the current public release notes before opening a question about scope or limitations.

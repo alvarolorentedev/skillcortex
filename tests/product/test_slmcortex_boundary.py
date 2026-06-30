@@ -36,10 +36,13 @@ def test_src_tree_is_flat_product_layout():
     }
 
 
-def test_console_scripts_expose_only_slmcortex_product_entrypoint():
+def test_console_scripts_expose_product_entrypoints():
     payload = tomllib.loads((ROOT / "pyproject.toml").read_text())
     scripts = payload["project"]["scripts"]
-    assert scripts == {"slmcortex": "slmcortex:main"}
+    assert scripts == {
+        "slmcortex": "slmcortex:main",
+        "slmcortex-composer": "slmcortex:composer_main",
+    }
 
 
 def test_packaged_configs_match_repo_configs():

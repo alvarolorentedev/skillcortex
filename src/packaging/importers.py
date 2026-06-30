@@ -77,7 +77,7 @@ def import_lora(
     output: Path,
     train_dataset: Path,
     eval_dataset: Path,
-    version: str = "0.1.0",
+    version: str = "0.1.1",
     description: str | None = None,
     cache_dir: Path | None = None,
     max_download_bytes: int | None = None,

@@ -1,5 +1,6 @@
 import json
 
+import slmcortex as slmcortex_module
 from slmcortex.cli import main
 from slmcortex.composer_app import run_composer_app
 from slmcortex.packaging.artifacts import package_checksums
@@ -60,6 +61,19 @@ def _package_fastapi_contract(workspace_root, tmp_path):
     metadata = json.loads((package / "metadata.json").read_text())
     metadata["checksums"] = package_checksums(package)
     (package / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+
+
+def test_composer_console_script_dispatches_to_composer_app(monkeypatch):
+    observed = {}
+
+    def fake_main(argv=None):
+        observed["argv"] = argv
+        return 0
+
+    monkeypatch.setattr(slmcortex_module, "main", fake_main)
+
+    assert slmcortex_module.composer_main(["--help"]) == 0
+    assert observed["argv"] == ["composer-app", "--help"]
 
 
 def test_composer_app_persists_onboarding_and_project_state(tmp_path, capsys):

@@ -64,7 +64,7 @@ def _demo_slms(root: Path) -> Path:
         train_dataset=Path("data/train.jsonl"),
         eval_dataset=Path("data/eval.jsonl"),
         eval_summary=eval_summary,
-        version="0.1.0",
+        version="0.1.1",
         description="FastAPI endpoint validation",
         composition={
             "capabilities": {"allowed_task_types": ["python_generation"]},
