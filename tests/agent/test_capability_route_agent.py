@@ -167,26 +167,30 @@ def test_agent_run_slms_dir_confirm_uses_review_path_without_silent_writes(tmp_p
     assert app.read_text() == "from fastapi import FastAPI\n"
 
 
-def test_agent_run_slms_dir_reads_task_from_stdin(tmp_path, monkeypatch, capsys):
+def test_agent_run_slms_dir_reads_tasks_from_stdin(tmp_path, monkeypatch, capsys):
     slms_dir = package_fastapi_slm(tmp_path)
     capsys.readouterr()
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "app.py").write_text("from fastapi import FastAPI\n")
-    task = "Create a FastAPI endpoint with Pydantic validation"
+    tasks = [
+        "Create a FastAPI endpoint with Pydantic validation",
+        "Add a user endpoint",
+    ]
 
     def fake_run_agent(**kwargs):
-        assert kwargs["task"] == [task]
-        assert kwargs["writes"] == "confirm"
+        assert kwargs["task"] == [tasks[0]]
+        assert kwargs["task_provider"]() == tasks[1]
+        assert kwargs["task_provider"]() is None
+        assert kwargs["writes"] == "on"
         assert kwargs["dry_run"] is False
         return {
-            "status": "review_required",
-            "review_artifact_path": str(tmp_path / "review.patch"),
+            "status": "applied",
             "runtime": str(kwargs["runtime_path"].resolve()),
         }
 
     monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fake_run_agent)
-    monkeypatch.setattr("sys.stdin", io.StringIO(task + "\n"))
+    monkeypatch.setattr("sys.stdin", io.StringIO("\n".join(tasks) + "\n"))
 
     assert (
         main(
@@ -206,8 +210,8 @@ def test_agent_run_slms_dir_reads_task_from_stdin(tmp_path, monkeypatch, capsys)
 
     result = json.loads(capsys.readouterr().out)
     assert result["mode"] == "dynamic_agent"
-    assert result["agent_execution_status"] == "review_required"
-    assert result["write_mode"] == "confirm"
+    assert result["agent_execution_status"] == "completed"
+    assert result["write_mode"] == "on"
 
 
 def test_agent_run_slms_dir_uses_available_slms_when_route_selects_none(tmp_path, monkeypatch, capsys):
@@ -218,12 +222,11 @@ def test_agent_run_slms_dir_uses_available_slms_when_route_selects_none(tmp_path
     task = "Write CSS for a landing page"
 
     def fake_run_agent(**kwargs):
-        assert kwargs["writes"] == "confirm"
+        assert kwargs["writes"] == "on"
         assert kwargs["dry_run"] is False
         assert kwargs["runtime_path"].joinpath("composition.yaml").exists()
         return {
-            "status": "review_required",
-            "review_artifact_path": str(tmp_path / "review.patch"),
+            "status": "applied",
             "runtime": str(kwargs["runtime_path"].resolve()),
         }
 
@@ -250,7 +253,7 @@ def test_agent_run_slms_dir_uses_available_slms_when_route_selects_none(tmp_path
     result = json.loads(capsys.readouterr().out)
     assert result["routing_decision"]["selected_slms"] == []
     assert result["selected_slms"] == [str(slms_dir / "fastapi_contract")]
-    assert result["agent_execution_status"] == "review_required"
+    assert result["agent_execution_status"] == "completed"
     assert any("base fallback" in warning for warning in result["warnings"])
 
 
@@ -341,11 +344,21 @@ def test_agent_run_slms_dir_repairs_stale_protected_inputs(tmp_path, monkeypatch
     assert repaired["protected_inputs"] == {"all_unchanged": True, "files": {}}
 
 
-def test_agent_run_slms_dir_write_mode_on_fails_clearly(tmp_path, capsys):
-    slms_dir = tmp_path / "slms"
+def test_agent_run_slms_dir_write_mode_on_is_supported(tmp_path, monkeypatch, capsys):
+    slms_dir = package_fastapi_slm(tmp_path)
+    capsys.readouterr()
     repo = tmp_path / "repo"
     repo.mkdir()
-    write_fastapi_slm(slms_dir)
+    (repo / "app.py").write_text("from fastapi import FastAPI\n")
+
+    def fake_run_agent(**kwargs):
+        assert kwargs["writes"] == "on"
+        return {
+            "status": "applied",
+            "runtime": str(kwargs["runtime_path"].resolve()),
+        }
+
+    monkeypatch.setattr("slmcortex.cli.handlers.run_agent", fake_run_agent)
 
     assert (
         main(
@@ -357,15 +370,19 @@ def test_agent_run_slms_dir_write_mode_on_fails_clearly(tmp_path, capsys):
                 "--repo",
                 str(repo),
                 "--task",
-                "Create a FastAPI endpoint",
+                "Create a FastAPI endpoint with Pydantic validation",
                 "--write-mode",
                 "on",
+                "--compose-runtime-out",
+                str(tmp_path / "runtime"),
             ]
         )
-        == 2
+        == 0
     )
 
-    assert "only supports --dry-run or --write-mode confirm" in capsys.readouterr().err
+    result = json.loads(capsys.readouterr().out)
+    assert result["agent_execution_status"] == "completed"
+    assert result["write_mode"] == "on"
 
 
 def test_agent_run_slms_dir_uses_dynamic_base_when_no_slm_packages_available(tmp_path, monkeypatch, capsys):
@@ -377,11 +394,10 @@ def test_agent_run_slms_dir_uses_dynamic_base_when_no_slm_packages_available(tmp
     def fake_run_agent(**kwargs):
         assert kwargs["runtime_path"] is None
         assert kwargs["runtime"].validate()["runtime"] == "dynamic"
-        assert kwargs["writes"] == "confirm"
+        assert kwargs["writes"] == "on"
         assert kwargs["dry_run"] is False
         return {
-            "status": "review_required",
-            "review_artifact_path": str(tmp_path / "review.patch"),
+            "status": "applied",
             "runtime": "dynamic",
         }
 
@@ -406,7 +422,7 @@ def test_agent_run_slms_dir_uses_dynamic_base_when_no_slm_packages_available(tmp
     result = json.loads(capsys.readouterr().out)
     assert result["runtime_out"] is None
     assert result["composition_strategy"] == "dynamic"
-    assert result["agent_execution_status"] == "review_required"
+    assert result["agent_execution_status"] == "completed"
     assert any("base fallback" in warning for warning in result["warnings"])
 
 

@@ -661,14 +661,14 @@ Behavior:
 - runtime mode runs the agent against an already composed bundle
 - slms-dir mode routes and composes first, then runs the agent
 - runtime mode can repeat `--task` to preload multiple tasks
-- slms-dir mode accepts one task per run
+- slms-dir mode composes from the first task, runs it, then prompts for the next task
 - omitting `--task` reads tasks from stdin or prompts interactively
 - `--dry-run` is available for route/plan checks without applying changes
 
 Optional flags:
 
 - `--task` can be repeated to preload multiple tasks
-- `--writes` or `--write-mode` accepts `off`, `confirm`, or `on`
+- `--writes` or `--write-mode` accepts `off`, `confirm`, or `on`; default is `on`
 - `--test-command`
 - `--trace-out`
 - `--compose-runtime-out`
@@ -679,7 +679,7 @@ Writes:
 
 - a trace JSON when `--trace-out` is set
 - optional review artifacts in confirm mode
-- optional file writes in `--write-mode on`
+- file writes in default `--write-mode on`
 
 Example:
 
@@ -691,7 +691,6 @@ slmcortex agent run \
 
 Notes:
 
-- `--slms-dir` mode only supports `--dry-run` or `--write-mode confirm`.
 - If you omit `--task`, the command reads tasks from stdin or prompts
   interactively.
 - `--trace-out` writes the run trace JSON to disk.

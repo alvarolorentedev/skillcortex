@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Callable
 
 from ...agent import run_agent
 from ...catalog import SlmCatalog, compose_from_route, route_task, validate_runtime_bundle
@@ -22,20 +23,23 @@ def run_dynamic_agent(
     *,
     slms_dir: Path,
     repo: Path,
-    task: str,
+    task: str | list[str],
     runtime_out: Path,
     writes: str,
     test_command: str | None,
     trace_out: Path | None,
     dry_run: bool,
     overwrite: bool,
+    task_provider: Callable[[], str | None] | None = None,
     compose_from_route_fn=compose_from_route,
     run_agent_fn=run_agent,
 ) -> dict:
+    tasks = [task] if isinstance(task, str) else task
+    first_task = tasks[0]
     composition = _compose_for_agent(
         slms_dir=slms_dir,
         repo=repo,
-        task=task,
+        task=first_task,
         runtime_out=runtime_out,
         overwrite=overwrite,
         compose_from_route_fn=compose_from_route_fn,
@@ -45,11 +49,12 @@ def run_dynamic_agent(
     agent_kwargs = dict(
         runtime_path=runtime_out,
         repo=repo,
-        task=[task],
+        task=tasks,
         writes=writes,
         test_command=test_command,
         trace_out=None,
         dry_run=dry_run,
+        task_provider=task_provider,
     )
     if composition.get("runtime") is not None:
         agent_kwargs["runtime"] = composition["runtime"]
@@ -64,7 +69,7 @@ def run_dynamic_agent(
         "composition_status": composition["composition_status"],
         "validation_status": composition["validation_status"],
         "agent_execution_status": _agent_status(agent_result, dry_run),
-        "write_mode": "dry_run" if dry_run else "confirm",
+        "write_mode": "dry_run" if dry_run else writes,
         "agent_result": agent_result,
         "trace_out": str(trace_out.resolve()) if trace_out is not None else None,
         "warnings": composition["warnings"],

@@ -18,7 +18,7 @@ def run_agent(
     runtime: Any | None = None,
     repo: Path,
     task: str | list[str] | None = None,
-    writes: str = "confirm",
+    writes: str = "on",
     test_command: str | None = None,
     trace_out: Path | None = None,
     dry_run: bool = False,

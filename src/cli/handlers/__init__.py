@@ -236,20 +236,17 @@ def _agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
 
 def _dynamic_agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
     tasks = collect_agent_tasks(parsed.task)
+    task_provider = None
     if not tasks:
         task_provider = stream_agent_tasks()
-        task = task_provider()
-        if not task:
+        first_task = task_provider()
+        if not first_task:
             raise ValueError("at least one task is required")
-        tasks = [task]
-    if len(tasks) != 1:
-        raise ValueError("agent run --slms-dir accepts one task")
-    if parsed.writes == "on" or (not parsed.dry_run and parsed.writes != "confirm"):
-        raise ValueError("dynamic slms-dir execution only supports --dry-run or --write-mode confirm")
+        tasks = [first_task]
     return run_dynamic_agent(
         slms_dir=Path(parsed.slms_dir),
         repo=Path(parsed.repo),
-        task=tasks[0],
+        task=tasks,
         runtime_out=Path(parsed.compose_runtime_out)
         if parsed.compose_runtime_out
         else default_dynamic_runtime_path(Path(parsed.repo), Path(parsed.slms_dir), tasks[0]),
@@ -257,6 +254,7 @@ def _dynamic_agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
         test_command=parsed.test_command,
         trace_out=Path(parsed.trace_out) if parsed.trace_out else None,
         dry_run=parsed.dry_run,
+        task_provider=task_provider,
         overwrite=parsed.overwrite,
         compose_from_route_fn=compose_from_route,
         run_agent_fn=run_agent,

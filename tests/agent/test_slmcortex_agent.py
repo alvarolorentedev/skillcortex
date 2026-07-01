@@ -339,6 +339,8 @@ def test_agent_run_records_dynamic_slm_switch_and_trace(tmp_path, monkeypatch, c
                 str(repo),
                 "--task",
                 "Fix the failing answer implementation.",
+                "--write-mode",
+                "confirm",
                 "--test-command",
                 "pytest -q",
                 "--trace-out",
@@ -497,6 +499,8 @@ def test_agent_run_confirm_mode_writes_review_artifact(tmp_path, monkeypatch, ca
                 str(repo),
                 "--task",
                 "Fix the failing answer implementation.",
+                "--write-mode",
+                "confirm",
                 "--trace-out",
                 str(trace),
             ]

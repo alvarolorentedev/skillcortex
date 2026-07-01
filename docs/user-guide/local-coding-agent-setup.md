@@ -159,7 +159,7 @@ Then start the real server without `--dry-run` when the route looks sane.
 
 Once direct inference looks sane, use the bounded agent path.
 
-Run the agent in confirm mode:
+Run the agent:
 
 ```bash
 python -m slmcortex agent run \
@@ -173,11 +173,10 @@ Pass `--task` when you want a one-shot request instead of the interactive prompt
 python -m slmcortex agent run \
   --slms-dir .slmcortex/prototype-slms \
   --repo /path/to/your/repo \
-  --task "Fix the failing answer implementation." \
-  --write-mode confirm
+  --task "Fix the failing answer implementation."
 ```
 
-Use confirm mode before you allow broader write automation.
+Use `--write-mode confirm` when you want a review patch instead of direct file writes.
 
 ## 8. Recommended first-user flow
 

@@ -31,7 +31,7 @@ def add_agent_parser(commands) -> None:
         action="append",
         help="Optional. Repeat to preload tasks. If omitted, tasks are read from stdin or prompted interactively.",
     )
-    agent_run.add_argument("--writes", "--write-mode", dest="writes", choices=WRITE_MODES, default="confirm")
+    agent_run.add_argument("--writes", "--write-mode", dest="writes", choices=WRITE_MODES, default="on")
     agent_run.add_argument("--test-command")
     agent_run.add_argument("--trace-out")
     agent_run.add_argument("--compose-runtime-out")

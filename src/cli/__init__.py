@@ -25,7 +25,7 @@ def _stream_agent_tasks() -> object:
 
         return stdin_provider
 
-    print("Enter agent tasks, one per line. Submit an empty line to start execution.", file=sys.stderr)
+    print("Enter agent tasks, one per line. Submit an empty line to stop.", file=sys.stderr)
     task_count = 0
 
     def prompt_provider() -> str | None:
