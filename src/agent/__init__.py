@@ -14,7 +14,8 @@ from .steps import task_sequence
 
 def run_agent(
     *,
-    runtime_path: Path,
+    runtime_path: Path | None = None,
+    runtime: Any | None = None,
     repo: Path,
     task: str | list[str] | None = None,
     writes: str = "confirm",
@@ -28,8 +29,12 @@ def run_agent(
     repo_root = repo.resolve()
     if not repo_root.exists() or not repo_root.is_dir():
         raise FileNotFoundError(f"repo not found: {repo_root}")
-    runtime = SlmRuntime.load(runtime_path)
+    if runtime is None:
+        if runtime_path is None:
+            raise ValueError("runtime_path is required unless runtime is provided")
+        runtime = SlmRuntime.load(runtime_path)
     runtime.validate()
+    runtime_label = str(runtime_path.resolve()) if runtime_path is not None else getattr(runtime.bundle, "name", "dynamic")
     sandbox = ToolSandbox(repo_root, writes)
     tasks: list[str] = []
     trace = {
@@ -38,7 +43,7 @@ def run_agent(
         "task": None,
         "tasks": tasks,
         "repo": str(repo_root),
-        "runtime": str(runtime_path.resolve()),
+        "runtime": runtime_label,
         "writes_mode": writes,
         "execution_mode": "dry-run-route-plan-only" if dry_run else f"write-mode-{writes}",
         "test_command": test_command,
@@ -92,7 +97,7 @@ def run_agent(
         "writes_mode": writes,
         "execution_mode": trace["execution_mode"],
         "repo": str(repo_root),
-        "runtime": str(runtime_path.resolve()),
+        "runtime": runtime_label,
         "trace_path": str(trace_out.resolve()) if trace_out is not None else None,
         "step_count": len(trace["steps"]),
         "final_summary": final_summary,

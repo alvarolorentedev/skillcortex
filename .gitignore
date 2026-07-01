@@ -8,3 +8,4 @@ artifacts/*
 docs/tasks/
 build/
 .ruff_cache/
+.slmcortex.yaml

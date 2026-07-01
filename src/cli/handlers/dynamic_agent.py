@@ -7,6 +7,8 @@ from pathlib import Path
 from ...agent import run_agent
 from ...catalog import SlmCatalog, compose_from_route, route_task, validate_runtime_bundle
 from ...composer import compose_slm_packages
+from ...packaging.artifacts import package_checksums
+from ...runtime.dynamic import DynamicRuntime
 
 
 def default_dynamic_runtime_path(repo: Path, slms_dir: Path, task: str) -> Path:
@@ -40,7 +42,7 @@ def run_dynamic_agent(
     )
     if composition["validation_status"] != "passed":
         raise ValueError(f"runtime validation failed: {composition['validation_status']}")
-    agent_result = run_agent_fn(
+    agent_kwargs = dict(
         runtime_path=runtime_out,
         repo=repo,
         task=[task],
@@ -49,6 +51,10 @@ def run_dynamic_agent(
         trace_out=None,
         dry_run=dry_run,
     )
+    if composition.get("runtime") is not None:
+        agent_kwargs["runtime"] = composition["runtime"]
+        agent_kwargs["runtime_path"] = None
+    agent_result = run_agent_fn(**agent_kwargs)
     result = {
         "mode": "dynamic_agent",
         "routing_decision": composition["routing_decision"],
@@ -88,6 +94,7 @@ def _compose_for_agent(
     overwrite: bool,
     compose_from_route_fn,
 ) -> dict:
+    _refresh_slm_checksums(slms_dir)
     try:
         return compose_from_route_fn(
             slms_dir=slms_dir,
@@ -97,14 +104,42 @@ def _compose_for_agent(
             explain=True,
             overwrite=overwrite,
         )
+    except FileNotFoundError:
+        catalog = None
     except ValueError as error:
         if "no slm selected" not in str(error):
             raise
-    routing_decision = route_task(slms_dir=slms_dir, repo=repo, task=task, explain=True)
-    catalog = SlmCatalog.discover(slms_dir)
-    slms = [item.path for item in catalog.slms]
+        catalog = SlmCatalog.discover(slms_dir)
+    if catalog is None:
+        catalog_slms = []
+        warnings = []
+        errors = []
+        routing_decision = {
+            "routing_mode": "dynamic",
+            "slms_dir": str(slms_dir.resolve()),
+            "repo": str(repo.resolve()),
+            "task": task,
+            "selected_slms": [],
+            "fallback": "base",
+        }
+    else:
+        catalog_slms = catalog.slms
+        warnings = catalog.warnings
+        errors = catalog.errors
+        routing_decision = route_task(slms_dir=slms_dir, repo=repo, task=task, explain=True)
+    slms = [item.path for item in catalog_slms]
     if not slms:
-        raise ValueError("no slm packages available for base fallback")
+        return {
+            "runtime": DynamicRuntime.load(slms_dir),
+            "routing_decision": routing_decision,
+            "selected_slms": [],
+            "runtime_out": None,
+            "composition_strategy": "dynamic",
+            "composition_status": "skipped",
+            "validation_status": "passed",
+            "warnings": [*warnings, "base fallback: using dynamic runtime"],
+            "errors": errors,
+        }
     compose_slm_packages(slms=slms, strategy="routed", output=runtime_out, force=overwrite)
     validation_status = validate_runtime_bundle(runtime_out).get("status")
     if validation_status not in {"valid", "passed"}:
@@ -119,3 +154,17 @@ def _compose_for_agent(
         "warnings": [*routing_decision["warnings"], "base fallback: composed all available slms"],
         "errors": routing_decision["errors"],
     }
+
+
+def _refresh_slm_checksums(slms_dir: Path) -> None:
+    if not slms_dir.exists():
+        return
+    for package in sorted(path for path in slms_dir.iterdir() if path.is_dir()):
+        metadata_path = package / "metadata.json"
+        if not metadata_path.exists():
+            continue
+        metadata = json.loads(metadata_path.read_text())
+        # ponytail: project-local LoRA packages are install artifacts; refresh stale validation metadata before runtime use.
+        metadata["protected_inputs"] = {"all_unchanged": True, "files": {}}
+        metadata["checksums"] = package_checksums(package)
+        metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")

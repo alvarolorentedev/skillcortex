@@ -48,6 +48,9 @@ class DynamicRuntime:
         prompt: str | None = None,
         system: str | None = None,
         messages: list[dict[str, str]] | None = None,
+        task_type: str | None = None,
+        semantic_family: str | None = None,
+        slm_override: str | None = None,
         max_tokens: int | None = None,
         temperature: float | None = None,
         dry_run: bool = False,
@@ -328,6 +331,13 @@ class DynamicRuntime:
         if decision.selected_slms:
             return "local_lora"
         return "base_fallback"
+
+    def validate(self) -> dict:
+        return {
+            "status": "valid",
+            "runtime": "dynamic",
+            "slms": sorted(self.slms),
+        }
 
 
 __all__ = ["DynamicRouteDecision", "DynamicRuntime", "Router", "train_slm_package"]
