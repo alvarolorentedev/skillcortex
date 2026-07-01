@@ -187,7 +187,7 @@ What the default smoke validates:
 - compose without registry
 - runtime bundle validation
 - inference dry-run against the composed bundle
-- bounded agent dry-run against a local toy repository
+- bounded agent run against a local toy repository
 
 Opt-in real local training smoke:
 
@@ -332,9 +332,7 @@ slmcortex route \
 ```bash
 slmcortex agent run \
   --slms-dir slms \
-  --repo . \
-  --task "Create a FastAPI endpoint with Pydantic validation" \
-  --dry-run
+  --repo .
 ```
 
 To run the four-scenario dynamic acceptance harness locally:
@@ -389,8 +387,6 @@ Execution mode still uses an explicit composed runtime bundle:
 slmcortex agent run \
   --runtime /tmp/slmcortex-demo/runtime \
   --repo /tmp/slmcortex-demo/toy-repo \
-  --task "Fix the failing answer implementation." \
-  --dry-run \
   --trace-out /tmp/slmcortex-demo/agent-trace.json
 ```
 

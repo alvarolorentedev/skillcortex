@@ -159,17 +159,15 @@ Then start the real server without `--dry-run` when the route looks sane.
 
 Once direct inference looks sane, use the bounded agent path.
 
-Start with `--dry-run`:
+Run the agent in confirm mode:
 
 ```bash
 python -m slmcortex agent run \
   --slms-dir .slmcortex/prototype-slms \
-  --repo /path/to/your/repo \
-  --task "Fix the failing answer implementation." \
-  --dry-run
+  --repo /path/to/your/repo
 ```
 
-When routing and task output look correct, move to confirm mode:
+Pass `--task` when you want a one-shot request instead of the interactive prompt:
 
 ```bash
 python -m slmcortex agent run \
@@ -196,10 +194,10 @@ export SLMCORTEX_BASE_CONFIG=src/slmcortex_resources/configs/prototype.yaml
 python scripts/run_dynamic_adaptive_smoke.py --real
 python -m slmcortex infer --slms-dir .slmcortex/prototype-slms --prompt "Fix a FastAPI validation bug" --allow-remote-loras --dry-run
 python -m slmcortex serve --slms-dir .slmcortex/prototype-slms --allow-remote-loras --dry-run
-python -m slmcortex agent run --slms-dir .slmcortex/prototype-slms --repo /path/to/your/repo --task "Fix the failing answer implementation." --dry-run
+python -m slmcortex agent run --slms-dir .slmcortex/prototype-slms --repo /path/to/your/repo
 ```
 
-If each step works, the next step is to remove `--dry-run` for the inference path and then for the bounded agent path.
+If each step works, the next step is to remove `--dry-run` for the inference path.
 
 ## 9. Current limitations
 

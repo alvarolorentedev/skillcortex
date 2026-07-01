@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 
 from ...agent import run_agent
-from ...catalog import compose_from_route
+from ...catalog import SlmCatalog, compose_from_route, route_task, validate_runtime_bundle
+from ...composer import compose_slm_packages
 
 
 def default_dynamic_runtime_path(repo: Path, slms_dir: Path, task: str) -> Path:
@@ -29,13 +30,13 @@ def run_dynamic_agent(
     compose_from_route_fn=compose_from_route,
     run_agent_fn=run_agent,
 ) -> dict:
-    composition = compose_from_route_fn(
+    composition = _compose_for_agent(
         slms_dir=slms_dir,
         repo=repo,
         task=task,
         runtime_out=runtime_out,
-        explain=True,
         overwrite=overwrite,
+        compose_from_route_fn=compose_from_route_fn,
     )
     if composition["validation_status"] != "passed":
         raise ValueError(f"runtime validation failed: {composition['validation_status']}")
@@ -76,3 +77,45 @@ def _agent_status(agent_result: dict, dry_run: bool) -> str:
     if agent_result.get("review_artifact_path"):
         return "review_required"
     return "completed"
+
+
+def _compose_for_agent(
+    *,
+    slms_dir: Path,
+    repo: Path,
+    task: str,
+    runtime_out: Path,
+    overwrite: bool,
+    compose_from_route_fn,
+) -> dict:
+    try:
+        return compose_from_route_fn(
+            slms_dir=slms_dir,
+            repo=repo,
+            task=task,
+            runtime_out=runtime_out,
+            explain=True,
+            overwrite=overwrite,
+        )
+    except ValueError as error:
+        if "no slm selected" not in str(error):
+            raise
+    routing_decision = route_task(slms_dir=slms_dir, repo=repo, task=task, explain=True)
+    catalog = SlmCatalog.discover(slms_dir)
+    slms = [item.path for item in catalog.slms]
+    if not slms:
+        raise ValueError("no slm packages available for base fallback")
+    compose_slm_packages(slms=slms, strategy="routed", output=runtime_out, force=overwrite)
+    validation_status = validate_runtime_bundle(runtime_out).get("status")
+    if validation_status not in {"valid", "passed"}:
+        raise ValueError(f"runtime validation failed: {validation_status}")
+    return {
+        "routing_decision": routing_decision,
+        "selected_slms": [str(path) for path in slms],
+        "runtime_out": str(runtime_out.resolve()),
+        "composition_strategy": "routed",
+        "composition_status": "written",
+        "validation_status": "passed",
+        "warnings": [*routing_decision["warnings"], "base fallback: composed all available slms"],
+        "errors": routing_decision["errors"],
+    }

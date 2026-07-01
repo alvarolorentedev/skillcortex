@@ -26,6 +26,6 @@ ROOT_EXAMPLES = dedent(
     slmcortex compose-from-route --slms-dir slms --repo . --task "Create a FastAPI endpoint" --runtime-out /tmp/slmcortex-demo/runtime
     slmcortex validate-runtime --runtime /tmp/slmcortex-demo/runtime
     slmcortex infer --runtime /tmp/slmcortex-demo/runtime --prompt "Fix this Python traceback" --dry-run
-    slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task "Fix the failing answer implementation." --dry-run
+    slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo
     """
 ).strip()

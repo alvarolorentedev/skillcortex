@@ -47,7 +47,7 @@ follow-up to the [quickstart](quickstart.md).
 | `validate-runtime` | runtime bundle | validation result only | checking a bundle before use |
 | `infer` | runtime or slms dir, prompt or request file | inference result or dry-run route | running model-backed or dry-run inference |
 | `serve` | runtime bundle | server process | exposing the OpenAI-compatible API |
-| `agent run` | runtime or slms dir, repo, task | trace, diffs, optional writes | bounded repo work on a local checkout |
+| `agent run` | runtime or slms dir, repo, optional task | trace, diffs, optional writes | bounded repo work on a local checkout |
 | `loras download` | LoRA names or `hf://` URL | project-local SLM package(s) | downloading selected project-owned LoRAs |
 
 ## `doctor`
@@ -660,8 +660,10 @@ Behavior:
 
 - runtime mode runs the agent against an already composed bundle
 - slms-dir mode routes and composes first, then runs the agent
-- `--task` can be repeated to preload multiple tasks
-- `--dry-run` plans the work without applying changes
+- runtime mode can repeat `--task` to preload multiple tasks
+- slms-dir mode accepts one task per run
+- omitting `--task` reads tasks from stdin or prompts interactively
+- `--dry-run` is available for route/plan checks without applying changes
 
 Optional flags:
 
@@ -684,9 +686,7 @@ Example:
 ```bash
 slmcortex agent run \
   --runtime /tmp/slmcortex-demo/runtime \
-  --repo /tmp/slmcortex-demo/toy-repo \
-  --task "Fix the failing answer implementation." \
-  --dry-run
+  --repo /tmp/slmcortex-demo/toy-repo
 ```
 
 Notes:

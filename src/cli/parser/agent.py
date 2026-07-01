@@ -9,7 +9,7 @@ def add_agent_parser(commands) -> None:
         "agent",
         **parser_kwargs(
             "Run the bounded local agent on top of a runtime bundle.",
-            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo\n"
             "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode on --test-command \"pytest -q\"",
             summary="Composer: run the bounded local agent on a composed runtime.",
         ),
@@ -19,7 +19,7 @@ def add_agent_parser(commands) -> None:
         "run",
         **parser_kwargs(
             "Inspect a local repository, propose a change, and optionally validate it.",
-            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --dry-run\n"
+            "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo\n"
             "slmcortex agent run --runtime /tmp/slmcortex-demo/runtime --repo /tmp/slmcortex-demo/toy-repo --task \"Fix the failing answer implementation.\" --write-mode confirm --trace-out /tmp/slmcortex-demo/agent-trace.json",
         ),
     )

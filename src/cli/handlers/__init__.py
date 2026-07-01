@@ -220,7 +220,7 @@ def _agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
     if not parsed.repo:
         raise ValueError("agent run requires --repo unless .slmcortex.yaml provides project defaults")
     if parsed.slms_dir:
-        return _dynamic_agent(parsed, collect_agent_tasks)
+        return _dynamic_agent(parsed, collect_agent_tasks, stream_agent_tasks)
     tasks = collect_agent_tasks(parsed.task)
     return run_agent(
         runtime_path=Path(parsed.runtime),
@@ -234,12 +234,16 @@ def _agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
     )
 
 
-def _dynamic_agent(parsed, collect_agent_tasks) -> dict:
+def _dynamic_agent(parsed, collect_agent_tasks, stream_agent_tasks) -> dict:
     tasks = collect_agent_tasks(parsed.task)
     if not tasks:
-        raise ValueError("agent run --slms-dir --dry-run requires --task")
+        task_provider = stream_agent_tasks()
+        task = task_provider()
+        if not task:
+            raise ValueError("at least one task is required")
+        tasks = [task]
     if len(tasks) != 1:
-        raise ValueError("agent run --slms-dir --dry-run accepts one --task")
+        raise ValueError("agent run --slms-dir accepts one task")
     if parsed.writes == "on" or (not parsed.dry_run and parsed.writes != "confirm"):
         raise ValueError("dynamic slms-dir execution only supports --dry-run or --write-mode confirm")
     return run_dynamic_agent(
